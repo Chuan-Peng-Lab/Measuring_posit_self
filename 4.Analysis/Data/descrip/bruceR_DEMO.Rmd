@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(bruceR)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+d1 = between.3
+d1$Y1 = d1$SCORE  # 复制一下
+d1$Y2 = rnorm(32)  # 随机数
+d1$B = factor(d1$B, levels=1:2, labels=c("Low", "High"))
+d1$C = factor(d1$C, levels=1:2, labels=c("M", "F"))
+
+## 单样本t检验 ##
+TTEST(d1, "SCORE")
+TTEST(d1, "SCORE", test.value=5)
+
+## 独立样本t检验 ##
+TTEST(d1, "SCORE", x="A")
+TTEST(d1, "SCORE", x="A", var.equal=FALSE)
+TTEST(d1, y="Y1", x=c("A", "B", "C"))
+
+```
+
+```{r}
+d2 = within.1
+## 配对样本t检验 ##
+TTEST(d2, y=c("A1", "A2"), paired=TRUE)
+TTEST(d2, y=c("A1", "A2", "A3", "A4"), paired=TRUE)
+```
+```{r}
+## 被试间设计 ##
+between.2
+MANOVA(between.2, dv="SCORE", between=c("A", "B"))
+```
+
+```{r}
+MANOVA(between.2, dv="SCORE", between=c("A", "B")) %>%
+  EMMEANS("A", by="B") %>%
+  EMMEANS("B", by="A")
+```
+
+
+```{r}
+## 被试内设计 ##
+within.3
+MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
+       within=c("A", "B", "C"))
+```
+```{r}
+MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
+       within=c("A", "B", "C")) %>%
+  EMMEANS("A", by="B") %>%
+  EMMEANS(c("A", "B"), by="C") %>%
+  EMMEANS("A", by=c("B", "C"))
+```
+
+```{r}
+## 长数据也行 ##
+?afex::obk.long
+?bruceR::MANOVA
+MANOVA(afex::obk.long,
+       subID="id",
+       dv="value",
+       between=c("treatment", "gender"),
+       within=c("phase", "hour"),
+       cov="age",
+       sph.correction="GG")
+
+```
+
+
+```{r}
+## 混合设计 ##
+mixed.3_2b1w
+MANOVA(mixed.3_2b1w, dvs="B1:B2", dvs.pattern="B(.)",
+       between=c("A", "C"), within="B")
+```
+```{r}
+data.new = mixed.3_1b2w
+names(data.new) = c("Group", "Cond_01", "Cond_02", "Cond_03", "Cond_04")
+MANOVA(data.new,
+       dvs="Cond_01:Cond_04",
+       dvs.pattern="Cond_(..)",
+       between="Group",
+       within="Condition")
+```
+
+```{r}
+?pivot_wider
+```
+
+

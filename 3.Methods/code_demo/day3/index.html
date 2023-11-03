@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>day3</title>
+  <script src='./jspsych-7.3.1/plugins/axios.min.js'></script>
+  <script src='./jspsych-7.3.1/js/jquery.js'></script>
+  <script src='./jspsych-7.3.1/jspsych.js'></script>
+  <script src="./self-report\surveys\plugin-survey.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-survey-text.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-survey-html-form.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-survey-multi-choice.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-survey-likert.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-html-button-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-html-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-image-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-video-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-audio-button-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-preload.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-video-slider-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-survey-multi-select.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-html-slider-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-fullscreen.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-call-function.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-virtual-chinrest.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-instructions.js"></script>
+  <script src="./self-report/plugin-survey-template.js"></script>
+  <link href="./jspsych-7.3.1/css/jspsych.css" rel="stylesheet" type="text/css">
+  <script src="./jspsych-psychophysics-3.4.0/jspsych-psychophysics.js"></script>
+  <script src="./jspsych-7.3.1/js/jSignature/jSignature.min.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-virtual-chinrest.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-likert.js"></script>
+  <script src='./jspsych-7.3.1/plugins/extension_naodao-2021-12.js'></script>
+  <script src="./initJspsy2.js"></script>
+
+  <script src=".\self-report\surveys\SWB.js"></script>
+  <script src=".\self-report\surveys\LOT.js"></script>
+  <script src=".\self-report\surveys\IPC.js"></script>
+  <script src="./self-report/surveys/selfesteem.js"></script>
+  <script src="./self-report/surveys/coreself.js"></script>
+  <script src="./self-report/surveys/NPI.js"></script>
+  <script src="./self-report/surveys/hsns.js"></script>
+  <script src="./self-report/surveys/SGPS.js"></script>
+  <script src="./self-report/surveys/selfclarity.js"></script>
+  <script src="./self-report/surveys/phq9.js"></script>
+  <script src="./self-report/surveys/gad7.js"></script>
+  <script src=".\self-report\surveys\moralidentity.js"></script>
+  <script src=".\self-report\surveys\moralSelf_image.js"></script>
+  <script src=".\self-report\surveys\sde.js"></script>
+  <script src=".\self-report\surveys\IM.js"></script>
+  <script src=".\self-report\surveys\domain_rating.js"></script>
+
+
+  <head>
+    <style>
+      body {
+        background-color: rgb(128, 128, 128);
+        /*背景灰色*/
+        color: white;
+        font-size: 22px;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      p {
+        font-size: 22px;
+        line-height: 20px;
+      }
+    </style>
+  </head>
+
+</head>
+
+<body>
+
+
+
+
+</body>
+<script>
+var info = []
+var welcome = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `
+   <p><div style='color:white; font-size: 25px'>您好，欢迎参加本次实验。</div></p>
+   <p><div style='color:white; font-size: 25px'>为充分保障您的权利，请确保您已经知晓并同意《参与实验同意书》以及《数据公开知情同意书》。</div></p>
+   <p><div style='color:white; font-size: 25px'>如果您未见过上述内容，请咨询实验员。</div></p>
+   <p style='color:white; font-size: 25px'>如果您选择继续实验，则表示您已经清楚两份知情同意书的内容并同意。</p>
+   <p><div style = "color: red;font-size:30px;">请确保您记得day0的实验编号，您将在本次实验输入该编号，若您忘记，请咨询实验员后作答。</div></p>
+   <p> <div style = "color: green"><按空格键至下页></div> </p>
+   `,
+  choices: [' '],
+};
+/* basic data collection jsPsychInstructions trial 被试基本信息收集 */
+var information = {
+  timeline: [{
+    // 实验被试信息收集
+    type: jsPsychCallFunction, //探测被试显示器数据
+    func: function () {
+      if ($(window).outerHeight() < 500) {
+        alert("您设备不支持实验，请进入全屏模式。若已进入全屏，请换一台高分辨率的设备，谢谢。");
+        window.location = "";
+      }
+    }
+  }, {
+    type: jsPsychSurveyHtmlForm,
+    preamble: "<p style =' color : white;font-size:25px;'>这是本次实验的最后一阶段，您需要再次完成先前已经完成过的一些问卷以及一个新问卷。</p>",
+    html: `    
+      <p><div style =' color : white;font-size:20px;'>您的实验编号是</div></p> 
+  <input type="text" name="ParticipantID" required/><br> 
+  `,
+
+    button_label: "继续",
+    on_finish: function (data) {
+      var response = data.response;
+     var ParticipantID = response["ParticipantID"].trim();
+     var subj_idx=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.userId;
+      info["subj_idx"] = subj_idx;
+      info["ParticipantID"] = ParticipantID;}}]};
+
+  var fullscreen_trial = {
+  type: jsPsychFullscreen,
+  fullscreen_mode: true,
+  data: {
+    user_agent: navigator.userAgentData,
+  },
+  message: `
+    <p style="font: 16pt 微软雅黑; text-align: left; line-height: 1.6em">
+    <b>
+    测验将在一个「全屏页面」开始，为确保最佳效果，请你：<br/>
+    （1）在电脑上进行测验，并使用主流浏览器打开本网页<br/>
+    &emsp;&emsp;（Chrome、Edge、Firefox、Safari等，不要用IE）<br/>
+    （2）开始前，请将输入法切换为英文状态<br/>
+    （3）关掉电脑上其他正在运行的程序或将其最小化<br/>
+    （4）将手机调至静音，并尽可能减少环境噪音干扰<br/>
+    （5）在测验过程中不要退出全屏，若意外退出，请按F11重新进入全屏<br/>
+    （6）务必认真作答，仔细实验的阅读指导语<br/>
+    （7）实验的作答认真程度以及正确率，将影响后续报酬的发放<br/>
+    <br/>
+    </b>
+    如果你同意参与，并且清楚理解了上述要求，请点击开始：
+    </p>`,
+  button_label: '点击这里全屏开始',
+  delay_after: 100
+}
+  var timeline = [];
+  var rest_time = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "<p style='color:white;'>现在是休息时间，当您结束休息后，您可以点击 结束休息 按钮 继续。</p>",
+    choices: ["结束休息"],
+    data: {
+      task_id: "rest_time",
+      screen_id: "rest_time",
+      time_stamp: Date()
+    },
+    on_load: () => {
+      $("body").css("cursor", "default");
+    },
+    on_finish: function (data) {
+      end_time = new Date();
+      
+    }
+  };
+
+  var mysave = {
+    type: jsPsychCallFunction,
+    func: function () {
+      jsPsych.data.get().addToAll(info).localSave("csv", `rawdata_${info["subj_idx"]}_day3.csv`); //原始数据读取和保存
+      let DOM = document.getElementById("jspsych-content");
+      DOM.innerHTML = "<p>正在保存数据中，请稍后</p>";
+      
+    }
+  };
+
+  timeline.push(welcome);
+ // timeline.push(chinrest);
+  timeline.push(fullscreen_trial);
+  timeline.push(information);
+  timeline.push(selfclarity);
+  timeline.push(phq);
+  timeline.push(gad);
+ timeline.push(swb);
+  timeline.push(lot);
+  timeline.push(IPC_I);
+  timeline.push(selfesteem);
+  timeline.push(coreself);
+  timeline.push(SGPS);
+  timeline.push(NPI);
+  timeline.push(hsns);
+  timeline.push(moralidentity);
+  timeline.push(moralSeImag);
+  timeline.push(sde);
+  timeline.push(IM);
+  timeline.push(domain_rating);
+  var after = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `
+    <p>第三阶段的实验部分已结束，后续还有一个有关此阶段实验相关信息的问题反馈的问卷。</p>
+    <p>请不要关闭页面，随后将自动跳转到问题反馈页面。</p>
+    <p>系统将自动下载一个.csv文件，该文件为您的实验数据的备份文件。请不要对其进行任何更改，请不要随便删除，将它保存在您的系统文件夹中。</p>
+    <p>如果数据遗失，我们将联系您获取该备份文件。</p>
+    <p>感谢您的配合！</p>`,
+  choices: 'ALL_KEYS',
+  trial_duration: 450,
+  response_ends_trial: false,
+
+};
+var finish = {
+    type:jsPsychHtmlKeyboardResponse, //jsPsychHtmlKeyboardResponse
+    stimulus: `
+    <p>感谢您参加我们的实验，请<span style="color: white;">按 空格键 开始上传数据</span>，并通知研究者。</p>
+    <p>感谢您的配合！</p>`,
+    choices: "ALL_KEYS",
+    trial_duration: 5000,
+    response_ends_trial: true,
+    extensions: [{type: Naodao}]
+  };
+ timeline.push(after);
+  timeline.push(mysave);
+  timeline.push(finish);
+  jsPsych.run(timeline);
+
+</script>
+
+
+</html>

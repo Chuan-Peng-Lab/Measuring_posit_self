@@ -1,0 +1,307 @@
+---
+title: "SEE_day1_clean"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r setup, include=FALSE}
+getwd() #查看工作目录，
+
+```
+
+
+### 加载R包
+
+```{r create environment}
+#清空环境
+rm(list = ls())
+
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+
+# 加载所需要的R包
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer")
+```
+
+```{r}
+# 导入文件，"../../../Data/raw/day1/pre2/",修改pre2，它为每批新建的文件夹
+subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")#修改phase_002
+
+subj_day1_phase_003<-read.csv(list.files("../../../Data/raw/day1/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%#修改phase_002
+    slice(-1)%>%
+  select(-c("Subject.IDs","NodeId","NodeId.1","Node.1","Env_Q1.1","Env_Q2","Env_Q3.1","Env_Q4.1","Env_Q5.1","X"))%>%
+  rename(
+    USERID=UserId,
+    Time_day1=Time,
+    ever_join_similar=Env_Q1,
+    ever_IAT = Env_Q2_item1,
+     ever_AlT = Env_Q2_item2,
+     ever_ques = Env_Q2_item3,
+    join_interval = Env_Q3,
+    going_normal = Env_Q4,
+   full_screen = Env_Q5,
+    any_problem = Env_Q6,
+    distrub =Env_Q7,
+    when_disturb = Env_Q8,
+   feedback=Env_Q9,
+   aim=Env_Q10
+  ) %>%
+  mutate(Eligible="",
+         Moneny="",
+         Paid_date="") %>%
+ merge(.,subj_day0_phase_003[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE)
+# 导出文件，"../../../Data/raw/day1/pre2/",修改pre2，它为每批新建的文件夹。修改文件名，subj_day1_pre2.xlsx，修改pre2
+write.xlsx(subj_day1_phase_003, "../../../Data/raw/day1/phase_003/subj_day1_phase_003.xlsx")#修改phase_002
+```
+
+
+
+### 检查工作环境，查看文件列表
+```{r check environment}
+
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
+list.files("../../../Data/raw/day1/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+
+#汇总本轮day0所有被试的数据
+combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
+   folder_path<-paste0("../../../Data/raw/day1/",phase,"/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  
+  selected_files <- files[firstnum:lastnum] #输入文件列表的文件范围；起始编号：终止编号
+  
+  combined_data <- NULL
+  
+  for (file in files) {
+    tmp <- read.csv(file, header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")  # 逐个读取csv文件，fileEncoding可能为UTF-8 或 GBK
+    
+    if (is.null(combined_data)) {
+      combined_data <- tmp
+    } else {
+      combined_data <- rbind(combined_data, tmp)
+    }
+  }
+  output_file<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")
+  write.csv(combined_data, output_file, row.names = FALSE)
+}
+
+
+# 使用示例，每次运行仅需修改此4个参数
+combine_csv_files("phase_003", 1,15)
+
+
+```
+
+```{r day1 }
+day10<-read.csv(paste0("../../../Data/raw/day1/","phase_003","/day1_","phase_003",".csv"))
+#记录单个被试self-esteem
+day1_process<-function(phase){
+   filePath<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")
+  day10<-read.csv(filePath,fileEncoding = 'UTF-8')
+  
+  #这行代码不是每次都需要，是本次数据有个被试输错被试编号
+ # day10$ParticipantID[day10$ParticipantID == 1] <- 306
+  
+#记录IAT，选择IAT所涉及的列；task_id区分了domain，ability的区块：若version_attrib = version_target，则自我——积极组合先出现；moral的区块则是依据version_attrib2 = version_target2
+
+IAT <- day10 %>%
+  select(.,c("subj_idx","ParticipantID","IAT","stimulus","condition","task_id","word","screen_id","rt","RT","response","correct","version_attrib","version_target","version_attrib2","version_target2"))%>%
+  filter((task_id %in% c("moral", "ability"))| (version_attrib %in% c(1, 2)) | (version_attrib2 %in% c(1, 2)))%>%
+ merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  select(-c("subj_idx"))
+
+
+#记录单个被试ALT基线的数据
+ALT1 <- day10 %>%
+  select(c("subj_idx","ParticipantID","task_id","screen_id","condition","word","response","responses","rt","correct")) %>%
+  filter((task_id %in% c("ALT1", "ALT1_1","ALT1_2")))%>%
+  mutate(conditionType = ifelse(condition == word, "match", "nonmatch"))%>%  # condition为呈现的图片，word 为文字标签，若两者一致，条件类型为匹配
+ mutate(condition = case_when(
+    condition == "圆形" ~ "circle",
+    condition == "菱形" ~ "diamond",
+    condition == "方形" ~ "square",
+    condition == "三角" ~ "triangle",
+    condition == "椭圆" ~ "ellipse",
+    condition == "六边" ~ "hexagon",
+    condition == "五边" ~ "pentagon",
+    condition == "梯形" ~ "trapezoid",
+    TRUE ~ condition
+  )) %>%
+  mutate(word = case_when(
+    word == "圆形" ~ "circle",
+    word == "菱形" ~ "diamond",
+    word == "方形" ~ "square",
+    word == "三角" ~ "triangle",
+    word == "椭圆" ~ "ellipse",
+    word == "六边" ~ "hexagon",
+    word == "五边" ~ "pentagon",
+    word == "梯形" ~ "trapezoid",
+    TRUE ~ word
+  ))%>%
+  mutate(con = paste(condition, conditionType, sep = "_"))%>%#将中文转为英文，且组成条件组合：图形——匹配/不匹配
+  mutate(rt = ifelse(response=="null", NA, rt),
+                    correct = ifelse(response=="null", NA, correct))%>%
+ merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  select(-c("subj_idx"))#如果被试未作出反应，则反应时rt和正确率correct 均为NA.
+
+
+
+#记录被试day1的问卷 的数据
+day1_all <- day10 %>%
+  filter(trial_index == 0) %>%
+  select(subj_idx,ParticipantID,everything(), -c("rt", "stimulus", "response", "trial_type", "trial_index", "time_elapsed", "internal_node_id", "success","user_agent","question_order","responses","item_order","radio_event_ids","radio_event_times","key_event_times","mouse_event_times","straightlining","zigzagging","value","honeypot"))%>%
+  select(ParticipantID, everything(), -c("timeout", "failed_images", "failed_audio", "failed_video", "view_history", "response_type", "key_press", "avg_frame_time","center_x","center_y","correct_response","correct","identity","Image","word","condition","task_id","screen_id","time_stamp","version_attrib","version_target","IAT","RT","varname","summary","version_attrib2","version_target2"))%>%
+  mutate(
+    NPI1 = ifelse(NPI1 == "0", 1, 0),
+    NPI3 = ifelse(NPI3 == "0", 1, 0),
+    NPI4 = ifelse(NPI4 == "0", 1, 0),
+    NPI7 = ifelse(NPI7 == "0", 1, 0),
+    NPI8 = ifelse(NPI8 == "0", 1, 0),
+    NPI10 = ifelse(NPI10 == "0", 1, 0),
+    NPI11 = ifelse(NPI11 == "0", 1, 0),
+    NPI13 = ifelse(NPI13 == "0", 1, 0),
+    NPI15 = ifelse(NPI15 == "0", 1, 0)
+  )%>%
+ merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  select(-c("subj_idx"))
+
+ day10<-day10%>%
+   merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+   select(-c("subj_idx"))
+ 
+  output_path <- paste0("../../../Data/raw/day1/",phase,"/day1_",phase, ".csv")
+  write.csv(day10, output_path)
+  
+  output_path <- paste0("../../../Data/clean/clean_day1/",phase,"/IAT_",phase,".csv")
+  write.csv(IAT, output_path)
+  
+  output_path <- paste0("../../../Data/clean/clean_day1/",phase,"/ALT1_",phase, ".csv")
+  write.csv(ALT1, output_path)
+   output_path <- paste0("../../../Data/clean/clean_day1/",phase,"/day1_q_",phase, ".csv")
+    write.csv(day1_all, output_path)
+}
+
+## 运行范例，[输入文件，输出文件的后缀，标记不同批次]
+
+##每次运行仅需要修改汇总文件路径“pre2/day0_pre2.csv”，和批次号"pre2"
+
+day1_process("phase_003")
+```
+
+
+#数据筛选部分：
+1.IAT:选3,4,6,7；按ID,domain分组，对rt进行操作，去掉>10000，看有没有10%小于300ms,标记该被试invalid;
+
+2. ALT基线：rt<200,rt>1200不要；舍掉这些数据，看正式实验每个条件准确率有没有>50%，
+```{r day1 被试筛选}
+# ALT部分的筛选，修改第一行的两个参数；ALT1_select为起得新变量名，ALT1为导入的变量名
+
+ALT1<-read.csv("../../../Data/clean/clean_day1/phase_003/ALT1_phase_003.csv")#修改phase_002
+ALT1_select<-ALT1 %>%
+ # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+  mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
+  filter(screen_id%in%c("formal_ALT1_1","formal_ALT1_2") )%>% #选择正式实验的数据
+  group_by(ID, con,conditionType) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    all_count=n(),#每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count #计算正确率= 正确/总数
+  )%>%
+    mutate(note = "") %>%
+  mutate(note = ifelse(acc < 0.5, "invalid", note))%>%
+  ungroup()
+ALT_S2<-ALT1_select%>%
+  filter(., ID %in% c("phase_003_subj_14", "phase_003_subj_3"))
+
+  
+
+#IAT部分的数据的筛选
+IAT<-read.csv("../../../Data/clean/clean_day1/phase_003/IAT_phase_003.csv")#修改phase_002
+IAT_select <- IAT %>%
+   filter(.,ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+   mutate(ID = as.character(ID)) %>%
+  mutate(ParticipantID = as.character(ParticipantID)) %>%
+  filter(screen_id %in% c(3, 4, 6, 7)) %>%  # 选出将来用于分析的block
+  group_by(ID,task_id) %>%
+  summarise(rt_over10000=sum(rt>10000),rt_les300 = sum(rt <= 300), row_count = sum(rt<=10000)) %>% #计算反应时过长的trial数，反应时过短的trial数
+  mutate(proportion = rt_les300 / row_count) %>% #排除反应时过长的trial以后，计算反应时过短的trial所占的比例
+    mutate(note = "") %>%
+  mutate(note = ifelse(proportion > 0.1, "invalid", note))
+
+#查看ALT1或者IAT中不符合条件的被试,ALT1_select,IAT1_select
+ex_subj <- ALT1_select %>%
+  filter(note=="invalid")%>%
+  distinct() 
+
+```
+
+# 实验设计的随机性检查
+ 1.查看是否被试随机被分配到先完成ALT or IAT,trial_index越小，代表先完成
+ 2.ALT内部两个block随机性检查，看ALT1_2与ALT1_1的trial_index的数值大小判断先后顺序
+ 3.**被试间的ALT的match按键是否进行f,j平衡**
+ 
+ 4.IAT是否moral和ability两个block随机呈现,trial_index小，则代表其先出现
+ 5.看version_attrib = version_target（ability区块的自我——积极组合先出现，若两者不相等则不是）
+
+```{r day1 随机性的检查}
+raw_day1<-read.csv("../../../Data/raw/day1/phase_002/day1_phase_002.csv")#修改phase_002
+
+raw_day1_check <- function(data) {
+  trial_idx_prac_ALT1_1 <- data %>%
+    group_by(ID) %>%
+    filter(screen_id == "prac_ALT1_1") %>%
+    summarize(trial_idx_prac_ALT1_1 = min(trial_index))
+
+  trial_idx_prac_ALT1_2 <- data %>%
+    group_by(ID) %>%
+    filter(screen_id == "prac_ALT1_2") %>%
+    summarize(trial_idx_prac_ALT1_2= min(trial_index))
+
+  trial_idx_IAT_moral <- data %>%
+    group_by(ID) %>%
+    filter(task_id == "moral") %>%
+    summarize(trial_idx_IAT_moral = min(trial_index))
+  
+   trial_idx_IAT_ability <- data %>%
+    group_by(ID) %>%
+    filter(task_id == "ability") %>%
+    summarize(trial_idx_IAT_ability = min(trial_index))
+  
+  merged_data <- merge(trial_idx_prac_ALT1_1,trial_idx_prac_ALT1_2, by = "ID", all = TRUE)
+  merged_data <- merge(merged_data, trial_idx_IAT_moral, by = "ID", all = TRUE)
+  merged_data <- merge(merged_data, trial_idx_IAT_ability, by = "ID", all = TRUE)
+  merged_data <- merged_data %>%
+    left_join(data %>% filter(identity == "match") %>% select(ID, correct_response), by = "ID")%>%
+  distinct() 
+  merged_data <- merged_data %>%
+    left_join(data %>% filter(version_attrib %in% c(1, 2) |
+           version_attrib2 %in% c(1, 2) ) %>% select(ID, version_attrib,version_target,version_attrib2,version_target2), by = "ID")%>%
+    rename(attrib_ability=version_attrib,
+    attrib_moral=version_attrib2,
+    target_ability=version_target,
+    target_moral = version_target2)%>%
+  print(merged_data)
+}
+
+raw_day1_check(raw_day1)
+
+
+```

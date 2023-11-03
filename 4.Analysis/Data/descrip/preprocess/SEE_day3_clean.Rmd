@@ -1,0 +1,247 @@
+---
+title: "SEE_day3_clean"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r setup, include=FALSE}
+getwd() #查看工作目录，
+#清空环境
+rm(list = ls())
+```
+
+### 加载R包
+
+```{r create environment}
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+
+# 加载所需要的R包
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer")
+```
+
+```{r}
+subj_day0_phase_002<-read.xlsx("../../../Data/raw/day0/phase_002/subj_day0_phase_002.xlsx")#修改phase_002
+# 导入文件，修改phase_002
+subj_day3_phase_002<-read.csv(list.files("../../../Data/raw/day3/phase_002/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+    slice(-1)%>%
+  select(-c("Subject.IDs","NodeId","Node","Env_Q1","Env_Q2","Env_Q3","Env_Q4","Env_Q5","X"))%>%
+  rename(
+    USERID=UserId,
+    Time_day3=Time,
+  )%>%
+  mutate(Eligible="",
+         Moneny="",
+         Paid_date="")%>%
+ merge(.,subj_day0_phase_002[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) #修改phase_002 
+# 导出文件
+write.xlsx(subj_day3_phase_002, "../../../Data/raw/day3/phase_002/subj_day3_phase_002.xlsx")#修改phase_002
+```
+
+### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
+```{r check environment}
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
+list.files("../../../Data/raw/day3/phase_002/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+
+#汇总本轮day0所有被试的数据
+combine_csv_files <- function(phase,firstnum, lastnum) 
+  {  ##[批次号，输入文件列表的文件范围]
+  folder_path<-paste0("../../..//Data/raw/day3/",phase,"/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  
+  selected_files <- files[firstnum:lastnum] #输入文件列表的文件范围；起始编号：终止编号
+  
+  combined_data <- NULL
+  
+  for (file in files) {
+    tmp <- read.csv(file, header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")  # 逐个读取csv文件，fileEncoding可能为UTF-8 或 GBK
+    
+    if (is.null(combined_data)) {
+      combined_data <- tmp
+    } else {
+      combined_data <- rbind(combined_data, tmp)
+    }
+  }
+  
+  write.csv(combined_data, paste0( "../../../Data/raw/day3/",phase,"/day3_",phase,".csv"), row.names = FALSE)
+}
+
+
+# 使用示例，每次运行仅需修改此3个参数
+combine_csv_files("phase_002",1,13)#修改phase_002
+
+
+```
+
+#将合并所有被试后的day2的数据中包含的变量进行拆分为不同的文件
+```{r day3 }
+#记录单个被试subject well-being
+day3_process<-function(phase){
+  filePath<-paste0("../../../Data/raw/day3/",phase,"/day3_phase_002",".csv")
+  day3 <- read.csv(filePath, fileEncoding = "UTF-8")
+    #这行代码不是每次都需要，是本次数据有个被试输错被试编号
+  #day3$ParticipantID[day3$ParticipantID == 1] <- 306
+  
+#记录单个被试的IPC，内控感，-3~3，但是没有0，0~1,1~2,2~3
+
+#记录单个被试的NPI
+# NPI,1~0,2-1,3-0,4-0,5-1,6-1,7-0,8-0,9-1,10-0,11-0,12-1,13-0,14-1,15-0；NPI-16,全量表分数代表自恋的显性维度，得分0—15，分数越高，显性自恋水平越高；0是第一个选项，对代表自恋的选项进行计分为1，记录每个问题的第一个选项的分值为0还是1
+
+# 记录day3的问卷的数据
+day3_q <- day3 %>%
+  filter(trial_index == 0) %>%
+  select(ParticipantID, everything(), -c("subj_idx","success", "user_agent", "value", "responses", "item_order", "radio_event_ids", "radio_event_times", "key_event_times","mouse_event_times","straightlining","zigzagging","honeypot","question_order","internal_node_id","time_elapsed","trial_index","trial_type","response","stimulus","rt"))%>%
+  mutate(across(starts_with("IPC"), ~ case_when(. == 0 ~ 1, . == 1 ~ 2, . == 2 ~ 3, TRUE ~ .)))%>%
+  mutate(
+    NPI1 = ifelse(NPI1 == "0", 1, 0),
+    NPI3 = ifelse(NPI3 == "0", 1, 0),
+    NPI4 = ifelse(NPI4 == "0", 1, 0),
+    NPI7 = ifelse(NPI7 == "0", 1, 0),
+    NPI8 = ifelse(NPI8 == "0", 1, 0),
+    NPI10 = ifelse(NPI10 == "0", 1, 0),
+    NPI11 = ifelse(NPI11 == "0", 1, 0),
+    NPI13 = ifelse(NPI13 == "0", 1, 0),
+    NPI15 = ifelse(NPI15 == "0", 1, 0)
+  ) %>%
+  merge(.,subj_day0_phase_002[, c("ID","ParticipantID")], by = "ParticipantID", all.x = TRUE)#修改phase_002
+
+
+  output_path <- paste0("../../../Data/clean/clean_day3/",phase,"/day3_q_",phase,".csv")
+  write.csv(day3_q, output_path)
+
+}
+
+day3_process("phase_002")#修改phase_002
+
+```
+
+
+```{r}
+day3_q <-read.csv("../../../Data/clean/clean_day3/phase_002/day3_q_phase_002.csv")#修改phase_002
+day3_q  <- day3_q  %>%
+    rename(ability_rating = domain_rating_1, 
+           physical_attraction = domain_rating_2,
+           material_wealth = domain_rating_3,
+           social_ability = domain_rating_4,
+           moral_rating=domain_rating_5,
+           )%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24)
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+
+```
+
+```{r}
+plot_bar(day3_q )
+```
+
+```{r}
+day2_q <-read.csv("../../../Data/clean/clean_day2/phase_002/day2_q_phase_002.csv")#修改phase_002
+day0_q <-read.csv("../../../Data/clean/clean_day0/phase_002/day0_all_phase_002.csv")#修改phase_002
+day1_q<-read.csv("../../../Data/clean/clean_day1/phase_002/day1_q_phase_002.csv")#修改phase_002
+
+#合并day0到day2的问卷数据
+day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
+  merge(day2_q, by = "ID", all = TRUE)
+# %>%filter(ID != "phase_002_subj_1" & ID != "phase_002_subj_3")#这行代码不是每次都需要，这是被试流失，去除流失的被试
+
+#对合并day0到day2的问卷数据，进行总分计算
+day0t2_q<- day0t2_q%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24)
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+  
+
+```
+
+```{r}
+plot_bar(day0t2_q)
+```
+
+
+```{r 计算重测信度}
+
+#选择要算重测信度的量表
+questionnaires <- c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al")
+
+# 计算重测信度
+
+# 存储计算的重测信度
+reliabilities <- data.frame(questionnaire = character(0), reliability = numeric(0))
+
+for (questionnaire in questionnaires) {
+  # 选择两次测量的数据，for循环
+  data1 <- day0t2_q [, c("ID", questionnaire)]
+  data2 <- day3_q [, c("ID", questionnaire)]
+  
+  # 合并数据框
+  combined_data <- merge(data1, data2, by = "ID", suffixes = c("_1", "_2"))
+  
+  # 计算重测信度，利用pearson积差相关
+  reliability <- cor(combined_data[, paste(questionnaire, "_1", sep = "")], combined_data[, paste(questionnaire, "_2", sep = "")],method = "pearson", use = "pairwise")
+  
+  # 存储结果
+  reliabilities <- rbind(reliabilities, data.frame(questionnaire = questionnaire, reliability = reliability))
+}
+
+# 输出重测信度
+print(reliabilities)
+
+```

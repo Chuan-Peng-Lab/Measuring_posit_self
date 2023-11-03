@@ -1,0 +1,11 @@
+﻿Number,Prompt,Measure,Reverse
+1,做一个有如上品质的人会让我感觉很好。,moralIdentity_i,false
+2,成为拥有这些特征的人对我来说很重要。,moralIdentity_i,false
+3,我会因为有如上品质而羞耻。,moralIdentity_e,true
+4,我认为这些品质对我不是十分重要。,moralIdentity_i,true
+5,我强烈地渴望具有这些特征。,moralIdentity_i,false
+6,我的着装打扮使我看上去是这样的人。,moralIdentity_e,false
+7,我在空闲时间做的事情能清楚的反映我有如上品质。,moralIdentity_i,false
+8,我读的书、杂志能清楚地表现出我有如上品质。,moralIdentity_e,false
+9,我积极参加能表现这些品质的活动。,moralIdentity_e,false
+10,在我的工作、学习中，平时别人知道我拥有这些特征。,moralIdentity_e,false
