@@ -294,6 +294,9 @@ raw_day1_check <- function(data) {
   merged_data <- merged_data %>%
     left_join(data %>% filter(version_attrib %in% c(1, 2) |
            version_attrib2 %in% c(1, 2) ) %>% select(ID, version_attrib,version_target,version_attrib2,version_target2), by = "ID")%>%
+  mutate(IAT_first = ifelse(trial_idx_IAT_moral < trial_idx_IAT_ability, "IAT_moral", "IAT_ability"))%>%
+     mutate(ALT_first = ifelse(trial_idx_prac_ALT1_1 < trial_idx_prac_ALT1_2, "ALT1_1", "ALT1_2"))%>%
+   mutate(order_first = ifelse((trial_idx_IAT_moral < trial_idx_prac_ALT1_1 & trial_idx_IAT_moral < trial_idx_prac_ALT1_2) | (trial_idx_IAT_ability < trial_idx_prac_ALT1_1 & trial_idx_IAT_ability < trial_idx_prac_ALT1_2), "IAT", "ALT"))%>%
     rename(attrib_ability=version_attrib,
     attrib_moral=version_attrib2,
     target_ability=version_target,
