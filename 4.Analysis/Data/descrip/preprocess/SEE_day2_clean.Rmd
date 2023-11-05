@@ -161,6 +161,11 @@ ALT2 <- day20 %>%
     grepl("强|弱", condition) ~ "ability",
     TRUE ~ NA_character_
   ),
+  valence = case_when(
+    grepl("好|强", condition) ~ "positive",
+    grepl("坏|弱", condition) ~ "negative",
+    TRUE ~ NA_character_
+  ),
   person = case_when(
     grepl("我", condition) ~ "self",
     grepl("他|她", condition) ~ "friend",
@@ -288,6 +293,8 @@ get_first_trial_indices <- function(data) {
   merged_data <- merge(merged_data, trial_idx_prac_ALT2_ability, by = "ID", all = TRUE)
   merged_data <- merged_data %>%
     left_join(data %>% filter(identity == "match") %>% select(ID, correct_response), by = "ID")%>%
+     mutate(ALT2_first = ifelse(first_trial_idx_prac_ALT2_moral < first_trial_idx_prac_ALT2_ability, "moral", "ability"))%>%
+    mutate(order_first = ifelse(first_trial_idx_EW_practice < first_trial_idx_prac_ALT2_moral & first_trial_idx_EW_practice < first_trial_idx_prac_ALT2_ability, "SRET", "ALT2"))%>%
   distinct() 
   print(merged_data)
 }
