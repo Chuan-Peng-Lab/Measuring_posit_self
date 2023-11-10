@@ -68,7 +68,6 @@ combine_csv_files <- function(phase, firstnum, lastnum) {
 # 修改"phase_002"，替换成对应的批次
 # 使用示例，每次运行仅需修改此3个参数
 combine_csv_files("phase_003",1,15)
-print(paste0("../../../Data/raw/day0/","phase_003","/day0_","phase_003",".csv"))
 ```
 
 
@@ -108,7 +107,7 @@ day0_all<-read.csv("../../../Data/clean/clean_day0/phase_003/day0_all_phase_003.
   rename(No=X)#重命名列
 
 # 导入文件，修改文件地址"../../../Data/raw/day0/phase_002/"中的批次号“phase_002”
-subj_day0_phase_002<-read.csv(list.files("../../../Data/raw/day0/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+subj_day0_phase_003<-read.csv(list.files("../../../Data/raw/day0/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","X"))%>%#去除这些列
   rename(
@@ -128,10 +127,20 @@ subj_day0_phase_002<-read.csv(list.files("../../../Data/raw/day0/phase_003/",pat
          Paid_date="")%>%#付偿日期
   arrange( USERID)%>%#将脑岛ID从低到高排序
   mutate(No= row_number())%>%#按行依次编号
-  merge(.,day0_all[, c("No", "ID","ParticipantID","subj_idx")], by = "No", all.x = TRUE)#将ID合并进文件
+merge(.,day0_all[, c("No", "ID","ParticipantID","subj_idx")], by = "No", all.x = TRUE)#将ID合并进文件
 
 # 导出文件，输出的文件地址"../../../Data/raw/day0/phase_002/subj_day0_phase_002.xlsx",修改批次号“phase_002”
 write.xlsx(subj_day0_phase_002, "../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
+subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
+subj_email_phase_003<-subj_day0_phase_003%>%
+  select(c("ID","e_mail","wechat","Subject.Name","region"))%>%
+  rename(姓名=ID,
+   邮件地址=e_mail,
+         移动电话=wechat,
+         联系地址=region
+         )
+  
+write.csv(subj_email_phase_003, "../../../Data/raw/day0/phase_003/subj_email_phase_003.csv")
 
 
 #去掉该数据中的被试脑岛编号和被试姓名

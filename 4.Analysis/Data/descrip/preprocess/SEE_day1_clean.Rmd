@@ -262,7 +262,7 @@ ex_subj <- ALT1_select %>%
  5.看version_attrib = version_target（ability区块的自我——积极组合先出现，若两者不相等则不是）
 
 ```{r day1 随机性的检查}
-raw_day1<-read.csv("../../../Data/raw/day1/phase_002/day1_phase_002.csv")#修改phase_002
+raw_day1<-read.csv("../../../Data/raw/day1/phase_003/day1_phase_003.csv")#修改phase_002
 
 raw_day1_check <- function(data) {
   trial_idx_prac_ALT1_1 <- data %>%
@@ -294,7 +294,7 @@ raw_day1_check <- function(data) {
   merged_data <- merged_data %>%
     left_join(data %>% filter(version_attrib %in% c(1, 2) |
            version_attrib2 %in% c(1, 2) ) %>% select(ID, version_attrib,version_target,version_attrib2,version_target2), by = "ID")%>%
-  mutate(IAT_first = ifelse(trial_idx_IAT_moral < trial_idx_IAT_ability, "IAT_moral", "IAT_ability"))%>%
+  mutate(IAT_first = ifelse(trial_idx_IAT_moral < trial_idx_IAT_ability, "moral", "ability"))%>%
      mutate(ALT_first = ifelse(trial_idx_prac_ALT1_1 < trial_idx_prac_ALT1_2, "ALT1_1", "ALT1_2"))%>%
    mutate(order_first = ifelse((trial_idx_IAT_moral < trial_idx_prac_ALT1_1 & trial_idx_IAT_moral < trial_idx_prac_ALT1_2) | (trial_idx_IAT_ability < trial_idx_prac_ALT1_1 & trial_idx_IAT_ability < trial_idx_prac_ALT1_2), "IAT", "ALT"))%>%
     rename(attrib_ability=version_attrib,
