@@ -30,9 +30,9 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 ```
 
 ```{r}
-subj_day0_phase_002<-read.xlsx("../../../Data/raw/day0/phase_002/subj_day0_phase_002.xlsx")#修改phase_002
+subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")#修改phase_002
 # 导入文件，修改phase_002
-subj_day3_phase_002<-read.csv(list.files("../../../Data/raw/day3/phase_002/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+subj_day3_phase_003<-read.csv(list.files("../../../Data/raw/day3/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","Node","Env_Q1","Env_Q2","Env_Q3","Env_Q4","Env_Q5","X"))%>%
   rename(
@@ -42,15 +42,15 @@ subj_day3_phase_002<-read.csv(list.files("../../../Data/raw/day3/phase_002/",pat
   mutate(Eligible="",
          Moneny="",
          Paid_date="")%>%
- merge(.,subj_day0_phase_002[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) #修改phase_002 
+ merge(.,subj_day0_phase_003[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) #修改phase_002 
 # 导出文件
-write.xlsx(subj_day3_phase_002, "../../../Data/raw/day3/phase_002/subj_day3_phase_002.xlsx")#修改phase_002
+write.xlsx(subj_day3_phase_003, "../../../Data/raw/day3/phase_003/subj_day3_phase_003.xlsx")#修改phase_002
 ```
 
 ### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
 ```{r check environment}
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day3/phase_002/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day3/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) 
@@ -71,13 +71,15 @@ combine_csv_files <- function(phase,firstnum, lastnum)
       combined_data <- rbind(combined_data, tmp)
     }
   }
-  
+  combined_data<-combined_data%>%
+merge(., subj_day0_phase_003[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  select(-c("subj_idx"))
   write.csv(combined_data, paste0( "../../../Data/raw/day3/",phase,"/day3_",phase,".csv"), row.names = FALSE)
 }
 
 
 # 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_002",1,13)#修改phase_002
+combine_csv_files("phase_003",1,12)#修改phase_002
 
 
 ```
@@ -85,8 +87,8 @@ combine_csv_files("phase_002",1,13)#修改phase_002
 #将合并所有被试后的day2的数据中包含的变量进行拆分为不同的文件
 ```{r day3 }
 #记录单个被试subject well-being
-day3_process<-function(phase){
-  filePath<-paste0("../../../Data/raw/day3/",phase,"/day3_phase_002",".csv")
+day3_process<-function(phase){  
+  filePath<-paste0("../../../Data/raw/day3/",phase,"/day3_",phase,".csv")
   day3 <- read.csv(filePath, fileEncoding = "UTF-8")
     #这行代码不是每次都需要，是本次数据有个被试输错被试编号
   #day3$ParticipantID[day3$ParticipantID == 1] <- 306
@@ -99,7 +101,7 @@ day3_process<-function(phase){
 # 记录day3的问卷的数据
 day3_q <- day3 %>%
   filter(trial_index == 0) %>%
-  select(ParticipantID, everything(), -c("subj_idx","success", "user_agent", "value", "responses", "item_order", "radio_event_ids", "radio_event_times", "key_event_times","mouse_event_times","straightlining","zigzagging","honeypot","question_order","internal_node_id","time_elapsed","trial_index","trial_type","response","stimulus","rt"))%>%
+  select(ID, everything(), -c("success", "user_agent", "value", "responses", "item_order", "radio_event_ids", "radio_event_times", "key_event_times","mouse_event_times","straightlining","zigzagging","honeypot","question_order","internal_node_id","time_elapsed","trial_index","trial_type","response","stimulus","rt"))%>%
   mutate(across(starts_with("IPC"), ~ case_when(. == 0 ~ 1, . == 1 ~ 2, . == 2 ~ 3, TRUE ~ .)))%>%
   mutate(
     NPI1 = ifelse(NPI1 == "0", 1, 0),
@@ -111,8 +113,7 @@ day3_q <- day3 %>%
     NPI11 = ifelse(NPI11 == "0", 1, 0),
     NPI13 = ifelse(NPI13 == "0", 1, 0),
     NPI15 = ifelse(NPI15 == "0", 1, 0)
-  ) %>%
-  merge(.,subj_day0_phase_002[, c("ID","ParticipantID")], by = "ParticipantID", all.x = TRUE)#修改phase_002
+  ) 
 
 
   output_path <- paste0("../../../Data/clean/clean_day3/",phase,"/day3_q_",phase,".csv")
@@ -120,13 +121,13 @@ day3_q <- day3 %>%
 
 }
 
-day3_process("phase_002")#修改phase_002
+day3_process("phase_003")#修改phase_002
 
 ```
 
 
 ```{r}
-day3_q <-read.csv("../../../Data/clean/clean_day3/phase_002/day3_q_phase_002.csv")#修改phase_002
+day3_q <-read.csv("../../../Data/clean/clean_day3/phase_003/day3_q_phase_003.csv")#修改phase_002
 day3_q  <- day3_q  %>%
     rename(ability_rating = domain_rating_1, 
            physical_attraction = domain_rating_2,
@@ -164,14 +165,20 @@ day3_q  <- day3_q  %>%
 
 ```
 
+# 选出完整参与了day0 ~ day3 实验的被试
+```{r select subjects join all experiments}
+subj_phase_003 <- unique(day3_q$ID)
+print(subj_phase_003)
+```
+
 ```{r}
 plot_bar(day3_q )
 ```
 
 ```{r}
-day2_q <-read.csv("../../../Data/clean/clean_day2/phase_002/day2_q_phase_002.csv")#修改phase_002
-day0_q <-read.csv("../../../Data/clean/clean_day0/phase_002/day0_all_phase_002.csv")#修改phase_002
-day1_q<-read.csv("../../../Data/clean/clean_day1/phase_002/day1_q_phase_002.csv")#修改phase_002
+day2_q <-read.csv("../../../Data/clean/clean_day2/phase_003/day2_q_phase_003.csv")#修改phase_002
+day0_q <-read.csv("../../../Data/clean/clean_day0/phase_003/day0_all_phase_003.csv")#修改phase_002
+day1_q<-read.csv("../../../Data/clean/clean_day1/phase_003/day1_q_phase_003.csv")#修改phase_002
 
 #合并day0到day2的问卷数据
 day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
@@ -179,7 +186,7 @@ day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
 # %>%filter(ID != "phase_002_subj_1" & ID != "phase_002_subj_3")#这行代码不是每次都需要，这是被试流失，去除流失的被试
 
 #对合并day0到day2的问卷数据，进行总分计算
-day0t2_q<- day0t2_q%>%
+day0t2_q<- subset(day0t2_q, ID %in% subj_phase_003)%>%
   mutate(
     phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
     gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
