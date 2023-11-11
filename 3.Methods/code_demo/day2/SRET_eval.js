@@ -792,6 +792,7 @@ var instructions_math = {
   stimulus: `
     <p><div style='color:white;font-size:35px; line-height:20px;'>计算任务</div></p><br>
     <p><div style='color:red;font-size:25px; line-height:20px;'>接下来，您将看到一些四则运算题，<b>请从键盘选择 0-9 进行反应。</b></div></p>
+    <p><div style='color:red;font-size:25px; line-height:20px;'>请尽可能快地进行计算，计算的速度和正确率将影响报酬的发放。</div></p>
     <p><div class='footer' style='color:white;font-size:25px; line-height:20px;'>如果对本实验还有不清楚之处，请立即向实验员咨询。</p><p style='color:white;font-size:25px; line-height:20px;'>如果您明白了规则：</p><p style='color:white;font-size:22px; line-height:20px;'>请按 继续 进入练习</p>
     </div>
     `,
