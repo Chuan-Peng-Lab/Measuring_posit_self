@@ -34,46 +34,54 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
 pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer")
 ```
 
-```{r}
-# 导入文件，"../../../Data/raw/day1/pre2/",修改pre2，它为每批新建的文件夹
-subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")#修改phase_002
+```{r 初步生成day1被试信息的文件}
+subj_phase_day1 <- function(phase,Moneny, Paid_date) {
+  # 读取 subj_day0_phase_003 数据
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
 
-subj_day1_phase_003<-read.csv(list.files("../../../Data/raw/day1/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%#修改phase_002
-    slice(-1)%>%
-  select(-c("Subject.IDs","NodeId","NodeId.1","Node.1","Env_Q1.1","Env_Q2","Env_Q3.1","Env_Q4.1","Env_Q5.1","X"))%>%
-  rename(
-    USERID=UserId,
-    Time_day1=Time,
-    ever_join_similar=Env_Q1,
-    ever_IAT = Env_Q2_item1,
-     ever_AlT = Env_Q2_item2,
-     ever_ques = Env_Q2_item3,
-    join_interval = Env_Q3,
-    going_normal = Env_Q4,
-   full_screen = Env_Q5,
-    any_problem = Env_Q6,
-    distrub =Env_Q7,
-    when_disturb = Env_Q8,
-   feedback=Env_Q9,
-   aim=Env_Q10
-  ) %>%
-  mutate(Eligible="",
-         Moneny="",
-         Paid_date="") %>%
- merge(.,subj_day0_phase_003[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE)
-# 导出文件，"../../../Data/raw/day1/pre2/",修改pre2，它为每批新建的文件夹。修改文件名，subj_day1_pre2.xlsx，修改pre2
-write.xlsx(subj_day1_phase_003, "../../../Data/raw/day1/phase_003/subj_day1_phase_003.xlsx")#修改phase_002
+  # 读取 subj_day1_phase_003 数据
+  subj_day1 <- read.csv(list.files(paste0("../../../Data/raw/day1/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
+    slice(-1) %>%
+    select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) %>%#去除无关列
+    rename(
+      USERID = UserId,#脑岛ID
+      Time_day1 = Time,#作答时间
+      ever_join_similar = Env_Q1,#是否参加参加过类似的实验
+      ever_IAT = Env_Q2_item1,#参加过IAT
+      ever_AlT = Env_Q2_item2,#参加过ALT
+      ever_ques = Env_Q2_item3,#填写过类似的问卷
+      join_interval = Env_Q3,#上次参与的时间间隔
+      going_normal = Env_Q4,#试验是否一切正常
+      full_screen = Env_Q5,#是否全程全屏
+      any_problem = Env_Q6,#是否遇到问题
+      distrub = Env_Q7,#是否遭到干扰
+      when_disturb = Env_Q8,#什么时候遭到干扰
+      feedback = Env_Q9,#对实验的体验
+      aim = Env_Q10#对实验目的的猜测
+    ) %>%
+    mutate(Eligible = "",
+           Moneny = Moneny,
+           Paid_date = Paid_date) %>%
+    merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
+
+  # 将结果写入 Excel 文件
+  write.xlsx(subj_day1, paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
+}
+
+# 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
+subj_phase_day1("phase_003","10","11.1")
+
 ```
 
 
 
 ### 检查工作环境，查看文件列表
-```{r check environment}
+```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day1/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
 
-#汇总本轮day0所有被试的数据
+#汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
    folder_path<-paste0("../../../Data/raw/day1/",phase,"/jsPsych")
   files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
@@ -91,33 +99,39 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
       combined_data <- rbind(combined_data, tmp)
     }
   }
-  output_file<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")
-  write.csv(combined_data, output_file, row.names = FALSE)
+  output_file<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")#输出文件路径
+  write.csv(combined_data, output_file, row.names = FALSE)#输出文件
 }
 
 
-# 使用示例，每次运行仅需修改此4个参数
+# 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
 combine_csv_files("phase_003", 1,15)
 
 
 ```
 
-```{r day1 }
-day10<-read.csv(paste0("../../../Data/raw/day1/","phase_003","/day1_","phase_003",".csv"))
-#记录单个被试self-esteem
+```{r 预处理本轮day1的数据 }
+
 day1_process<-function(phase){
+  
+  #创建子文件夹"../../../Data/clean/clean_day1/phase"用于储存清洗后的文件
+  
+  dir.create(paste0("../../../Data/clean/clean_day1/",phase), recursive = TRUE)
+  
+  #读取文件
+  
    filePath<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")
+   
   day10<-read.csv(filePath,fileEncoding = 'UTF-8')
   
-  #这行代码不是每次都需要，是本次数据有个被试输错被试编号
- # day10$ParticipantID[day10$ParticipantID == 1] <- 306
+   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
   
 #记录IAT，选择IAT所涉及的列；task_id区分了domain，ability的区块：若version_attrib = version_target，则自我——积极组合先出现；moral的区块则是依据version_attrib2 = version_target2
 
 IAT <- day10 %>%
   select(.,c("subj_idx","ParticipantID","IAT","stimulus","condition","task_id","word","screen_id","rt","RT","response","correct","version_attrib","version_target","version_attrib2","version_target2"))%>%
   filter((task_id %in% c("moral", "ability"))| (version_attrib %in% c(1, 2)) | (version_attrib2 %in% c(1, 2)))%>%
- merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+ merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%
   select(-c("subj_idx"))
 
 
@@ -150,9 +164,9 @@ ALT1 <- day10 %>%
   ))%>%
   mutate(con = paste(condition, conditionType, sep = "_"))%>%#将中文转为英文，且组成条件组合：图形——匹配/不匹配
   mutate(rt = ifelse(response=="null", NA, rt),
-                    correct = ifelse(response=="null", NA, correct))%>%
- merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
-  select(-c("subj_idx"))#如果被试未作出反应，则反应时rt和正确率correct 均为NA.
+                    correct = ifelse(response=="null", NA, correct))%>%#如果被试未作出反应，则反应时rt和正确率correct 均为NA.
+ merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%
+  select(-c("subj_idx"))
 
 
 
@@ -172,11 +186,11 @@ day1_all <- day10 %>%
     NPI13 = ifelse(NPI13 == "0", 1, 0),
     NPI15 = ifelse(NPI15 == "0", 1, 0)
   )%>%
- merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+ merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%
   select(-c("subj_idx"))
 
  day10<-day10%>%
-   merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+   merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%
    select(-c("subj_idx"))
  
   output_path <- paste0("../../../Data/raw/day1/",phase,"/day1_",phase, ".csv")
@@ -191,9 +205,8 @@ day1_all <- day10 %>%
     write.csv(day1_all, output_path)
 }
 
-## 运行范例，[输入文件，输出文件的后缀，标记不同批次]
+## 运行范例，[标记不同批次]
 
-##每次运行仅需要修改汇总文件路径“pre2/day0_pre2.csv”，和批次号"pre2"
 
 day1_process("phase_003")
 ```
@@ -202,55 +215,87 @@ day1_process("phase_003")
 #数据筛选部分：
 1.IAT:选3,4,6,7；按ID,domain分组，对rt进行操作，去掉>10000，看有没有10%小于300ms,标记该被试invalid;
 
-2. ALT基线：rt<200,rt>1200不要；舍掉这些数据，看正式实验每个条件准确率有没有>50%，
+2. ALT基线：rt<200,rt>1200不要；舍掉这些数据，看正式实验每个条件准确率有没有>60%，
 ```{r day1 被试筛选}
-# ALT部分的筛选，修改第一行的两个参数；ALT1_select为起得新变量名，ALT1为导入的变量名
+select_day1<-function(phase){
+# ALT部分的筛选
+  #读取ALT1文件
+  
+ALT1<-read.csv(paste0("../../../Data/clean/clean_day1/",phase,"/ALT1_",phase,".csv"))
 
-ALT1<-read.csv("../../../Data/clean/clean_day1/phase_003/ALT1_phase_003.csv")#修改phase_002
 ALT1_select<-ALT1 %>%
- # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
-  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(rt=as.numeric(rt))%>% #分别转变被试编号和反应时类型为字符型与数值型
   mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
   filter(screen_id%in%c("formal_ALT1_1","formal_ALT1_2") )%>% #选择正式实验的数据
-  group_by(ID, con,conditionType) %>%  #按被试与条件分组
+  group_by(ID, con,conditionType) %>%  #按被试与条件分组，con为“图形_匹配/不匹配”，conditionType为“匹配/不匹配”
   summarise(
-    avg_rt = mean(rt, na.rm = TRUE),
-    max_rt = max(rt, na.rm = TRUE),
-    min_rt = min(rt, na.rm = TRUE),
-    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    avg_rt = mean(rt, na.rm = TRUE),#分组后计算平均反应时
+    max_rt = max(rt, na.rm = TRUE),#分组后计算最大反应时
+    min_rt = min(rt, na.rm = TRUE),#分组后计算最小反应时
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时的标准差
     all_count=n(),#每个条件的总trial数量
-    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
-    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快<200和按键太慢>1200的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),#按键速度符合要求，正确反应的
     acc = correct_count /all_count #计算正确率= 正确/总数
   )%>%
     mutate(note = "") %>%
-  mutate(note = ifelse(acc < 0.5, "invalid", note))%>%
+  mutate(note = ifelse(acc < 0.6, "invalid", note))%>%#正确率小于0.6，为无效
   ungroup()
-ALT_S2<-ALT1_select%>%
-  filter(., ID %in% c("phase_003_subj_14", "phase_003_subj_3"))
 
+print(ALT1_select)#查看筛选后的ALT1数据
   
 
 #IAT部分的数据的筛选
-IAT<-read.csv("../../../Data/clean/clean_day1/phase_003/IAT_phase_003.csv")#修改phase_002
+ #读取IAT数据
+IAT<-read.csv(paste0("../../../Data/clean/clean_day1/",phase,"/IAT_",phase,".csv"))
+
 IAT_select <- IAT %>%
-   filter(.,ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+  # filter(.,ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
    mutate(ID = as.character(ID)) %>%
   mutate(ParticipantID = as.character(ParticipantID)) %>%
   filter(screen_id %in% c(3, 4, 6, 7)) %>%  # 选出将来用于分析的block
-  group_by(ID,task_id) %>%
+  group_by(ID,task_id) %>%# task_id是领域，按被试和领域分组
   summarise(rt_over10000=sum(rt>10000),rt_les300 = sum(rt <= 300), row_count = sum(rt<=10000)) %>% #计算反应时过长的trial数，反应时过短的trial数
   mutate(proportion = rt_les300 / row_count) %>% #排除反应时过长的trial以后，计算反应时过短的trial所占的比例
     mutate(note = "") %>%
-  mutate(note = ifelse(proportion > 0.1, "invalid", note))
+  mutate(note = ifelse(proportion > 0.1, "invalid", note))#比例大于0.1，则无效
 
-#查看ALT1或者IAT中不符合条件的被试,ALT1_select,IAT1_select
-ex_subj <- ALT1_select %>%
-  filter(note=="invalid")%>%
-  distinct() 
+#查看IAT筛选结果
+print(IAT_select)
 
+#合并IAT和ALT的无效数据
+ex_subj <- bind_rows(
+  ALT1_select %>% filter(note == "invalid"),
+  IAT_select %>% filter(note == "invalid")
+)
+
+#查看两个组合后的无效数据
+print(ex_subj)
+
+# 读取 subj_day1 数据
+subj_day1 <- read.xlsx(paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
+
+# 根据 ex_subj 的 ID 列填充 Eligible 列，如果在无效数据中，则填入no,否则为yes，上传到飞书subj_info的所有参加day1的被试信息
+subj_day1 <- subj_day1 %>%
+  mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
+
+# 将结果写入 Excel 文件，导出day1所有被试数据
+write.xlsx(subj_day1, file = paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
+
+# 从 subj_day1 中筛选 Eligible 列的值为 "yes" 的行，导出符合要求的被试数据
+select_day1 <- subj_day1 %>%
+  filter(Eligible == "yes")
+
+# 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
+write.xlsx(select_day1, file = paste0("../../../Data/raw/day1/", phase, "/select_day1_", phase, ".xlsx"))
+
+}
+
+##仅需修改此代码；分别为“批次号”
+
+select_day1("phase_003")
 ```
 
 # 实验设计的随机性检查
@@ -262,9 +307,12 @@ ex_subj <- ALT1_select %>%
  5.看version_attrib = version_target（ability区块的自我——积极组合先出现，若两者不相等则不是）
 
 ```{r day1 随机性的检查}
-raw_day1<-read.csv("../../../Data/raw/day1/phase_003/day1_phase_003.csv")#修改phase_002
+#修改phase_002
 
-raw_day1_check <- function(data) {
+raw_day1_check <- function(phase) {
+  
+  
+   data<-read.csv(paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv"))
   trial_idx_prac_ALT1_1 <- data %>%
     group_by(ID) %>%
     filter(screen_id == "prac_ALT1_1") %>%
@@ -304,7 +352,7 @@ raw_day1_check <- function(data) {
   print(merged_data)
 }
 
-raw_day1_check(raw_day1)
+raw_day1_check("phase_003")
 
 
 ```

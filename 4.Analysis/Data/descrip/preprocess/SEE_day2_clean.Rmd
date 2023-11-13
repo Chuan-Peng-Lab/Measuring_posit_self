@@ -33,37 +33,46 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 ```
 
 
-```{r}
-subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")#修改phase_002
 
-# 导入文件，修改phase_002，它为每批新建的文件夹
-subj_day2_phase_003<-read.csv(list.files("../../../Data/raw/day2/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
-    slice(-1)%>%
-  select(-c("Subject.IDs","NodeId","NodeId.1","Node.1","Env_Q1.1","Env_Q2","Env_Q3.1","Env_Q4.1","Env_Q5.1","X"))%>%
-  rename(
-    USERID=UserId,
-    Time_day2=Time,
-    ever_join_similar=Env_Q1,
-    ever_SRET = Env_Q2_item1,
-     ever_AlT = Env_Q2_item2,
-     ever_ques = Env_Q2_item3,
-    join_interval = Env_Q3,
-    going_normal = Env_Q4,
-   full_screen = Env_Q5,
-    exit_fullScreen = Env_Q6,
-     what_problem=Env_Q7,
-    distrub = Env_Q8,
-   when_disturb=Env_Q9,
-   feedbackm=Env_Q10,
-    aim=Env_Q11,
-  )%>%
-  mutate(Eligible="",
-         Moneny="",
-         Paid_date="") %>%
- merge(.,subj_day0_phase_003[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE)#修改phase_002
 
-# 导出文件，修改phase_002
-write.xlsx(subj_day2_phase_003, "../../../Data/raw/day2/phase_003/subj_day2_phase_003.xlsx")
+```{r 初步生成day2被试信息的文件}
+subj_phase_day2 <- function(phase,Moneny, Paid_date) {
+  # 读取 subj_day0_phase_003 数据
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
+
+  # 读取 subj_day2_phase_003 数据
+  subj_day2 <- read.csv(list.files(paste0("../../../Data/raw/day2/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
+    slice(-1) %>%
+    select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) %>%
+    rename(
+      USERID = UserId,#脑岛编号
+      Time_day2 = Time,#做实验的时间
+      ever_join_similar = Env_Q1,#是否曾经参加类似的实验
+      ever_SRET = Env_Q2_item1,#是否曾经参加SRET
+      ever_AlT = Env_Q2_item2,#是否曾经参加ALT
+      ever_ques = Env_Q2_item3,#是否曾经参加问卷
+      join_interval = Env_Q3,#上次参加的时间间隔
+      going_normal = Env_Q4,#实验是否正常
+      full_screen = Env_Q5,#是否全程全屏
+      exit_fullScreen = Env_Q6,#什么时候退出全屏
+      what_problem = Env_Q7,#有没有什么问题
+      distrub = Env_Q8,#是否受到干扰
+      when_disturb = Env_Q9,#什么时候受到干扰
+      feedbackm = Env_Q10,#对实验的意见
+      aim = Env_Q11#认为实验目的是什么
+    ) %>%
+    mutate(Eligible = "",
+           Moneny = Moneny,
+           Paid_date = Paid_date) %>%
+    merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
+
+  # 将结果写入 Excel 文件
+  write.xlsx(subj_day2, paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+}
+
+# 调用函数并传入相应的 phase 参数
+subj_phase_day2("phase_003","10","11.4")
+
 ```
 
 
@@ -71,7 +80,7 @@ write.xlsx(subj_day2_phase_003, "../../../Data/raw/day2/phase_003/subj_day2_phas
 ```{r check environment}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day2/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_002
+list.files("../../../Data/raw/day2/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -96,8 +105,8 @@ combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入�
 }
 
 
-# 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_003",1,12)#修改phase_002
+# 使用示例，每次运行仅需修改此3个参数，[批次号，输入文件列表的文件起始编号，终止编号]
+combine_csv_files("phase_003",1,12)
 
 ```
 
@@ -105,11 +114,15 @@ combine_csv_files("phase_003",1,12)#修改phase_002
 ```{r day2 }
 #记录单个被试subject well-being
 day2_process<-function(phase){
+  
+   #创建子文件夹"../../../Data/clean/clean_day2/phase"用于储存清洗后的文件
+  
+  dir.create(paste0("../../../Data/clean/clean_day2/",phase), recursive = TRUE)
+  
   filePath<-paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv")
   day20 <- read.csv(filePath, fileEncoding = "UTF-8")
   
-    #这行代码不是每次都需要，是本次数据有个被试输错被试编号
-  #day20$ParticipantID[day20$ParticipantID == 1] <- 306
+    subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
   
 #记录被试的SRET
 SRET <- day20 %>%
@@ -135,7 +148,7 @@ SRET <- day20 %>%
     correct
   )) %>%
   mutate(con = paste(person, valence, domain, sep = "_")) %>%
-  merge(., subj_day0_phase_003[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%
   select(-c("subj_idx"))
 
 #记录被试ALT正式的数据
@@ -172,7 +185,7 @@ ALT2 <- day20 %>%
     TRUE ~ NA_character_
   )) %>%
   mutate(con = paste(domain, person, identity, sep = "_")) %>%
-  merge(., subj_day0_phase_003[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+  merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%
 select(-c("subj_idx"))
 
 # 记录day2的问卷的数据
@@ -181,11 +194,11 @@ day2_q <- day20 %>%
   select(ParticipantID, everything(), -c("friend_name","rt", "stimulus", "response", "trial_type", "trial_index", "time_elapsed", "internal_node_id", "success","user_agent","question_order","responses","item_order","radio_event_ids","radio_event_times","key_event_times","mouse_event_times","straightlining","zigzagging","value","honeypot"))%>%
   select( everything(), -c("timeout", "failed_images", "failed_audio", "failed_video", "view_history", "response_type", "key_press", "avg_frame_time","center_x","center_y","correct_response","correct","identity","Image","word","condition","task_id","screen_id","time_stamp","domain","valence","math","status","duration","Word","Word2","person"))%>%
   mutate(across(starts_with("IPC"), ~ case_when(. == 0 ~ 1, . == 1 ~ 2, . == 2 ~ 3, TRUE ~ .)))%>%
- merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+ merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
 select(-c("subj_idx"))
   
  day20<-day20%>%
-   merge(.,subj_day0_phase_003[, c("ID","subj_idx")], by = "subj_idx",all.x = TRUE)%>%#修改phase_002
+   merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx",all.x = TRUE)%>%#修改phase_002
  select(-c("subj_idx"))
    
   output_path <- paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv")
@@ -212,7 +225,11 @@ day2_process("phase_003")
 
 # ALT的各个图形的正确率不低于20%，道德、能力领域的总正确率不低于60%
 ```{r day2 被试筛选}
-ALT2<-read.csv("../../../Data/clean/clean_day2/phase_003/ALT2_phase_003.csv")#修改phase_002
+select_day2<-function(phase){
+  
+  ALT2<-read.csv(paste0("../../../Data/clean/clean_day2/",phase,"/ALT2_",phase,".csv"))
+
+
 # ALT部分的筛选
 ALT2_select<-ALT2%>%
    filter(screen_id%in%c("ability","moral") )%>%
@@ -234,6 +251,7 @@ ALT2_select<-ALT2%>%
     mutate(note = "") %>%
   mutate(note = ifelse(acc < 0.2, "invalid", note))%>%#各个图形的正确率不低于20%
   ungroup()
+print(ALT2_select)
 
   ALT2_select2<-ALT2%>%
    filter(screen_id%in%c("ability","moral") )%>%
@@ -252,13 +270,39 @@ ALT2_select<-ALT2%>%
     acc2 = correct_count2 / all_count2,
     note = ifelse(acc2 < 0.6, "invalid", note)#道德、能力领域的总正确率不低于60%
   )
-
+print(ALT2_select2)
     
-ex_subj2 <- ALT2_select2 %>%
-  filter(note=="invalid")%>%
-  distinct() 
+#合并ALT2两种筛选标准下排除的无效数据
+ex_subj <- bind_rows(
+  ALT2_select %>% filter(note == "invalid"),
+  ALT2_select2 %>% filter(note == "invalid"))
+
+#查看两个组合后的无效数据
+print(ex_subj)
+
+# 读取 subj_day1 数据
+subj_day2 <- read.xlsx(paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+
+# 根据 ex_subj 的 ID 列填充 Eligible 列，如果在无效数据中，则填入no,否则为yes，上传到飞书subj_info的所有参加day1的被试信息
+subj_day2 <- subj_day2 %>%
+  mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
+
+# 将结果写入 Excel 文件，导出day1所有被试数据
+write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+
+# 从 subj_day2 中筛选 Eligible 列的值为 "yes" 的行，导出符合要求的被试数据
+select_day2 <- subj_day2 %>%
+  filter(Eligible == "yes")
+
+# 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
+write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
+
+}
 
 
+##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
+
+select_day2("phase_003")
 ```
 
 # 实验设计的随机性检查
@@ -270,10 +314,13 @@ ex_subj2 <- ALT2_select2 %>%
 
 ```{r day2 随机性检查}
 
-raw_day2<-read.csv("../../../Data/raw/day2/phase_003/day2_phase_003.csv")#修改phase_002
+#raw_day2<-read.csv("../../../Data/raw/day2/phase_003/day2_phase_003.csv")#修改phase_002
 
 
-get_first_trial_indices <- function(data) {
+get_first_trial_indices <- function(phase) {
+  
+   data<-read.csv(paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv"))
+  
   trial_idx_EW_practice <- data %>%
     group_by(ID) %>%
     filter(screen_id == "EW_practice") %>%
@@ -298,15 +345,20 @@ get_first_trial_indices <- function(data) {
   distinct() 
   print(merged_data)
 }
-get_first_trial_indices(raw_day2)
+get_first_trial_indices("phase_003")
 ```
 
 ```{r day2 词汇表检查}
-  stimuli<- read.csv("../../../../2.Materials/stimuli.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "GBK")
+  
 
-SRET_phase_002<-read.csv("../../../Data/clean/clean_day2/phase_003/SRET_phase_003.csv")
+get_first_trial_indices <- function(phase) {
+  stimuli<- read.csv("../../../../2.Materials/stimuli.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "GBK")
+  
+   SRET<-read.csv(paste0("../../../Data/clean/clean_day2/",phase,"/SRET_",phase,".csv"))
+  
+
 ## 评估阶段共88个词(4首因+80正式+4尾因记忆)；再认阶段，每个词只出现一次，old/new各80个；每个被试内词只出现一次
-  vocabulary_check <- SRET_phase_002 %>%
+  vocabulary_check <- SRET %>%
     mutate(ID = as.character(ID),person= as.character(person),valence= as.character(valence),domain= as.character(domain),word= as.character(word),identity= as.character(identity)) %>%
     select(ID,screen_id,person,valence,domain,word,identity)%>%
     filter(screen_id %in% c("EW_practice","EW_formal","RJ_formal1","RJ_formal_2")) %>%
@@ -316,7 +368,7 @@ SRET_phase_002<-read.csv("../../../Data/clean/clean_day2/phase_003/SRET_phase_00
   summarise(frequency = n())
   
 ##顺序性检查，每个被试为一个list，将列拼接在一起，拉动查看每行的词
-vocabulary_check2 <- SRET_phase_002 %>%
+vocabulary_check2 <- SRET %>%
   mutate(ID = as.character(ID),
          person = as.character(person),
          valence = as.character(valence),
@@ -329,7 +381,7 @@ vocabulary_check2 <- SRET_phase_002 %>%
   bind_cols()
 
 ## 将评估阶段的每个词的日常使用频率和效价从"stimuli.csv"拼接过来
-   vocabulary_check3 <- SRET_phase_002 %>%
+   vocabulary_check3 <- SRET %>%
     mutate(ID = as.character(ID),person= as.character(person),valence= as.character(valence),domain= as.character(domain),word= as.character(word),identity== as.character(identity)) %>%
     select(ID,task_id,screen_id,person,valence,domain,word,identity)%>%
    mutate(person = ifelse(person %in% c("朋友", "自己"), recode(person, "朋友" = "friend", "自己" = "self"), person))%>%
@@ -348,10 +400,10 @@ vocabulary_check2 <- SRET_phase_002 %>%
     avg_freq_Chinese = mean(freq_Chinese, na.rm = TRUE))
    
 # 对 morality_Positive 和 ability_Positive 进行独立样本 t 检验
-t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Positive" | con1 == "ability_Positive"))
+print(t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Positive" | con1 == "ability_Positive")))
 
 # 对 morality_Negative 和 ability_Negative 进行独立样本 t 检验
-t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Negative" | con1 == "ability_Negative"))
+print(t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Negative" | con1 == "ability_Negative")))
 
 ##查看self和friend在道德/能力领域的词汇间是否存在显著差异，con2为领域_人称_效价
  vocabulary_check3_2<-vocabulary_check3 %>% 
@@ -360,11 +412,16 @@ t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "moral
     avg_Val_mean = mean(Val_mean, na.rm = TRUE),
     avg_freq_Chinese = mean(freq_Chinese, na.rm = TRUE))
  
-t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Negative" | con2 == "ability_friend_Negative"))
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Negative" | con2 == "ability_friend_Negative")))
 
-t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Positive" | con2 == "ability_friend_Positive"))
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Positive" | con2 == "ability_friend_Positive")))
 
-t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Negative" | con2 == "morality_friend_Negative"))
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Negative" | con2 == "morality_friend_Negative")))
 
-t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Positive" | con2 == "morality_friend_Positive"))
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Positive" | con2 == "morality_friend_Positive")))
+
+}
+
+#修改批次号
+get_first_trial_indices ("phase_003")
 ```

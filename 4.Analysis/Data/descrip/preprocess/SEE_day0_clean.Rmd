@@ -41,7 +41,7 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_002”，查看对应的文件夹内的文件
 
-list.files("../../../Data/raw/day0/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day0/phase_004/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据，##[批次号，输入文件列表的文件起始编号，终止编号]
 combine_csv_files <- function(phase, firstnum, lastnum) {
@@ -65,13 +65,15 @@ combine_csv_files <- function(phase, firstnum, lastnum) {
   write.csv(combined_data,output_file, row.names = FALSE)
 }
 
-# 修改"phase_002"，替换成对应的批次
-# 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_003",1,15)
+
+# 使用示例，每次运行仅需修改此3个参数,[“批次号”，输入文件列表的文件起始编号，终止编号]
+combine_csv_files("phase_004",1,20)
 ```
 
 
 ### Prepare clean data for variables.
+
+##先在../../../Data/clean/clean_day0/建立子文件phase_004
 
 ```{r day0 处理合并后的raw data}
 
@@ -81,7 +83,10 @@ combine_csv_files("phase_003",1,15)
 day0_process<-function(phase){
   
   day0<-read.csv(paste0("../../../Data/raw/day0/",phase,"/day0_",phase,".csv"),fileEncoding = 'UTF-8')
-    #输出文件
+  
+    #创建子文件夹"../../../Data/clean/clean_day0/phase"用于储存清洗后的文件
+
+dir.create(paste0("../../../Data/clean/clean_day0/",phase), recursive = TRUE)
 
 ## 记录被试 day0 完成所有问卷的数据，宽数据版
 day0_all <- day0 %>%
@@ -96,18 +101,21 @@ day0_all <- day0 %>%
 }
 
 ## 运行范例，每次运行仅需要修改批次号"phase_002"
-day0_process("phase_003")
+day0_process("phase_004")
 
 ```
 
 ```{r}
-# 导入文件，修改文件地址“/phase_002/day0_all_phase_002.csv”中的批次号“phase_002”
 
-day0_all<-read.csv("../../../Data/clean/clean_day0/phase_003/day0_all_phase_003.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
+subj_phase_day0 <- function(phase,Eligible,Moneny,Paid_date) {
+
+# 导入文件，修改文件地址“/phase_002/day0_all_phase_002.csv”中的批次号“phase_002”
+day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
   rename(No=X)#重命名列
 
+
 # 导入文件，修改文件地址"../../../Data/raw/day0/phase_002/"中的批次号“phase_002”
-subj_day0_phase_003<-read.csv(list.files("../../../Data/raw/day0/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+subj_day0<-read.csv(list.files(paste0("../../../Data/raw/day0/",phase,"/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","X"))%>%#去除这些列
   rename(
@@ -122,17 +130,18 @@ subj_day0_phase_003<-read.csv(list.files("../../../Data/raw/day0/phase_003/",pat
     refresh_rate = Info_Q7,#刷新率
     resolution_ratio = Info_Q8#电脑分辨率
   ) %>%
-  mutate(Eligible="",#是否符合要求
-         Moneny="",#报酬金额
-         Paid_date="")%>%#付偿日期
+  mutate(Eligible=Eligible,#是否符合要求
+         Moneny=Moneny,#报酬金额
+         Paid_date=Paid_date)%>%#付偿日期
   arrange( USERID)%>%#将脑岛ID从低到高排序
   mutate(No= row_number())%>%#按行依次编号
 merge(.,day0_all[, c("No", "ID","ParticipantID","subj_idx")], by = "No", all.x = TRUE)#将ID合并进文件
 
 # 导出文件，输出的文件地址"../../../Data/raw/day0/phase_002/subj_day0_phase_002.xlsx",修改批次号“phase_002”
-write.xlsx(subj_day0_phase_002, "../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
-subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
-subj_email_phase_003<-subj_day0_phase_003%>%
+write.xlsx(subj_day0, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))
+
+#subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
+subj_email<-subj_day0%>%
   select(c("ID","e_mail","wechat","Subject.Name","region"))%>%
   rename(姓名=ID,
    邮件地址=e_mail,
@@ -140,13 +149,16 @@ subj_email_phase_003<-subj_day0_phase_003%>%
          联系地址=region
          )
   
-write.csv(subj_email_phase_003, "../../../Data/raw/day0/phase_003/subj_email_phase_003.csv")
-
+write.csv(subj_email, paste0("../../../Data/raw/day0/",phase,"/subj_email_",phase,".csv"))
 
 #去掉该数据中的被试脑岛编号和被试姓名
 day0_all<-day0_all%>%
 select(-c("subj_name","subj_idx"))
-write.csv(day0_all,"../../../Data/clean/clean_day0/phase_003/day0_all_phase_003.csv")#修改输出文件名内包含的批次号“phase_002”
+write.csv(day0_all,paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"))
+
+}
+
+subj_phase_day0("phase_004","yes","1","11.13")
 ```
 
 
@@ -161,8 +173,8 @@ write.csv(day0_all,"../../../Data/clean/clean_day0/phase_003/day0_all_phase_003.
 
 
 ```{r day0 数据总分计算，分类}
-
-
+plot_descript_day0<-function(phase){
+day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), fileEncoding = "UTF-8")
 day0_all <- day0_all %>%
   mutate(
      ID = as.character(ID),
@@ -248,10 +260,13 @@ mutate(gad_al = rowSums(select(., starts_with("gad_")))) %>%
   ))
 #绘制离散变量的棒图
 plot_bar(day0_all)
-```
-```{r}
+
 #绘制连续变量的直方图
 plot_histogram(day0_all)
+
+}
+plot_descript_day0("phase_004")
+
 ```
 
 

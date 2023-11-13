@@ -30,21 +30,28 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 ```
 
 ```{r}
-subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")#修改phase_002
+subj_phase_day3 <- function(phase,Eligible,Moneny, Paid_date) {
+  # 读取 subj_day0_phase_003 数据
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/",phase, "/subj_day0_",phase, ".xlsx"))
+
 # 导入文件，修改phase_002
-subj_day3_phase_003<-read.csv(list.files("../../../Data/raw/day3/phase_003/",pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+subj_day3<-read.csv(list.files(paste0("../../../Data/raw/day3/", phase, "/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","Node","Env_Q1","Env_Q2","Env_Q3","Env_Q4","Env_Q5","X"))%>%
   rename(
     USERID=UserId,
     Time_day3=Time,
   )%>%
-  mutate(Eligible="",
-         Moneny="",
-         Paid_date="")%>%
- merge(.,subj_day0_phase_003[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) #修改phase_002 
+  mutate(Eligible=Eligible,
+         Moneny=Moneny,
+         Paid_date=Paid_date)%>%
+ merge(.,subj_day0[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) 
 # 导出文件
-write.xlsx(subj_day3_phase_003, "../../../Data/raw/day3/phase_003/subj_day3_phase_003.xlsx")#修改phase_002
+write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_",phase,".xlsx"))
+}
+# 调用函数并传入相应的 phase 参数,“批次号”，“是否符合要求”，“报酬金额”，“发放报酬的日期”
+
+subj_phase_day3 ("phase_003","yes","109","11.9")
 ```
 
 ### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
@@ -88,6 +95,11 @@ combine_csv_files("phase_003",1,12)#修改phase_002
 ```{r day3 }
 #记录单个被试subject well-being
 day3_process<-function(phase){  
+  
+   #创建子文件夹"../../../Data/clean/clean_day3/phase"用于储存清洗后的文件
+  
+  dir.create(paste0("../../../Data/clean/clean_day3/",phase), recursive = TRUE)
+  
   filePath<-paste0("../../../Data/raw/day3/",phase,"/day3_",phase,".csv")
   day3 <- read.csv(filePath, fileEncoding = "UTF-8")
     #这行代码不是每次都需要，是本次数据有个被试输错被试编号
