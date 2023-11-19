@@ -69,7 +69,7 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
-subj_phase_day1("phase_003","10","11.1")
+subj_phase_day1("phase_004","10","11.11")
 
 ```
 
@@ -79,7 +79,7 @@ subj_phase_day1("phase_003","10","11.1")
 ```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
+list.files("../../../Data/raw/day1/phase_004/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
 
 #汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -105,7 +105,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
 
 
 # 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_003", 1,15)
+combine_csv_files("phase_004", 1,15)
 
 
 ```
@@ -208,7 +208,7 @@ day1_all <- day10 %>%
 ## 运行范例，[标记不同批次]
 
 
-day1_process("phase_003")
+day1_process("phase_004")
 ```
 
 
@@ -295,7 +295,7 @@ write.xlsx(select_day1, file = paste0("../../../Data/raw/day1/", phase, "/select
 
 ##仅需修改此代码；分别为“批次号”
 
-select_day1("phase_003")
+select_day1("phase_004")
 ```
 
 # 实验设计的随机性检查
