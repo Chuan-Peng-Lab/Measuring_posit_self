@@ -71,7 +71,7 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数
-subj_phase_day2("phase_003","10","11.4")
+subj_phase_day2("phase_004","10","11.19")
 
 ```
 
@@ -80,7 +80,7 @@ subj_phase_day2("phase_003","10","11.4")
 ```{r check environment}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day2/phase_003/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
+list.files("../../../Data/raw/day2/phase_004/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -106,7 +106,7 @@ combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入�
 
 
 # 使用示例，每次运行仅需修改此3个参数，[批次号，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_003",1,12)
+combine_csv_files("phase_004",1,18)
 
 ```
 
@@ -214,7 +214,7 @@ select(-c("subj_idx"))
 
 }
 
-day2_process("phase_003")
+day2_process("phase_004")
 
 
 
@@ -302,7 +302,7 @@ write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select
 
 ##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
 
-select_day2("phase_003")
+select_day2("phase_004")
 ```
 
 # 实验设计的随机性检查
@@ -345,7 +345,7 @@ get_first_trial_indices <- function(phase) {
   distinct() 
   print(merged_data)
 }
-get_first_trial_indices("phase_003")
+get_first_trial_indices("phase_004")
 ```
 
 ```{r day2 词汇表检查}
@@ -423,5 +423,5 @@ print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == 
 }
 
 #修改批次号
-get_first_trial_indices ("phase_003")
+get_first_trial_indices ("phase_004")
 ```

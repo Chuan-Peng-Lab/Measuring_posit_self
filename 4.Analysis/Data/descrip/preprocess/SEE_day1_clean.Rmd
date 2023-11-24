@@ -38,7 +38,7 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 subj_phase_day1 <- function(phase,Moneny, Paid_date) {
   # 读取 subj_day0_phase_003 数据
   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
-
+ 
   # 读取 subj_day1_phase_003 数据
   subj_day1 <- read.csv(list.files(paste0("../../../Data/raw/day1/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
     slice(-1) %>%
@@ -63,13 +63,17 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
            Moneny = Moneny,
            Paid_date = Paid_date) %>%
     merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
+  
+   #由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
+  subj_day0_row <- subj_day0[subj_day0$ID == "phase_005_subj_17", c("USERID", "Subject.Name", "ParticipantID", "ID")]
+  subj_day1 <- bind_rows(subj_day1, subj_day0_row)
 
   # 将结果写入 Excel 文件
   write.xlsx(subj_day1, paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
 }
 
 # 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
-subj_phase_day1("phase_004","10","11.11")
+subj_phase_day1("phase_005","10","11.24")
 
 ```
 
@@ -105,7 +109,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
 
 
 # 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_004", 1,15)
+combine_csv_files("phase_005", 1,18)
 
 
 ```
@@ -208,7 +212,7 @@ day1_all <- day10 %>%
 ## 运行范例，[标记不同批次]
 
 
-day1_process("phase_004")
+day1_process("phase_005")
 ```
 
 
@@ -295,7 +299,7 @@ write.xlsx(select_day1, file = paste0("../../../Data/raw/day1/", phase, "/select
 
 ##仅需修改此代码；分别为“批次号”
 
-select_day1("phase_004")
+select_day1("phase_005")
 ```
 
 # 实验设计的随机性检查
@@ -352,7 +356,7 @@ raw_day1_check <- function(phase) {
   print(merged_data)
 }
 
-raw_day1_check("phase_003")
+raw_day1_check("phase_005")
 
 
 ```

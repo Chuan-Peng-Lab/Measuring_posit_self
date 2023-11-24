@@ -20,6 +20,7 @@ The preview shows you a rendered HTML copy of the contents of the editor. Conseq
 ### 加载R包
 
 ```{r create environment}
+rm(list = ls())
 # 检查是否已安装 pacman
 if (!requireNamespace("pacman", quietly = TRUE)) {
   install.packages("pacman") }   # 如果未安装，则安装包
@@ -35,11 +36,12 @@ source("R_rainclouds.R")
 
 # 设置文件夹路径
 
-folder_path <- "../../Data/clean/"
+folder_path <- "../../../Data/clean/"
 
-getwd()
+folder_path<-paste0("../../../Data/raw/day2/",phase,"/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
 # 使用list.files函数搜索以"phase_003.csv"为后缀结尾的文件
-file_list <- list.files(path = folder_path, pattern = "\\phase_003.csv$", full.names = TRUE, recursive = TRUE)
+file_list <- list.files(path = folder_path, pattern = "\\phase_004.csv$", full.names = TRUE, recursive = TRUE)
 
 # file_list现在包含了所有匹配的文件的完整路径
 
@@ -57,10 +59,38 @@ for (file_name in file_list) {
 
 ```
 
+```{r}
+
+
+main_folder <- "../../Data/clean/"
+
+# 获取所有子文件夹的路径
+subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.names = TRUE)
+
+# 循环读取每个子文件夹下的 phase_0xx 文件夹内的 CSV 文件
+for (subfolder in subfolders) {
+  phase_folder <- file.path(subfolder, "phase_004")
+
+  # 检查 phase_0xx 文件夹是否存在
+  if (dir.exists(phase_folder)) {
+    # 获取 phase_0xx 文件夹下所有 CSV 文件的路径
+    csv_files <- list.files(path = phase_folder, pattern = "\\.csv$", full.names = TRUE)
+    print(csv_files)
+    # 循环读取每个 CSV 文件
+    for (csv_file in csv_files) {
+      var_name <- tools::file_path_sans_ext(basename(csv_file))
+      assign(var_name, read.csv(csv_file, fileEncoding = 'UTF-8', header = TRUE))
+    }
+  }
+}
+
+```
+
+
 # 选出完整参与了day0 ~ day3 实验的被试
 ```{r select subjects join all experiments}
-subj_phase_003 <- unique(day2_q_phase_003$ID)
-print(subj_phase_003)
+subj_phase_004 <- unique(day2_q_phase_004$ID)
+print(subj_phase_004)
 ```
 
 ALT1
@@ -73,7 +103,7 @@ ALT2
 3.within MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
        within=c("A", "B", "C"))
 ```{r 按匹配与不匹配绘制acc和RT}
-ALT1_plot_phase_003 <- subset(ALT1_phase_003, ID %in% subj_phase_003)%>%
+ALT1_plot_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
@@ -140,13 +170,13 @@ ylab('RT')+xlab('conditionType')+coord_flip()+theme_cowplot()+guides(fill = FALS
 }
 
 # 使用函数并传递ALT1_plot_phase_003作为参数
-ALT1_plot <- acc_and_rt_plots(ALT1_plot_phase_003)
+ALT1_plot <- acc_and_rt_plots(ALT1_plot_phase_004)
 
 # 显示结果
 print(ALT1_plot)
 ```
 ```{r 按condition图形绘制acc和RT}
-ALT1_plot2_phase_003 <- subset(ALT1_phase_003, ID %in% subj_phase_003)%>%
+ALT1_plot2_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
@@ -199,7 +229,7 @@ ylab('RT')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
 }
 
 # 使用函数并传递ALT1_plot_phase_003作为参数
-ALT1_plot2 <- acc_and_rt_plots2(ALT1_plot2_phase_003)
+ALT1_plot2 <- acc_and_rt_plots2(ALT1_plot2_phase_004)
 
 # 显示拼接后的图
 print(ALT1_plot2)
@@ -208,7 +238,7 @@ print(ALT1_plot2)
 # 查看ALT2的匹配与不匹配的正确率和反应时的分布
 
 ```{r 先准备ALT2数据acc和RT}
-ALT2_plot_phase_003 <- subset(ALT2_phase_003, ID %in% subj_phase_003)%>%
+ALT2_plot_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
@@ -259,7 +289,7 @@ ylab('Acc')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, 
   
   return(final_plot)
 }
-ALT2_acc_plot(ALT2_plot_phase_003)
+ALT2_acc_plot(ALT2_plot_phase_004)
 ```
 ```{r ALT2_valence}
 ALT2_acc_plot2 <- function(data) {
@@ -292,7 +322,7 @@ ylab('Acc')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, 
   
   return(final_plot)
 }
-ALT2_acc_plot2(ALT2_plot_phase_003)
+ALT2_acc_plot2(ALT2_plot_phase_004)
 ```
 
 ```{r ALT2_identity}
@@ -327,7 +357,7 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
   return(final_plot)
   
 }
-ALT2_rt_plot(ALT2_plot_phase_003)
+ALT2_rt_plot(ALT2_plot_phase_004)
 ```
 ```{r ALT2_valence}
 ALT2_rt_plot2 <- function(data) {
@@ -362,7 +392,7 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
   
   return(final_plot)
 }
-ALT2_rt_plot2(ALT2_plot_phase_003)
+ALT2_rt_plot2(ALT2_plot_phase_004)
 ```
 
 
@@ -386,7 +416,7 @@ ALT2_rt_plot2(ALT2_plot_phase_003)
 ```{r IAT数据处理}
 
 
-IAT_phase_003_analysis <- subset(IAT_phase_003, ID %in% subj_phase_003)%>%
+IAT_phase_004_analysis <- subset(IAT_phase_004, ID %in% subj_phase_004)%>%
   mutate(ID = as.character(ID)) %>%
   mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>%
@@ -431,7 +461,7 @@ IAT_phase_003_analysis <- subset(IAT_phase_003, ID %in% subj_phase_003)%>%
 ```
 
 ```{r}
-raw_day1<-read.csv("../../Data/raw/day1/phase_003/day1_phase_003.csv")#修改phase_002
+raw_day1<-read.csv("../../Data/raw/day1/phase_004/day1_phase_004.csv")#修改phase_002
 
 IAT_order <- function(data,IAT_analysis) {
 
@@ -457,11 +487,11 @@ IAT_order <- function(data,IAT_analysis) {
    # filter(version_attrib %in% c(1, 2) |version_attrib2 %in% c(1, 2) ) %>% 
     #select(ID, version_attrib,version_target,version_attrib2,version_target2)%>%
   mutate(IAT_first = ifelse(trial_idx_IAT_moral < trial_idx_IAT_ability, "moral_first", "ability_first"))%>%
-    subset(., ID %in% subj_phase_003)
+    subset(., ID %in% subj_phase_004)
   print(merged_data)
 }
 
-IAT_order(raw_day1,IAT_phase_003_analysis)
+IAT_order(raw_day1,IAT_phase_004_analysis)
 ```
 # IAT block_type(compatible,incompatible)*task_id(moral,	ability)
 ```{r IAT block_type(compatible,incompatible)*task_id(moral,	ability)}
@@ -503,7 +533,7 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
   print(IAT_ANOVA)
   print(rt_plot1)
 }
-IAT_rt_plot(IAT_phase_003_analysis)
+IAT_rt_plot(IAT_phase_004_analysis)
 ```
 
 # IAT的d_prime值
@@ -597,7 +627,7 @@ paired_t_test_result <- t.test(morality_D, ability_D, paired = TRUE)
 print(paired_t_test_result)
 
 }
-IAT_D_plot(IAT_phase_003_analysis)
+IAT_D_plot(IAT_phase_004_analysis)
 ```
 
 
@@ -691,7 +721,7 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
   print(rt_EW_ability)
   print(rt_EW_moral)
 }
-SRET_EW(SRET_phase_003)
+SRET_EW(SRET_phase_004)
 ```
 ```{r 计算题}
 SRET_math<-function(data){
@@ -709,7 +739,7 @@ SRET_math<-data %>%
 acc=n_correct/N
            )
 print(SRET_math)}
-SRET_math(SRET_phase_003)
+SRET_math(SRET_phase_004)
 ```
 
 
@@ -815,7 +845,7 @@ ylab('d_prime')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FAL
 }
 
 # 调用函数并存储结果
-SRET_RJ(SRET_phase_003)
+SRET_RJ(SRET_phase_004)
 ```
 
 ```{r SRET RJ_formal2_source_memory}
@@ -900,7 +930,7 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
    print(SRET_RJ2_plot2)
 
 }
-SRET_Source_M(SRET_phase_003)
+SRET_Source_M(SRET_phase_004)
 ```
 
 
