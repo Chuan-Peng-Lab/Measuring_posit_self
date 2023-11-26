@@ -31,33 +31,6 @@ source("R_rainclouds.R")
 ```
 
 
-```{r save all variable from a folder, echo=FALSE}
-
-
-# 设置文件夹路径
-
-folder_path <- "../../../Data/clean/"
-
-folder_path<-paste0("../../../Data/raw/day2/",phase,"/jsPsych")
-  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
-# 使用list.files函数搜索以"phase_003.csv"为后缀结尾的文件
-file_list <- list.files(path = folder_path, pattern = "\\phase_004.csv$", full.names = TRUE, recursive = TRUE)
-
-# file_list现在包含了所有匹配的文件的完整路径
-
-print(file_list)
-
-
-# 使用for循环读取文件并保存为相应的变量
-for (file_name in file_list) {
-  # 获取文件名（不包含路径和扩展名）
-  var_name <- tools::file_path_sans_ext(basename(file_name))
-  
-  # 读取文件并保存为相应的变量
-  assign(var_name, read.csv(file_name, fileEncoding = 'UTF-8',header = TRUE))
-}
-
-```
 
 ```{r}
 
@@ -67,9 +40,9 @@ main_folder <- "../../Data/clean/"
 # 获取所有子文件夹的路径
 subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.names = TRUE)
 
-# 循环读取每个子文件夹下的 phase_0xx 文件夹内的 CSV 文件
+
 for (subfolder in subfolders) {
-  phase_folder <- file.path(subfolder, "phase_004")
+  phase_folder <- file.path(subfolder, "phase_004")# 循环读取每个子文件夹下的 phase_0xx 文件夹内的 CSV 文件
 
   # 检查 phase_0xx 文件夹是否存在
   if (dir.exists(phase_folder)) {
@@ -121,6 +94,27 @@ ALT1_plot_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
     correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
     acc = correct_count /all_count #计算正确率= 正确/总数
   )
+
+```
+```{r}
+ALT1_p2_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
+ # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+  mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
+  group_by(screen_id) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    all_count=n(),#每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count #计算正确率= 正确/总数
+  )
+print(ALT1_p2_phase_004)
 ```
 
 
@@ -175,6 +169,7 @@ ALT1_plot <- acc_and_rt_plots(ALT1_plot_phase_004)
 # 显示结果
 print(ALT1_plot)
 ```
+
 ```{r 按condition图形绘制acc和RT}
 ALT1_plot2_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
@@ -255,6 +250,24 @@ ALT2_plot_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
     correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
     acc = correct_count /all_count #计算正确率= 正确/总数
   )
+
+ALT2_p_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
+ # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+  mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  group_by(screen_id,identity,person,valence) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    all_count=n(),#每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count #计算正确率= 正确/总数
+  )
+print(ALT2_p_phase_004)
 ```
 # ALT2按match/nonmatch
 ```{r ALT2_identity}
