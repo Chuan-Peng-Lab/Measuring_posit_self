@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+#install.packages("cowplot")
+# 加载所需要的R包
+pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot")
+source("R_rainclouds.R")
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+
+    # 获取 phase_0xx 文件夹下所有 CSV 文件的路径
+    csv_files <- list.files(path = "../../Data/all/", pattern = "\\.csv$", full.names = TRUE)
+    print(csv_files)
+    # 循环读取每个 CSV 文件
+    for (csv_file in csv_files) {
+      var_name <- tools::file_path_sans_ext(basename(csv_file))
+      assign(var_name, read.csv(csv_file, fileEncoding = 'UTF-8', header = TRUE))
+    }
+  
+
+```
+
+
+```{r 按匹配与不匹配绘制acc和RT}
+ALT1_data <- ALT1_all%>%mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
+  filter(screen_id%in%c("formal_ALT1_1","formal_ALT1_2") )%>% #选择正式实验的数据
+  group_by(ID,conditionType,condition) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    all_count=n(),#每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count #计算正确率= 正确/总数
+  )
+print(describe(ALT1_data))
+```
+# 查看ALT1的匹配与不匹配的正确率和反应时的分布
+```{r 按匹配与不匹配绘制acc和RT}
+
+```
+
+
+```{r 按匹配与不匹配绘制acc和RT}
+acc_and_rt_plots <- function(data) {
+  print(data)
+
+# ACC plot
+  acc_plot <- ggplot(data, aes(x = condition, y = acc, fill = conditionType, colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE) +
+    geom_point(position = position_jitter(width = .15), size = .25) +
+    geom_boxplot(aes(x = condition, y = acc), outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+    ylab('Acc') + xlab('conditionType') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: ACC of ALT1")
+
+  # RT plot
+  rt_plot <- ggplot(data, aes(x = condition, y = avg_rt, fill = conditionType, colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE) +
+    geom_point(position = position_jitter(width = .15), size = .25) +
+    geom_boxplot(aes(x = condition, y = avg_rt), outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+    ylab('RT') + xlab('conditionType') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1b: RT of ALT1")
+
+  # Combine plots vertically
+  final_plot <- acc_plot | rt_plot
+  print(final_plot)
+}
+
+
+# 使用函数并传递ALT1_plot_phase_003作为参数
+ALT1_plot <- acc_and_rt_plots(ALT1_data)
+
+```
+
+```{r}
+  ALT1_ACC <-ALT1_data%>% 
+  #ungroup()%>%
+  MANOVA(., dv = "acc", between = c("conditionType", "condition")) %>%
+    EMMEANS("conditionType", by = "condition") %>%
+    EMMEANS("condition", by = "conditionType")
+
+  print(ALT1_ACC)
+```
+

@@ -41,6 +41,7 @@ d2 = within.1
 TTEST(d2, y=c("A1", "A2"), paired=TRUE)
 TTEST(d2, y=c("A1", "A2", "A3", "A4"), paired=TRUE)
 ```
+
 ```{r}
 ## 被试间设计 ##
 between.2
@@ -60,6 +61,7 @@ within.3
 MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
        within=c("A", "B", "C"))
 ```
+
 ```{r}
 MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
        within=c("A", "B", "C")) %>%
@@ -89,6 +91,7 @@ mixed.3_2b1w
 MANOVA(mixed.3_2b1w, dvs="B1:B2", dvs.pattern="B(.)",
        between=c("A", "C"), within="B")
 ```
+
 ```{r}
 data.new = mixed.3_1b2w
 names(data.new) = c("Group", "Cond_01", "Cond_02", "Cond_03", "Cond_04")
