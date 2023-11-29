@@ -46,9 +46,11 @@ subj_day3<-read.csv(list.files(paste0("../../../Data/raw/day3/", phase, "/"),pat
          Moneny=Moneny,
          Paid_date=Paid_date)%>%
  merge(.,subj_day0[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) 
-   #由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
-  subj_day0_row <- subj_day0[subj_day0$ID == "phase_004_subj_12", c("USERID", "Subject.Name", "ParticipantID", "ID")]
-  subj_day3 <- bind_rows(subj_day3, subj_day0_row)
+
+####由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
+#####subj_day0_row <- subj_day0[subj_day0$ID == "phase_004_subj_12", c("USERID", "Subject.Name", "ParticipantID", "ID")]
+#####subj_day3 <- bind_rows(subj_day3, subj_day0_row)
+
 # 导出文件
 write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_",phase,".xlsx"))
 }

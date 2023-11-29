@@ -107,3 +107,48 @@ MANOVA(data.new,
 ```
 
 
+```{r}
+ggplot(data) +
+  geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.5) +
+  geom_errorbar( aes(x=name, ymin=value-sd, ymax=value+sd), width=0.4, colour="orange", alpha=0.9, size=1.3) +
+  coord_flip()
+
+se = sd(vec) / sqrt(length(vec))
+ggplot(my_sum) +
+  geom_bar( aes(x=Species, y=mean), stat="identity", fill="forestgreen", alpha=0.5) +
+  geom_errorbar( aes(x=Species, ymin=mean-se, ymax=mean+se), width=0.4, colour="orange", alpha=0.9, size=1.5) +
+  ggtitle("using standard error")
+```
+
+
+```{r}
+set.seed(123)
+data <- data.frame(
+  Group = rep(c("A", "B", "C"), each = 4),
+  Value = c(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+  SD = c(0.2, 0.3, 0.4, 0.5, 0.3, 0.4, 0.5, 0.6, 0.2, 0.3, 0.4, 0.5)
+)
+
+# Calculate standard error
+data$SE <- data$SD / sqrt(4)
+
+# Create a bar plot with error bars
+plot <- ggplot(data, aes(x = Group, y = Value, fill = Group)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = Value - SE, ymax = Value + SE), position = position_dodge(width = 0.8), width = 0.25) +
+  labs(title = "Bar Plot with Error Bars") +
+  theme_minimal()
+
+# Add significance annotations (p-values)
+plot_with_significance <- plot +
+  stat_compare_means(comparisons = list(c("A", "B"), c("A", "C"), c("B", "C")),
+                     method = "t.test", label = "p.format", verbose = FALSE)
+
+# Print the plot
+print(plot_with_significance)
+```
+https://ggplot2tutor.com/tutorials/barchart_simple
+
+https://r-graph-gallery.com/4-barplot-with-error-bar.html
+
+

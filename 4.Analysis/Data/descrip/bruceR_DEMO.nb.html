@@ -1798,12 +1798,69 @@ TTEST(d1, y=&quot;Y1&quot;, x=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;))
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZDIgPSB3aXRoaW4uMVxuIyMg6YWN5a+55qC35pysdOajgOmqjCAjI1xuVFRFU1QoZDIsIHk9YyhcIkExXCIsIFwiQTJcIiksIHBhaXJlZD1UUlVFKVxuVFRFU1QoZDIsIHk9YyhcIkExXCIsIFwiQTJcIiwgXCJBM1wiLCBcIkE0XCIpLCBwYWlyZWQ9VFJVRSlcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZDIgPSB3aXRoaW4uMVxuIyMg6YWN5a+55qC35pysdOajgOmqjCAjI1xuVFRFU1QoZDIsIHk9YyhcIkExXCIsIFwiQTJcIiksIHBhaXJlZD1UUlVFKVxuYGBgIn0= -->
 <pre class="r"><code>d2 = within.1
 ## 配对样本t检验 ##
-TTEST(d2, y=c(&quot;A1&quot;, &quot;A2&quot;), paired=TRUE)
-TTEST(d2, y=c(&quot;A1&quot;, &quot;A2&quot;, &quot;A3&quot;, &quot;A4&quot;), paired=TRUE)</code></pre>
+TTEST(d2, y=c(&quot;A1&quot;, &quot;A2&quot;), paired=TRUE)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG5QYWlyZWQtU2FtcGxlcyB0LXRlc3RcblxuSHlwb3RoZXNpczogdHdvLXNpZGVkICjOvDIgLSDOvDEg4omgIDApXG4ifQ== -->
+<pre><code>
+Paired-Samples t-test
+
+Hypothesis: two-sided (μ2 - μ1 ≠ 0)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiYEJheWVzRmFjdG9yYCBwYWNrYWdlIG5lZWRzIHRvIGJlIGluc3RhbGxlZC5cbiJ9 -->
+<pre><code>`BayesFactor` package needs to be installed.</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRGVzY3JpcHRpdmVzOlxu4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gVmFyaWFibGUgTiBNZWFuIChTLkQuKVxu4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gICAgICAgQTEgOCA0LjM4ICgxLjY5KVxuICAgICAgIEEyIDggMy44OCAoMS4yNSlcbuKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG5SZXN1bHRzIG9mIHQtdGVzdDpcbuKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICAgICAgICAgICAgICAgICAgICAgICB0IGRmICAgICBwICAgICBEaWZmZXJlbmNlIFs5NSUgQ0ldICBDb2hlbuKAmXMgZCBbOTUlIENJXSBCRjEwXG7ilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblBhaXJlZDogKEEyIC0gQTEpICAtMS4xOCAgNyAgLjI3NSAgICAgLTAuNTAgWy0xLjUwLCAwLjUwXSAtMC40MiBbLTEuMjUsIDAuNDJdICAgICBcbuKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuIn0= -->
+<pre><code>Descriptives:
+───────────────────────
+ Variable N Mean (S.D.)
+───────────────────────
+       A1 8 4.38 (1.69)
+       A2 8 3.88 (1.25)
+───────────────────────
+
+Results of t-test:
+──────────────────────────────────────────────────────────────────────────────────
+                       t df     p     Difference [95% CI]  Cohen’s d [95% CI] BF10
+──────────────────────────────────────────────────────────────────────────────────
+Paired: (A2 - A1)  -1.18  7  .275     -0.50 [-1.50, 0.50] -0.42 [-1.25, 0.42]     
+──────────────────────────────────────────────────────────────────────────────────</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuVFRFU1QoZDIsIHk9YyhcIkExXCIsIFwiQTJcIiwgXCJBM1wiLCBcIkE0XCIpLCBwYWlyZWQ9VFJVRSlcbmBgYCJ9 -->
+<pre class="r"><code>TTEST(d2, y=c(&quot;A1&quot;, &quot;A2&quot;, &quot;A3&quot;, &quot;A4&quot;), paired=TRUE)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG5QYWlyZWQtU2FtcGxlcyB0LXRlc3RcblxuSHlwb3RoZXNpczogdHdvLXNpZGVkICjOvDIgLSDOvDEg4omgIDApXG4ifQ== -->
+<pre><code>
+Paired-Samples t-test
+
+Hypothesis: two-sided (μ2 - μ1 ≠ 0)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiYEJheWVzRmFjdG9yYCBwYWNrYWdlIG5lZWRzIHRvIGJlIGluc3RhbGxlZC5cblxuYEJheWVzRmFjdG9yYCBwYWNrYWdlIG5lZWRzIHRvIGJlIGluc3RhbGxlZC5cbiJ9 -->
+<pre><code>`BayesFactor` package needs to be installed.
+
+`BayesFactor` package needs to be installed.</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRGVzY3JpcHRpdmVzOlxu4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gVmFyaWFibGUgTiAgTWVhbiAoUy5ELilcbuKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICAgICAgIEExIDggIDQuMzggKDEuNjkpXG4gICAgICAgQTIgOCAgMy44OCAoMS4yNSlcbiAgICAgICBBMyA4ICA3LjAwICgxLjMxKVxuICAgICAgIEE0IDggMTAuMDAgKDIuMjcpXG7ilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblxuUmVzdWx0cyBvZiB0LXRlc3Q6XG7ilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgICAgICAgICAgICAgICAgICAgICAgdCBkZiAgICAgcCAgICAgRGlmZmVyZW5jZSBbOTUlIENJXSAgQ29oZW7igJlzIGQgWzk1JSBDSV0gQkYxMFxu4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG5QYWlyZWQ6IChBMiAtIEExKSAgLTEuMTggIDcgIC4yNzUgICAgIC0wLjUwIFstMS41MCwgMC41MF0gLTAuNDIgWy0xLjI1LCAwLjQyXSAgICAgXG5QYWlyZWQ6IChBNCAtIEEzKSAgIDIuNTQgIDcgIC4wMzkgKiAgICAzLjAwIFsgMC4yMSwgNS43OV0gIDAuOTAgWyAwLjA2LCAxLjczXSAgICAgXG7ilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiJ9 -->
+<pre><code>Descriptives:
+────────────────────────
+ Variable N  Mean (S.D.)
+────────────────────────
+       A1 8  4.38 (1.69)
+       A2 8  3.88 (1.25)
+       A3 8  7.00 (1.31)
+       A4 8 10.00 (2.27)
+────────────────────────
+
+Results of t-test:
+──────────────────────────────────────────────────────────────────────────────────
+                       t df     p     Difference [95% CI]  Cohen’s d [95% CI] BF10
+──────────────────────────────────────────────────────────────────────────────────
+Paired: (A2 - A1)  -1.18  7  .275     -0.50 [-1.50, 0.50] -0.42 [-1.25, 0.42]     
+Paired: (A4 - A3)   2.54  7  .039 *    3.00 [ 0.21, 5.79]  0.90 [ 0.06, 1.73]     
+──────────────────────────────────────────────────────────────────────────────────</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
@@ -2023,8 +2080,56 @@ MANOVA(data.new,
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2dwbG90KGRhdGEpICtcbiAgZ2VvbV9iYXIoIGFlcyh4PW5hbWUsIHk9dmFsdWUpLCBzdGF0PVwiaWRlbnRpdHlcIiwgZmlsbD1cInNreWJsdWVcIiwgYWxwaGE9MC41KSArXG4gIGdlb21fZXJyb3JiYXIoIGFlcyh4PW5hbWUsIHltaW49dmFsdWUtc2QsIHltYXg9dmFsdWUrc2QpLCB3aWR0aD0wLjQsIGNvbG91cj1cIm9yYW5nZVwiLCBhbHBoYT0wLjksIHNpemU9MS4zKSArXG4gIGNvb3JkX2ZsaXAoKVxuXG5zZSA9IHNkKHZlYykgLyBzcXJ0KGxlbmd0aCh2ZWMpKVxuZ2dwbG90KG15X3N1bSkgK1xuICBnZW9tX2JhciggYWVzKHg9U3BlY2llcywgeT1tZWFuKSwgc3RhdD1cImlkZW50aXR5XCIsIGZpbGw9XCJmb3Jlc3RncmVlblwiLCBhbHBoYT0wLjUpICtcbiAgZ2VvbV9lcnJvcmJhciggYWVzKHg9U3BlY2llcywgeW1pbj1tZWFuLXNlLCB5bWF4PW1lYW4rc2UpLCB3aWR0aD0wLjQsIGNvbG91cj1cIm9yYW5nZVwiLCBhbHBoYT0wLjksIHNpemU9MS41KSArXG4gIGdndGl0bGUoXCJ1c2luZyBzdGFuZGFyZCBlcnJvclwiKVxuYGBgIn0= -->
+<pre class="r"><code>ggplot(data) +
+  geom_bar( aes(x=name, y=value), stat=&quot;identity&quot;, fill=&quot;skyblue&quot;, alpha=0.5) +
+  geom_errorbar( aes(x=name, ymin=value-sd, ymax=value+sd), width=0.4, colour=&quot;orange&quot;, alpha=0.9, size=1.3) +
+  coord_flip()
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpUaGlzIGlzIGFuIFtSIE1hcmtkb3duXShodHRwOi8vcm1hcmtkb3duLnJzdHVkaW8uY29tKSBOb3RlYm9vay4gV2hlbiB5b3UgZXhlY3V0ZSBjb2RlIHdpdGhpbiB0aGUgbm90ZWJvb2ssIHRoZSByZXN1bHRzIGFwcGVhciBiZW5lYXRoIHRoZSBjb2RlLiANCg0KVHJ5IGV4ZWN1dGluZyB0aGlzIGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqUnVuKiBidXR0b24gd2l0aGluIHRoZSBjaHVuayBvciBieSBwbGFjaW5nIHlvdXIgY3Vyc29yIGluc2lkZSBpdCBhbmQgcHJlc3NpbmcgKkN0cmwrU2hpZnQrRW50ZXIqLiANCg0KYGBge3J9DQpsaWJyYXJ5KHRpZHl2ZXJzZSkNCmxpYnJhcnkoYnJ1Y2VSKQ0KYGBgDQoNCkFkZCBhIG5ldyBjaHVuayBieSBjbGlja2luZyB0aGUgKkluc2VydCBDaHVuayogYnV0dG9uIG9uIHRoZSB0b29sYmFyIG9yIGJ5IHByZXNzaW5nICpDdHJsK0FsdCtJKi4NCg0KV2hlbiB5b3Ugc2F2ZSB0aGUgbm90ZWJvb2ssIGFuIEhUTUwgZmlsZSBjb250YWluaW5nIHRoZSBjb2RlIGFuZCBvdXRwdXQgd2lsbCBiZSBzYXZlZCBhbG9uZ3NpZGUgaXQgKGNsaWNrIHRoZSAqUHJldmlldyogYnV0dG9uIG9yIHByZXNzICpDdHJsK1NoaWZ0K0sqIHRvIHByZXZpZXcgdGhlIEhUTUwgZmlsZSkuDQoNClRoZSBwcmV2aWV3IHNob3dzIHlvdSBhIHJlbmRlcmVkIEhUTUwgY29weSBvZiB0aGUgY29udGVudHMgb2YgdGhlIGVkaXRvci4gQ29uc2VxdWVudGx5LCB1bmxpa2UgKktuaXQqLCAqUHJldmlldyogZG9lcyBub3QgcnVuIGFueSBSIGNvZGUgY2h1bmtzLiBJbnN0ZWFkLCB0aGUgb3V0cHV0IG9mIHRoZSBjaHVuayB3aGVuIGl0IHdhcyBsYXN0IHJ1biBpbiB0aGUgZWRpdG9yIGlzIGRpc3BsYXllZC4NCmBgYHtyfQ0KZDEgPSBiZXR3ZWVuLjMNCmQxJFkxID0gZDEkU0NPUkUgICMg5aSN5Yi25LiA5LiLDQpkMSRZMiA9IHJub3JtKDMyKSAgIyDpmo/mnLrmlbANCmQxJEIgPSBmYWN0b3IoZDEkQiwgbGV2ZWxzPTE6MiwgbGFiZWxzPWMoIkxvdyIsICJIaWdoIikpDQpkMSRDID0gZmFjdG9yKGQxJEMsIGxldmVscz0xOjIsIGxhYmVscz1jKCJNIiwgIkYiKSkNCg0KIyMg5Y2V5qC35pysdOajgOmqjCAjIw0KVFRFU1QoZDEsICJTQ09SRSIpDQpUVEVTVChkMSwgIlNDT1JFIiwgdGVzdC52YWx1ZT01KQ0KDQojIyDni6znq4vmoLfmnKx05qOA6aqMICMjDQpUVEVTVChkMSwgIlNDT1JFIiwgeD0iQSIpDQpUVEVTVChkMSwgIlNDT1JFIiwgeD0iQSIsIHZhci5lcXVhbD1GQUxTRSkNClRURVNUKGQxLCB5PSJZMSIsIHg9YygiQSIsICJCIiwgIkMiKSkNCg0KYGBgDQoNCmBgYHtyfQ0KZDIgPSB3aXRoaW4uMQ0KIyMg6YWN5a+55qC35pysdOajgOmqjCAjIw0KVFRFU1QoZDIsIHk9YygiQTEiLCAiQTIiKSwgcGFpcmVkPVRSVUUpDQpUVEVTVChkMiwgeT1jKCJBMSIsICJBMiIsICJBMyIsICJBNCIpLCBwYWlyZWQ9VFJVRSkNCmBgYA0KDQpgYGB7cn0NCiMjIOiiq+ivlemXtOiuvuiuoSAjIw0KYmV0d2Vlbi4yDQpNQU5PVkEoYmV0d2Vlbi4yLCBkdj0iU0NPUkUiLCBiZXR3ZWVuPWMoIkEiLCAiQiIpKQ0KYGBgDQoNCmBgYHtyfQ0KTUFOT1ZBKGJldHdlZW4uMiwgZHY9IlNDT1JFIiwgYmV0d2Vlbj1jKCJBIiwgIkIiKSkgJT4lDQogIEVNTUVBTlMoIkEiLCBieT0iQiIpICU+JQ0KICBFTU1FQU5TKCJCIiwgYnk9IkEiKQ0KYGBgDQoNCg0KYGBge3J9DQojIyDooqvor5XlhoXorr7orqEgIyMNCndpdGhpbi4zDQpNQU5PVkEod2l0aGluLjMsIGR2cz0iQTFCMUMxOkEyQjJDMiIsIGR2cy5wYXR0ZXJuPSJBKC4pQiguKUMoLikiLA0KICAgICAgIHdpdGhpbj1jKCJBIiwgIkIiLCAiQyIpKQ0KYGBgDQoNCmBgYHtyfQ0KTUFOT1ZBKHdpdGhpbi4zLCBkdnM9IkExQjFDMTpBMkIyQzIiLCBkdnMucGF0dGVybj0iQSguKUIoLilDKC4pIiwNCiAgICAgICB3aXRoaW49YygiQSIsICJCIiwgIkMiKSkgJT4lDQogIEVNTUVBTlMoIkEiLCBieT0iQiIpICU+JQ0KICBFTU1FQU5TKGMoIkEiLCAiQiIpLCBieT0iQyIpICU+JQ0KICBFTU1FQU5TKCJBIiwgYnk9YygiQiIsICJDIikpDQpgYGANCg0KYGBge3J9DQojIyDplb/mlbDmja7kuZ/ooYwgIyMNCj9hZmV4OjpvYmsubG9uZw0KP2JydWNlUjo6TUFOT1ZBDQpNQU5PVkEoYWZleDo6b2JrLmxvbmcsDQogICAgICAgc3ViSUQ9ImlkIiwNCiAgICAgICBkdj0idmFsdWUiLA0KICAgICAgIGJldHdlZW49YygidHJlYXRtZW50IiwgImdlbmRlciIpLA0KICAgICAgIHdpdGhpbj1jKCJwaGFzZSIsICJob3VyIiksDQogICAgICAgY292PSJhZ2UiLA0KICAgICAgIHNwaC5jb3JyZWN0aW9uPSJHRyIpDQoNCmBgYA0KDQoNCmBgYHtyfQ0KIyMg5re35ZCI6K6+6K6hICMjDQptaXhlZC4zXzJiMXcNCk1BTk9WQShtaXhlZC4zXzJiMXcsIGR2cz0iQjE6QjIiLCBkdnMucGF0dGVybj0iQiguKSIsDQogICAgICAgYmV0d2Vlbj1jKCJBIiwgIkMiKSwgd2l0aGluPSJCIikNCmBgYA0KDQpgYGB7cn0NCmRhdGEubmV3ID0gbWl4ZWQuM18xYjJ3DQpuYW1lcyhkYXRhLm5ldykgPSBjKCJHcm91cCIsICJDb25kXzAxIiwgIkNvbmRfMDIiLCAiQ29uZF8wMyIsICJDb25kXzA0IikNCk1BTk9WQShkYXRhLm5ldywNCiAgICAgICBkdnM9IkNvbmRfMDE6Q29uZF8wNCIsDQogICAgICAgZHZzLnBhdHRlcm49IkNvbmRfKC4uKSIsDQogICAgICAgYmV0d2Vlbj0iR3JvdXAiLA0KICAgICAgIHdpdGhpbj0iQ29uZGl0aW9uIikNCmBgYA0KDQpgYGB7cn0NCj9waXZvdF93aWRlcg0KYGBgDQoNCg0K</div>
+se = sd(vec) / sqrt(length(vec))
+ggplot(my_sum) +
+  geom_bar( aes(x=Species, y=mean), stat=&quot;identity&quot;, fill=&quot;forestgreen&quot;, alpha=0.5) +
+  geom_errorbar( aes(x=Species, ymin=mean-se, ymax=mean+se), width=0.4, colour=&quot;orange&quot;, alpha=0.9, size=1.5) +
+  ggtitle(&quot;using standard error&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2V0LnNlZWQoMTIzKVxuZGF0YSA8LSBkYXRhLmZyYW1lKFxuICBHcm91cCA9IHJlcChjKFwiQVwiLCBcIkJcIiwgXCJDXCIpLCBlYWNoID0gNCksXG4gIFZhbHVlID0gYygzLCA0LCA1LCA2LCA3LCA4LCA5LCAxMCwgMTEsIDEyLCAxMywgMTQpLFxuICBTRCA9IGMoMC4yLCAwLjMsIDAuNCwgMC41LCAwLjMsIDAuNCwgMC41LCAwLjYsIDAuMiwgMC4zLCAwLjQsIDAuNSlcbilcblxuIyBDYWxjdWxhdGUgc3RhbmRhcmQgZXJyb3JcbmRhdGEkU0UgPC0gZGF0YSRTRCAvIHNxcnQoNClcblxuIyBDcmVhdGUgYSBiYXIgcGxvdCB3aXRoIGVycm9yIGJhcnNcbnBsb3QgPC0gZ2dwbG90KGRhdGEsIGFlcyh4ID0gR3JvdXAsIHkgPSBWYWx1ZSwgZmlsbCA9IEdyb3VwKSkgK1xuICBnZW9tX2JhcihzdGF0ID0gXCJpZGVudGl0eVwiLCBwb3NpdGlvbiA9IHBvc2l0aW9uX2RvZGdlKCkpICtcbiAgZ2VvbV9lcnJvcmJhcihhZXMoeW1pbiA9IFZhbHVlIC0gU0UsIHltYXggPSBWYWx1ZSArIFNFKSwgcG9zaXRpb24gPSBwb3NpdGlvbl9kb2RnZSh3aWR0aCA9IDAuOCksIHdpZHRoID0gMC4yNSkgK1xuICBsYWJzKHRpdGxlID0gXCJCYXIgUGxvdCB3aXRoIEVycm9yIEJhcnNcIikgK1xuICB0aGVtZV9taW5pbWFsKClcblxuIyBBZGQgc2lnbmlmaWNhbmNlIGFubm90YXRpb25zIChwLXZhbHVlcylcbnBsb3Rfd2l0aF9zaWduaWZpY2FuY2UgPC0gcGxvdCArXG4gIHN0YXRfY29tcGFyZV9tZWFucyhjb21wYXJpc29ucyA9IGxpc3QoYyhcIkFcIiwgXCJCXCIpLCBjKFwiQVwiLCBcIkNcIiksIGMoXCJCXCIsIFwiQ1wiKSksXG4gICAgICAgICAgICAgICAgICAgICBtZXRob2QgPSBcInQudGVzdFwiLCBsYWJlbCA9IFwicC5mb3JtYXRcIiwgdmVyYm9zZSA9IEZBTFNFKVxuXG4jIFByaW50IHRoZSBwbG90XG5wcmludChwbG90X3dpdGhfc2lnbmlmaWNhbmNlKVxuYGBgIn0= -->
+<pre class="r"><code>set.seed(123)
+data &lt;- data.frame(
+  Group = rep(c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;), each = 4),
+  Value = c(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+  SD = c(0.2, 0.3, 0.4, 0.5, 0.3, 0.4, 0.5, 0.6, 0.2, 0.3, 0.4, 0.5)
+)
+
+# Calculate standard error
+data$SE &lt;- data$SD / sqrt(4)
+
+# Create a bar plot with error bars
+plot &lt;- ggplot(data, aes(x = Group, y = Value, fill = Group)) +
+  geom_bar(stat = &quot;identity&quot;, position = position_dodge()) +
+  geom_errorbar(aes(ymin = Value - SE, ymax = Value + SE), position = position_dodge(width = 0.8), width = 0.25) +
+  labs(title = &quot;Bar Plot with Error Bars&quot;) +
+  theme_minimal()
+
+# Add significance annotations (p-values)
+plot_with_significance &lt;- plot +
+  stat_compare_means(comparisons = list(c(&quot;A&quot;, &quot;B&quot;), c(&quot;A&quot;, &quot;C&quot;), c(&quot;B&quot;, &quot;C&quot;)),
+                     method = &quot;t.test&quot;, label = &quot;p.format&quot;, verbose = FALSE)
+
+# Print the plot
+print(plot_with_significance)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p><a href="https://ggplot2tutor.com/tutorials/barchart_simple" class="uri">https://ggplot2tutor.com/tutorials/barchart_simple</a></p>
+<p><a href="https://r-graph-gallery.com/4-barplot-with-error-bar.html" class="uri">https://r-graph-gallery.com/4-barplot-with-error-bar.html</a></p>
+<!-- rnb-text-end -->
+
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpUaGlzIGlzIGFuIFtSIE1hcmtkb3duXShodHRwOi8vcm1hcmtkb3duLnJzdHVkaW8uY29tKSBOb3RlYm9vay4gV2hlbiB5b3UgZXhlY3V0ZSBjb2RlIHdpdGhpbiB0aGUgbm90ZWJvb2ssIHRoZSByZXN1bHRzIGFwcGVhciBiZW5lYXRoIHRoZSBjb2RlLiANCg0KVHJ5IGV4ZWN1dGluZyB0aGlzIGNodW5rIGJ5IGNsaWNraW5nIHRoZSAqUnVuKiBidXR0b24gd2l0aGluIHRoZSBjaHVuayBvciBieSBwbGFjaW5nIHlvdXIgY3Vyc29yIGluc2lkZSBpdCBhbmQgcHJlc3NpbmcgKkN0cmwrU2hpZnQrRW50ZXIqLiANCg0KYGBge3J9DQpsaWJyYXJ5KHRpZHl2ZXJzZSkNCmxpYnJhcnkoYnJ1Y2VSKQ0KYGBgDQoNCkFkZCBhIG5ldyBjaHVuayBieSBjbGlja2luZyB0aGUgKkluc2VydCBDaHVuayogYnV0dG9uIG9uIHRoZSB0b29sYmFyIG9yIGJ5IHByZXNzaW5nICpDdHJsK0FsdCtJKi4NCg0KV2hlbiB5b3Ugc2F2ZSB0aGUgbm90ZWJvb2ssIGFuIEhUTUwgZmlsZSBjb250YWluaW5nIHRoZSBjb2RlIGFuZCBvdXRwdXQgd2lsbCBiZSBzYXZlZCBhbG9uZ3NpZGUgaXQgKGNsaWNrIHRoZSAqUHJldmlldyogYnV0dG9uIG9yIHByZXNzICpDdHJsK1NoaWZ0K0sqIHRvIHByZXZpZXcgdGhlIEhUTUwgZmlsZSkuDQoNClRoZSBwcmV2aWV3IHNob3dzIHlvdSBhIHJlbmRlcmVkIEhUTUwgY29weSBvZiB0aGUgY29udGVudHMgb2YgdGhlIGVkaXRvci4gQ29uc2VxdWVudGx5LCB1bmxpa2UgKktuaXQqLCAqUHJldmlldyogZG9lcyBub3QgcnVuIGFueSBSIGNvZGUgY2h1bmtzLiBJbnN0ZWFkLCB0aGUgb3V0cHV0IG9mIHRoZSBjaHVuayB3aGVuIGl0IHdhcyBsYXN0IHJ1biBpbiB0aGUgZWRpdG9yIGlzIGRpc3BsYXllZC4NCmBgYHtyfQ0KZDEgPSBiZXR3ZWVuLjMNCmQxJFkxID0gZDEkU0NPUkUgICMg5aSN5Yi25LiA5LiLDQpkMSRZMiA9IHJub3JtKDMyKSAgIyDpmo/mnLrmlbANCmQxJEIgPSBmYWN0b3IoZDEkQiwgbGV2ZWxzPTE6MiwgbGFiZWxzPWMoIkxvdyIsICJIaWdoIikpDQpkMSRDID0gZmFjdG9yKGQxJEMsIGxldmVscz0xOjIsIGxhYmVscz1jKCJNIiwgIkYiKSkNCg0KIyMg5Y2V5qC35pysdOajgOmqjCAjIw0KVFRFU1QoZDEsICJTQ09SRSIpDQpUVEVTVChkMSwgIlNDT1JFIiwgdGVzdC52YWx1ZT01KQ0KDQojIyDni6znq4vmoLfmnKx05qOA6aqMICMjDQpUVEVTVChkMSwgIlNDT1JFIiwgeD0iQSIpDQpUVEVTVChkMSwgIlNDT1JFIiwgeD0iQSIsIHZhci5lcXVhbD1GQUxTRSkNClRURVNUKGQxLCB5PSJZMSIsIHg9YygiQSIsICJCIiwgIkMiKSkNCg0KYGBgDQoNCmBgYHtyfQ0KZDIgPSB3aXRoaW4uMQ0KIyMg6YWN5a+55qC35pysdOajgOmqjCAjIw0KVFRFU1QoZDIsIHk9YygiQTEiLCAiQTIiKSwgcGFpcmVkPVRSVUUpDQpUVEVTVChkMiwgeT1jKCJBMSIsICJBMiIsICJBMyIsICJBNCIpLCBwYWlyZWQ9VFJVRSkNCmBgYA0KDQpgYGB7cn0NCiMjIOiiq+ivlemXtOiuvuiuoSAjIw0KYmV0d2Vlbi4yDQpNQU5PVkEoYmV0d2Vlbi4yLCBkdj0iU0NPUkUiLCBiZXR3ZWVuPWMoIkEiLCAiQiIpKQ0KYGBgDQoNCmBgYHtyfQ0KTUFOT1ZBKGJldHdlZW4uMiwgZHY9IlNDT1JFIiwgYmV0d2Vlbj1jKCJBIiwgIkIiKSkgJT4lDQogIEVNTUVBTlMoIkEiLCBieT0iQiIpICU+JQ0KICBFTU1FQU5TKCJCIiwgYnk9IkEiKQ0KYGBgDQoNCg0KYGBge3J9DQojIyDooqvor5XlhoXorr7orqEgIyMNCndpdGhpbi4zDQpNQU5PVkEod2l0aGluLjMsIGR2cz0iQTFCMUMxOkEyQjJDMiIsIGR2cy5wYXR0ZXJuPSJBKC4pQiguKUMoLikiLA0KICAgICAgIHdpdGhpbj1jKCJBIiwgIkIiLCAiQyIpKQ0KYGBgDQoNCmBgYHtyfQ0KTUFOT1ZBKHdpdGhpbi4zLCBkdnM9IkExQjFDMTpBMkIyQzIiLCBkdnMucGF0dGVybj0iQSguKUIoLilDKC4pIiwNCiAgICAgICB3aXRoaW49YygiQSIsICJCIiwgIkMiKSkgJT4lDQogIEVNTUVBTlMoIkEiLCBieT0iQiIpICU+JQ0KICBFTU1FQU5TKGMoIkEiLCAiQiIpLCBieT0iQyIpICU+JQ0KICBFTU1FQU5TKCJBIiwgYnk9YygiQiIsICJDIikpDQpgYGANCg0KYGBge3J9DQojIyDplb/mlbDmja7kuZ/ooYwgIyMNCj9hZmV4OjpvYmsubG9uZw0KP2JydWNlUjo6TUFOT1ZBDQpNQU5PVkEoYWZleDo6b2JrLmxvbmcsDQogICAgICAgc3ViSUQ9ImlkIiwNCiAgICAgICBkdj0idmFsdWUiLA0KICAgICAgIGJldHdlZW49YygidHJlYXRtZW50IiwgImdlbmRlciIpLA0KICAgICAgIHdpdGhpbj1jKCJwaGFzZSIsICJob3VyIiksDQogICAgICAgY292PSJhZ2UiLA0KICAgICAgIHNwaC5jb3JyZWN0aW9uPSJHRyIpDQoNCmBgYA0KDQoNCmBgYHtyfQ0KIyMg5re35ZCI6K6+6K6hICMjDQptaXhlZC4zXzJiMXcNCk1BTk9WQShtaXhlZC4zXzJiMXcsIGR2cz0iQjE6QjIiLCBkdnMucGF0dGVybj0iQiguKSIsDQogICAgICAgYmV0d2Vlbj1jKCJBIiwgIkMiKSwgd2l0aGluPSJCIikNCmBgYA0KDQpgYGB7cn0NCmRhdGEubmV3ID0gbWl4ZWQuM18xYjJ3DQpuYW1lcyhkYXRhLm5ldykgPSBjKCJHcm91cCIsICJDb25kXzAxIiwgIkNvbmRfMDIiLCAiQ29uZF8wMyIsICJDb25kXzA0IikNCk1BTk9WQShkYXRhLm5ldywNCiAgICAgICBkdnM9IkNvbmRfMDE6Q29uZF8wNCIsDQogICAgICAgZHZzLnBhdHRlcm49IkNvbmRfKC4uKSIsDQogICAgICAgYmV0d2Vlbj0iR3JvdXAiLA0KICAgICAgIHdpdGhpbj0iQ29uZGl0aW9uIikNCmBgYA0KDQpgYGB7cn0NCj9waXZvdF93aWRlcg0KYGBgDQoNCg0KYGBge3J9DQpnZ3Bsb3QoZGF0YSkgKw0KICBnZW9tX2JhciggYWVzKHg9bmFtZSwgeT12YWx1ZSksIHN0YXQ9ImlkZW50aXR5IiwgZmlsbD0ic2t5Ymx1ZSIsIGFscGhhPTAuNSkgKw0KICBnZW9tX2Vycm9yYmFyKCBhZXMoeD1uYW1lLCB5bWluPXZhbHVlLXNkLCB5bWF4PXZhbHVlK3NkKSwgd2lkdGg9MC40LCBjb2xvdXI9Im9yYW5nZSIsIGFscGhhPTAuOSwgc2l6ZT0xLjMpICsNCiAgY29vcmRfZmxpcCgpDQoNCnNlID0gc2QodmVjKSAvIHNxcnQobGVuZ3RoKHZlYykpDQpnZ3Bsb3QobXlfc3VtKSArDQogIGdlb21fYmFyKCBhZXMoeD1TcGVjaWVzLCB5PW1lYW4pLCBzdGF0PSJpZGVudGl0eSIsIGZpbGw9ImZvcmVzdGdyZWVuIiwgYWxwaGE9MC41KSArDQogIGdlb21fZXJyb3JiYXIoIGFlcyh4PVNwZWNpZXMsIHltaW49bWVhbi1zZSwgeW1heD1tZWFuK3NlKSwgd2lkdGg9MC40LCBjb2xvdXI9Im9yYW5nZSIsIGFscGhhPTAuOSwgc2l6ZT0xLjUpICsNCiAgZ2d0aXRsZSgidXNpbmcgc3RhbmRhcmQgZXJyb3IiKQ0KYGBgDQoNCg0KYGBge3J9DQpzZXQuc2VlZCgxMjMpDQpkYXRhIDwtIGRhdGEuZnJhbWUoDQogIEdyb3VwID0gcmVwKGMoIkEiLCAiQiIsICJDIiksIGVhY2ggPSA0KSwNCiAgVmFsdWUgPSBjKDMsIDQsIDUsIDYsIDcsIDgsIDksIDEwLCAxMSwgMTIsIDEzLCAxNCksDQogIFNEID0gYygwLjIsIDAuMywgMC40LCAwLjUsIDAuMywgMC40LCAwLjUsIDAuNiwgMC4yLCAwLjMsIDAuNCwgMC41KQ0KKQ0KDQojIENhbGN1bGF0ZSBzdGFuZGFyZCBlcnJvcg0KZGF0YSRTRSA8LSBkYXRhJFNEIC8gc3FydCg0KQ0KDQojIENyZWF0ZSBhIGJhciBwbG90IHdpdGggZXJyb3IgYmFycw0KcGxvdCA8LSBnZ3Bsb3QoZGF0YSwgYWVzKHggPSBHcm91cCwgeSA9IFZhbHVlLCBmaWxsID0gR3JvdXApKSArDQogIGdlb21fYmFyKHN0YXQgPSAiaWRlbnRpdHkiLCBwb3NpdGlvbiA9IHBvc2l0aW9uX2RvZGdlKCkpICsNCiAgZ2VvbV9lcnJvcmJhcihhZXMoeW1pbiA9IFZhbHVlIC0gU0UsIHltYXggPSBWYWx1ZSArIFNFKSwgcG9zaXRpb24gPSBwb3NpdGlvbl9kb2RnZSh3aWR0aCA9IDAuOCksIHdpZHRoID0gMC4yNSkgKw0KICBsYWJzKHRpdGxlID0gIkJhciBQbG90IHdpdGggRXJyb3IgQmFycyIpICsNCiAgdGhlbWVfbWluaW1hbCgpDQoNCiMgQWRkIHNpZ25pZmljYW5jZSBhbm5vdGF0aW9ucyAocC12YWx1ZXMpDQpwbG90X3dpdGhfc2lnbmlmaWNhbmNlIDwtIHBsb3QgKw0KICBzdGF0X2NvbXBhcmVfbWVhbnMoY29tcGFyaXNvbnMgPSBsaXN0KGMoIkEiLCAiQiIpLCBjKCJBIiwgIkMiKSwgYygiQiIsICJDIikpLA0KICAgICAgICAgICAgICAgICAgICAgbWV0aG9kID0gInQudGVzdCIsIGxhYmVsID0gInAuZm9ybWF0IiwgdmVyYm9zZSA9IEZBTFNFKQ0KDQojIFByaW50IHRoZSBwbG90DQpwcmludChwbG90X3dpdGhfc2lnbmlmaWNhbmNlKQ0KYGBgDQpodHRwczovL2dncGxvdDJ0dXRvci5jb20vdHV0b3JpYWxzL2JhcmNoYXJ0X3NpbXBsZQ0KDQpodHRwczovL3ItZ3JhcGgtZ2FsbGVyeS5jb20vNC1iYXJwbG90LXdpdGgtZXJyb3ItYmFyLmh0bWwNCg0KDQo=</div>
 
 
 

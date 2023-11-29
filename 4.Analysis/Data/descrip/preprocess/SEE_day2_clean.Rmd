@@ -66,9 +66,9 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
            Paid_date = Paid_date) %>%
     merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
   
-     #由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
-  subj_day0_row <- subj_day0[subj_day0$ID == "phase_005_subj_17", c("USERID", "Subject.Name", "ParticipantID", "ID")]
-  subj_day2 <- bind_rows(subj_day2, subj_day0_row)
+#####由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
+ # subj_day0_row <- subj_day0[subj_day0$ID == "phase_005_subj_17", c("USERID", "Subject.Name", "ParticipantID", "ID")]
+ # subj_day2 <- bind_rows(subj_day2, subj_day0_row)
 
   # 将结果写入 Excel 文件
   write.xlsx(subj_day2, paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
