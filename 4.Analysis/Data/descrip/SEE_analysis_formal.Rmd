@@ -144,25 +144,27 @@ acc_and_rt_plots <- function(data,output_file) {
 
 # ACC plot
   acc_plot <- ggplot(data, aes(x = condition, y = acc, fill = conditionType, colour = conditionType)) +
-    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE) +
-    geom_point(position = position_jitter(width = .15), size = .25) +
-    geom_boxplot(aes(x = condition, y = acc), outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = condition, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
     ylab('Acc') + xlab('conditionType') + coord_flip() +
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure 1a: ACC of ALT1")
+    ggtitle("Figure 1a: ACC of ALT1")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
 
   # RT plot
   rt_plot <- ggplot(data, aes(x = condition, y = avg_rt, fill = conditionType, colour = conditionType)) +
-    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE) +
-    geom_point(position = position_jitter(width = .15), size = .25) +
-    geom_boxplot(aes(x = condition, y = avg_rt), outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = condition, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
     ylab('RT') + xlab('conditionType') + coord_flip() +
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure 1b: RT of ALT1")
+    ggtitle("Figure 1b: RT of ALT1")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
 
   # Combine plots vertically
   final_plot <- acc_plot | rt_plot
@@ -206,11 +208,6 @@ ALT1_plot <- acc_and_rt_plots(ALT1_data,"../../Data/all/ALT1_plot.png")
 ```{r}
 
 ```
-
-
-
-
-
 
 
 
@@ -473,6 +470,815 @@ IAT_D_plot(IAT_data, IAT_data_D)
 
 ```
 ```{r}
+
+```
+
+# SRET的评估阶段按键“yes”，RT
+```{r SRET EW}
+SRET_EW<-function(data){
+  
+  # EW阶段的yes比例和rt汇总
+SRET_EW<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) %>%#去掉干扰词
+  group_by(ID,person,valence,domain)%>%
+  summarize(N_Yes = sum(responses == "yes"),
+            N_No = sum(responses == "no"),
+            N=n(),
+            pro_yes=N_Yes/N,
+            avg_rt = mean(rt, na.rm = TRUE),
+            sd_rt=sd(rt, na.rm = TRUE)
+           )
+print(SRET_EW)
+a<-describe(SRET_EW)
+print(a)
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，yes比例
+SRET_EW_ANOVA<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="pro_yes",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),)%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+ #  EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+  EMMEANS("person", by=c("domain", "valence")) 
+print(SRET_EW_ANOVA)
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，rt
+SRET_EW_ANOVA2<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="avg_rt",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),)%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+  # EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+  EMMEANS("person", by=c("domain", "valence")) 
+print(SRET_EW_ANOVA2)
+
+ 
+
+# 创建yes_proportion的雨云图
+  pro_yes_EW_ability <- SRET_EW %>% 
+    filter(domain %in% c("ability")) %>%
+    ggplot(.,aes(x=person,y=pro_yes, fill =person, colour =person))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =person, y =pro_yes),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~valence)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 7a: pro_yes of SRET_EW in ability")
+  
+ pro_yes_EW_moral <-SRET_EW  %>% 
+    filter(domain %in% c("morality")) %>%
+    ggplot(.,aes(x=person,y=pro_yes, fill =person, colour =person))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =person, y =pro_yes),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+  facet_wrap(~valence)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 7b: pro_yes of SRET_EW in moral")
+  print(pro_yes_EW_ability/pro_yes_EW_moral)
+
+# 创建rt的雨云图
+  rt_EW_ability <- SRET_EW %>% 
+    filter(domain %in% c("ability")) %>%
+    ggplot(.,aes(x=person,y=avg_rt, fill =person, colour =person))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =person, y =avg_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~valence)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 8a: RT of SRET_EW in ability")
+  
+  rt_EW_moral <-SRET_EW  %>% 
+    filter(domain %in% c("morality")) %>%
+    ggplot(.,aes(x=person,y=avg_rt, fill =person, colour =person))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =person, y =avg_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+  facet_wrap(~valence)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 8b: RT of SRET_EW in moral")
+  print(rt_EW_ability/rt_EW_moral)
+  #print(rt_EW_moral)
+}
+SRET_EW(SRET_all)
+```
+
+
+```{r 计算题}
+SRET_math<-function(data){
+  
+  # EW阶段的yes比例和rt汇总
+SRET_math<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("SRET_math_calculate") )%>% #选择正式实验的数据
+  group_by(ID)%>%
+  summarize(n_correct = sum(correct == "1"),
+            N=n(),
+            mean_rt=mean(rt, na.rm = TRUE),
+acc=n_correct/N  )
+print(SRET_math)
+
+rt_SRET_math <- ggplot(SRET_math, aes(x = mean_rt)) +
+  geom_density(fill = "skyblue", alpha = 0.7) +
+  labs(title = "Density Plot of mean_rt",
+       x = "mean_rt") +
+  theme_minimal()
+
+# 绘制acc的概率密度分布图
+acc_SRET_math <-ggplot(SRET_math, aes(x = acc)) +
+  geom_density(fill = "lightcoral", alpha = 0.7) +
+  labs(title = "Density Plot of acc",
+       x = "acc") +
+  theme_minimal()
+
+  print(rt_SRET_math/acc_SRET_math)
+
+
+}
+SRET_math(SRET_all)
+```
+
+```{r SRET RJ_formal1}
+SRET_RJ <- function(data) {
+  SRET_RJ <- data %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+    group_by(ID,domain, valence ) %>%#, valence
+    summarize(
+     
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),
+      CR = sum(sdt == "cr"),
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+    
+     self_H = sum(sdt == "hit"& person=="self")/10,
+     friend_H = sum(sdt == "hit"& person=="friend")/10,
+     P_H = H/(H+M),
+     P_FA = FA/(FA+CR),
+   
+      recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+      max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+      P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),# if hit rate is 1, standardize it
+      P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), # if FA rate is 0, standardize it
+      Correct_recognition = P_H - P_FA,
+      Z_P_H = qnorm(P_H),
+      Z_P_FA = qnorm(P_FA),
+      d_prime = Z_P_H - Z_P_FA) 
+  print(SRET_RJ)
+  a<-describe(SRET_RJ)
+print(a)
+  
+   SRET_RJ_plot <- SRET_RJ %>% 
+    ggplot(.,aes(x=valence,y=avg_rt, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =valence, y =avg_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 9: RT of SRET_RJ ")
+   
+   print(SRET_RJ_plot)
+   
+    SRET_RJ_plot2 <- SRET_RJ %>% 
+    ggplot(.,aes(x=valence,y=recognition, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =valence, y =recognition),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('recognition')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: recognition of SRET_RJ ")
+    print(SRET_RJ_plot2)
+    
+     SRET_RJ_plot3 <- SRET_RJ %>% 
+    ggplot(.,aes(x=valence,y=d_prime, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =valence, y =d_prime),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('d_prime')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 11: d_prime of SRET_RJ ")
+    print(SRET_RJ_plot3)
+    
+    SRET_RJ_ANOV<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="avg_rt",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+    print(SRET_RJ_ANOV)
+    
+     SRET_RJ_ANOV2<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="recognition",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+     print(SRET_RJ_ANOV2)
+     
+ SRET_RJ_ANOV3<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="Correct_recognition",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+     print(SRET_RJ_ANOV3)
+     
+}
+
+# 调用函数并存储结果
+SRET_RJ(SRET_all)
+```
+
+```{r SRET RJ_formal2_source_memory}
+SRET_Source_M<-function(data){
+SRET_RJ_2 <- data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )
+print(SRET_RJ_2)
+
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  group_by(ID,valence,domain) %>%
+  summarize(
+    n=n(), #所有按键反应了的试次
+   count_self = sum(responses == "self"),#所有反应是“self”的试次
+   count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+    self_M = 10-self_H,# 信号为self，没有被反应为“self
+   friend_M = 10-friend_H, # 信号为friend，没有被反应为“friend
+      FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      CR = 20-FA,#总共20新词，去掉被判断为旧词（信号），正确拒绝旧词
+      self_recognition = self_H /count_self,
+   # number of correct source attributions for self/ number of hits for self
+   friend_recognition = friend_H/ count_friend,
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+   max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+  )
+print(SRET_RJ_2)
+
+# 使用group_by和summarize检查每个ID的行数
+id_counts <- SRET_RJ_2 %>%
+  ungroup()%>%
+  group_by(ID) %>%
+  summarize(row_count = n())
+
+# 输出结果
+print(id_counts)
+
+# 检查是否每个ID都有4行数据
+all_ids_have_four_rows <- all(id_counts$row_count == 4)
+
+# 输出结果
+print(all_ids_have_four_rows)
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  pivot_longer(cols = c(self_recognition, friend_recognition),
+               names_to = "person",
+               values_to = "recognition")%>%
+  mutate(person = case_when(
+    person == "self_recognition" ~ "self",
+    person == "friend_recognition" ~ "friend",
+  ))
+print(SRET_RJ_2)
+
+
+
+ SRET_RJ2_plot <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=person,y=recognition, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =person, y =recognition),outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+ylab('ACC')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: acc of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot)
+   
+   SRET_RJ2_plot2 <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=person,y=avg_rt, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =person, y =avg_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 11: RT of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot2)
+   
+ 
+
+}
+SRET_Source_M(SRET_all)
+```
+
+```{r}
+# 选择ID列以及age到Fri_ses2之间的所有列
+day0_democr <- day0_all %>%
+  select(ID, age:fri_ses2)%>%
+  mutate(
+     ID = as.character(ID),
+    age=case_when(
+          between(age, 18, 28) ~ "18~28",
+          between(age, 28, 38) ~ "28~38",
+           between(age, 38, 48) ~ "38~48",
+          between(age, 48, 59) ~ "48~59",
+          age>59~ ">59",
+          TRUE ~ as.character(age) 
+        ),
+         obj_ses1=as.character(obj_ses1),
+         fri_ses2=as.character(fri_ses2),
+        sex=case_when(
+          sex==0~"male",
+          sex==1~"female",
+          TRUE ~ as.character(sex) 
+        ) ) %>%
+ mutate(fatherEdu = case_when(
+    fatherEdu == 0 ~ "zero",
+    fatherEdu == 1 ~ "elementary",
+    fatherEdu == 2 ~ "junior",
+    fatherEdu == 3 ~ "senior",
+    fatherEdu == 4 ~ "college",
+    fatherEdu == 5 ~ "graduate",
+    TRUE ~ as.character(fatherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(motherEdu = case_when(
+    motherEdu == 0 ~ "zero",#没上学
+    motherEdu == 1 ~ "elementary",#小学
+    motherEdu == 2 ~ "junior",#初中
+    motherEdu == 3 ~ "senior",#高中，中专
+    motherEdu == 4 ~ "college",#大学（专科或本科）
+    motherEdu == 5 ~ "graduate",#研究生
+    TRUE ~ as.character(motherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(FatherOccupation = case_when(
+    FatherOccupation == 0 ~ "casual_laborer",#临时工
+    FatherOccupation == 1 ~ "self_employed",#个体经营
+    FatherOccupation == 2 ~ "general_management",#一般管理
+    FatherOccupation == 3 ~ "middlel_management",#中层管理
+    FatherOccupation == 4 ~ "high_management",#高级管理
+    TRUE ~ as.character(FatherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(MotherOccupation = case_when(
+    MotherOccupation == 0 ~ "casual_laborer",#临时工
+    MotherOccupation == 1 ~ "self_employed",#个体经营
+    MotherOccupation == 2 ~ "general_management",#一般管理
+    MotherOccupation == 3 ~ "middle_management",#中层管理
+    MotherOccupation == 4 ~ "high_management",#高级管理
+    TRUE ~ as.character(MotherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(income = case_when(
+    income == 0 ~ "zero",
+    income < 2000 ~ "<2000",
+    between(income, 2000, 5000) ~ "2000~5000",
+    between(income, 5000, 10000) ~ "5000~10000",
+    between(income, 10000, 30000) ~ "10000~30000",
+    between(income, 30000, 50000) ~ "30000~50000",
+    between(income, 50000, 100000) ~ "50000~100000",
+    between(income, 100000, 150000) ~ "100000~150000",
+    between(income, 150000, 200000) ~ "150000~200000",
+    income >= 200000 ~ "≥200000",
+    TRUE ~ as.character(income)  # 如果没有匹配的条件，保持不变
+  ))%>%
+  select(-c("ID","birthday"))
+head(day0_democr)
+# 使用修改后的数据框进行绘图
+describe( day0_democr)
+
+```
+
+```{r}
+
+Sys.setlocale(category = "LC_ALL", locale = "Chinese")
+
+# 绘制age的频数分布直方图
+ggplot(day0_democr, aes(x = age)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Age Frequency Distribution", x = "Age Group", y = "Frequency")
+
+# 绘制obj_ses1的频数分布直方图
+ggplot(day0_democr, aes(x = obj_ses1)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "obj_ses1 Frequency Distribution", x = "obj_ses1", y = "Frequency")
+
+# 绘制fri_ses2的频数分布直方图
+ggplot(day0_democr, aes(x = fri_ses2)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "fri_ses2 Frequency Distribution", x = "fri_ses2", y = "Frequency")
+
+# 绘制sex的频数分布直方图
+ggplot(day0_democr, aes(x = sex)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Sex Frequency Distribution", x = "Sex", y = "Frequency")
+
+# 绘制fatherEdu的频数分布直方图
+ggplot(day0_democr, aes(x = fatherEdu)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Father Education Frequency Distribution", x = "Father Education", y = "Frequency")
+
+# 绘制motherEdu的频数分布直方图
+ggplot(day0_democr, aes(x = motherEdu)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Mother Education Frequency Distribution", x = "Mother Education", y = "Frequency")
+
+# 绘制FatherOccupation的频数分布直方图
+ggplot(day0_democr, aes(x = FatherOccupation)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Father Occupation Frequency Distribution", x = "Father Occupation", y = "Frequency")
+
+
+# 绘制MotherOccupation的频数分布直方图
+ggplot(day0_democr, aes(x = MotherOccupation)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Mother Occupation Frequency Distribution", x = "Mother Occupation", y = "Frequency")
+
+# 绘制income的频数分布直方图
+ggplot(day0_democr, aes(x = income)) +
+  geom_bar() +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Income Frequency Distribution", x = "Income Group", y = "Frequency")
+
+```
+
+
+#问卷的重测信度计算
+
+```{r}
+
+day3_q_all  <- day3_q_all  %>%
+    rename(ability_rating = domain_rating_1, 
+           physical_attraction = domain_rating_2,
+           material_wealth = domain_rating_3,
+           social_ability = domain_rating_4,
+           moral_rating=domain_rating_5,
+           )%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24),
+     sde_al = rowSums(select(., starts_with("sde")), na.rm = TRUE),
+     IM_al = rowSums(select(., starts_with("IM")), na.rm = TRUE),
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+
+```
+
+# 选出完整参与了day0 ~ day3 实验的被试
+```{r select subjects join all experiments}
+subj_all <- unique(day3_q_all$ID)
+print(subj_all)
+```
+
+
+```{r}
+#合并day0到day2的问卷数据
+day0t2_q<- merge(day0_all, day1_q_all, by = "ID", all = TRUE) %>%
+  merge(day2_q_all, by = "ID", all = TRUE)
+# %>%filter(ID != "phase_002_subj_1" & ID != "phase_002_subj_3")#这行代码不是每次都需要，这是被试流失，去除流失的被试
+
+#对合并day0到day2的问卷数据，进行总分计算
+day0t2_q<- subset(day0t2_q, ID %in% subj_all)%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24),
+     sde_al = rowSums(select(., starts_with("sde")), na.rm = TRUE),
+     IM_al = rowSums(select(., starts_with("IM")), na.rm = TRUE),
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+  
+
+```
+
+
+```{r 计算重测信度}
+
+#选择要算重测信度的量表
+questionnaires <- c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al","sde_al","IM_al")
+
+# 计算重测信度
+
+# 存储计算的重测信度
+reliabilities <- data.frame(questionnaire = character(0), reliability = numeric(0))
+
+for (questionnaire in questionnaires) {
+  # 选择两次测量的数据，for循环
+  data1 <- day0t2_q [, c("ID", questionnaire)]
+  data2 <- day3_q_all [, c("ID", questionnaire)]
+  
+  # 合并数据框
+  combined_data <- merge(data1, data2, by = "ID", suffixes = c("_1", "_2"))
+  
+  # 计算重测信度，利用pearson积差相关
+  reliability <- cor(combined_data[, paste(questionnaire, "_1", sep = "")], combined_data[, paste(questionnaire, "_2", sep = "")],method = "pearson", use = "pairwise")
+  
+  # 存储结果
+  reliabilities <- rbind(reliabilities, data.frame(questionnaire = questionnaire, reliability = reliability))
+}
+
+# 输出重测信度
+print(reliabilities)
+
+```
+
+```{r}
+# 假设你的数据框名为your_data_frame
+ day0t2_1<-  day0t2_q%>%
+  select(starts_with("selfclarity_"), 
+         starts_with("phq_"), 
+         starts_with("gad_"), 
+         starts_with("swb_"), 
+         starts_with("LOT_"), 
+         starts_with("IPC_"), 
+         starts_with("ses_"), 
+         starts_with("coreself_"), 
+         starts_with("SGPS_"), 
+         starts_with("NPI"), 
+         starts_with("hsns"), 
+         starts_with("MorIden_"), 
+         starts_with("moralSeImag_"), 
+         starts_with("sde_"), 
+         starts_with("IM_"),
+         ID)%>%
+  mutate(time="1")
+ day3_q_2<-day3_q_all %>%
+  select(starts_with("selfclarity_"), 
+         starts_with("phq_"), 
+         starts_with("gad_"), 
+         starts_with("swb_"), 
+         starts_with("LOT_"), 
+         starts_with("IPC_"), 
+         starts_with("ses_"), 
+         starts_with("coreself_"), 
+         starts_with("SGPS_"), 
+         starts_with("NPI"), 
+         starts_with("hsns"), 
+         starts_with("MorIden_"), 
+         starts_with("moralSeImag_"), 
+         starts_with("sde_"), 
+         starts_with("IM_"),
+         ID)%>%
+  mutate(time="2")
+
+
+day0t3_q_reliability<-bind_rows(day0t2_1, day3_q_2)
+
+
+# 假设你的数据框名为day0t3_q_reliability
+sde_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("sde_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(sde_retest_reliability)
+
+```
+```{r}
+IM_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("IM_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(IM_retest_reliability)
+```
+```{r}
+phq_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("phq_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(phq_retest_reliability)
+```
+```{r}
+gad_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("gad_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(gad_retest_reliability)
+```
+```{r}
+swb_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("swb_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(swb_retest_reliability)
+```
+```{r}
+NPI_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("NPI"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(IM_retest_reliability)
+```
+```{r}
+ses_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("ses_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(ses_retest_reliability)
+```
+
+```{r}
+SGPS_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("SGPS_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(SGPS_retest_reliability)
+```
+```{r}
+selfclarity_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("selfclarity_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(selfclarity_retest_reliability)
+```
+```{r}
+LOT_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("LOT_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(LOT_retest_reliability)
+```
+```{r}
+
+hsns_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("hsns_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(hsns_retest_reliability)
+```
+```{r}
+moralSeImag_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("moralSeImag_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(moralSeImag_retest_reliability)
+```
+
+```{r}
+MorIden_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("MorIden_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(MorIden_retest_reliability)
+```
+```{r}
+IPC_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("IPC_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(IPC_retest_reliability)
+```
+
+```{r}
+coreself_retest_reliability <- day0t3_q_reliability %>%
+  select(starts_with("coreself_"), "ID", "time")%>%
+testRetest(.,keys = NULL, id = "ID",lmer = FALSE,sort = TRUE)
+print(coreself_retest_reliability)
+```
+
+
+
+
+```{r}
+widetolong <- function(data, prefixes, id_col) {
+  result <- NULL  # Initialize an empty data frame to store concatenated results
+  
+  for (prefix in prefixes) {
+    # Choose columns based on the specified prefix and include ID column
+    selected_columns <- c(grep(paste0("^", prefix), names(data), value = TRUE), id_col)
+
+    # Select the relevant columns using all_of()
+    selected_data <- data %>% 
+      dplyr::select(all_of(selected_columns))
+
+    # Update the selection using all_of() in pivot_longer
+    long_data <- tidyr::pivot_longer(
+      data = selected_data,
+      cols = -{{id_col}},
+      names_to = "variable",
+      values_to = "score"
+    )
+    
+    # Concatenate the result with the existing data
+     result<- dplyr::bind_rows(result, long_data)
+  }
+
+  # Return the concatenated result
+  return(result)
+}
+
+# Example usage with multiple prefixes
+day0t2_long <- widetolong(day0t2_q, c("selfclarity_", "phq_", "gad_", "swb_", "LOT_", "IPC_", "ses_", "coreself_", "SGPS_", "NPI", "hsns", "MorIden_", "moralSeImag_", "sde_", "IM_"), "ID")%>%
+  mutate(time="1")
+
+day3_q_long <- widetolong(day3_q_all, c("selfclarity_", "phq_", "gad_", "swb_", "LOT_", "IPC_", "ses_", "coreself_", "SGPS_", "NPI", "hsns", "MorIden_", "moralSeImag_", "sde_", "IM_"), "ID")%>%
+  mutate(time="2")
+
+day0t3_q_all<-bind_rows(day0t2_long, day3_q_long)
+
+
+data <- day0t3_q_all[grepl("^sde_", day0t3_q_all$variable), ]
+
+data$time <- as.numeric(as.character(data$time))
+t_retest_reliability<-testRetest(data,keys=NULL,id="ID", time=  "time", select=NULL, 
+check.keys=TRUE, warnings=TRUE,lmer=TRUE,sort=TRUE)
+
+# Print the result
+print(result)
+
 
 ```
 

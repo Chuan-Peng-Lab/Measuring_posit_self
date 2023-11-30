@@ -132,6 +132,7 @@ merge_files <- function(prefix) {
 }
 
 # Merge files for different prefixes
+merge_files("day0")
 merge_files("ALT2")
 merge_files("day1_q")
 merge_files("day2_q")

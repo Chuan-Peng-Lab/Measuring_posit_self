@@ -66,13 +66,13 @@ MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
 MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
        within=c("A", "B", "C")) %>%
   EMMEANS("A", by="B") %>%
-  EMMEANS(c("A", "B"), by="C") %>%
+  EMMEANS(c("A", "B"), by="C") %>%#
   EMMEANS("A", by=c("B", "C"))
 ```
 
 ```{r}
 ## 长数据也行 ##
-?afex::obk.long
+afex::obk.long
 ?bruceR::MANOVA
 MANOVA(afex::obk.long,
        subID="id",
