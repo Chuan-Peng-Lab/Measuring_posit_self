@@ -75,8 +75,8 @@ var demographics_1 = {
         //d9 = income_scale.indexOf(responses.income);
         d10 = responses.income;
         jsPsych.data.addProperties({
-          //  subj_idx:subj_idx,subj_name:subj_name,age:age,education:education,
-           // national:national,birthday:birthday,sex:d2,
+            subj_idx:subj_idx,subj_name:subj_name,age:age,education:education,
+           national:national,birthday:birthday,sex:d2,
             fatherEdu: d6, motherEdu: d7,
             FatherOccupation: d8, MotherOccupation: d9,
             income: d10
