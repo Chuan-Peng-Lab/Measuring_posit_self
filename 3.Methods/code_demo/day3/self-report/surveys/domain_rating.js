@@ -7,15 +7,17 @@
 4） 社交能力
 5） 道德
 */ 
-
-var domain_rating = {
-    type: jsPsychSurveyTemplate,
-  items: [
+var domain_items= [
     "（1） 能力",
     "（2） 身体吸引",
     "（3） 物质财富",
     "（4） 社交能力",
-    "（5） 道德",],
+    "（5） 道德",];
+
+
+var domain_rating = {
+    type: jsPsychSurveyTemplate,
+  items:domain_items ,
     scale: [
         "1",
         "2",

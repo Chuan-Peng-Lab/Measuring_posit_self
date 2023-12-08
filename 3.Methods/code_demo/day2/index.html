@@ -47,11 +47,12 @@
   <script src=".\self-report\surveys\IPC.js"></script>
   <script src=".\ALT_2.js"></script>
   <script src=".\SRET_eval.js"></script>
-
+  <script src=".\self-report\surveys\bogus_items.js"></script>
   <script src=".\self-report\surveys\moralidentity.js"></script>
   <script src=".\self-report\surveys\moralSelf_image.js"></script>
   <script src=".\self-report\surveys\sde.js"></script>
   <script src=".\self-report\surveys\IM.js"></script>
+  
 
 
   <head>
@@ -118,7 +119,7 @@
  // timeline.push(chinrest);
   timeline.push(fullscreen_trial);
  timeline.push(swb);
-  timeline.push(lot);
+ timeline.push(lot);
   timeline.push(IPC_I);
 
 if(jsPsych.randomization.sampleBernoulli(0.5)){
@@ -136,6 +137,7 @@ if(jsPsych.randomization.sampleBernoulli(0.5)){
   timeline.push(rest_time);
   timeline.push(moralidentity);
   timeline.push(moralSeImag);
+
   timeline.push(sde);
   timeline.push(IM);
   var after = {
@@ -151,7 +153,7 @@ if(jsPsych.randomization.sampleBernoulli(0.5)){
     （2）图形标签匹配任务的单个条件的正确率低于20%，总正确率低于60%。</p>
     <p>感谢您的配合！</p>`,
   choices: 'ALL_KEYS',
-  trial_duration: 450,
+  trial_duration: 3000,
   response_ends_trial: false,
 
 };

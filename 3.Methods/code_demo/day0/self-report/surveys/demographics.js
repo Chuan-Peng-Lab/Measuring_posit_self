@@ -54,13 +54,13 @@ var demographics_1 = {
       
 
     on_finish: function (data) {
-        var subj_idx=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.userId;
+      var subj_idx=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.userId;
         var subj_name=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.realName;
         var age = $.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.age;
         var education =$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.education;
         var  national =$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.national;
         var birthday=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.birthday;
-        info["subj_idx"] = subj_idx;
+        info["subj_idx"] = subj_idx;  
         var responses = data.response;
        /* d1 = ethnicity_scale.indexOf(responses.ethnicity);       
        
@@ -75,8 +75,8 @@ var demographics_1 = {
         //d9 = income_scale.indexOf(responses.income);
         d10 = responses.income;
         jsPsych.data.addProperties({
-            subj_idx:subj_idx,subj_name:subj_name,age:age,education:education,
-            national:national,birthday:birthday,sex:d2,
+          //  subj_idx:subj_idx,subj_name:subj_name,age:age,education:education,
+           // national:national,birthday:birthday,sex:d2,
             fatherEdu: d6, motherEdu: d7,
             FatherOccupation: d8, MotherOccupation: d9,
             income: d10

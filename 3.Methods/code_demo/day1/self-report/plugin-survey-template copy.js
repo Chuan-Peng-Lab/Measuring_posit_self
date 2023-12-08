@@ -1,4 +1,4 @@
-var jsPsychSurveyTemplate2 = (function (jspsych) {
+var jsPsychSurveyTemplate = (function (jspsych) {
   'use strict';
 
   const info = {
@@ -65,12 +65,6 @@ var jsPsychSurveyTemplate2 = (function (jspsych) {
         pretty_name: 'Item width',
         default: 50,
         description: 'The percentage of a row occupied by an item text'
-      },
-      required: {
-        type: jspsych.ParameterType.BOOL,
-        pretty_name: 'Required',
-        default: true,
-        description: 'If true, the question is required and cannot be skipped.'
       },
       button_label: {
         type: jspsych.ParameterType.STRING,
@@ -252,16 +246,14 @@ var jsPsychSurveyTemplate2 = (function (jspsych) {
 
         // Add row.
         html += '<div class="survey-template-row">';
-html += `<div class='survey-template-prompt'>${trial.items[item_order[i]]}</div>`;
-for (var j = 0; j < values.length; j++) {
-  html += '<div class="survey-template-response">';
-  html += '<div class="pseudo-input"></div>';
-  const requiredAttribute = trial.required ? 'required' : ''; // Highlighted: Add required attribute based on the parameter
-  html += `<input type="radio" name="Q${qid}" value="${values[j]}" id=${j} tabindex="-1" ${requiredAttribute}>`;
-  html += "</div>";
-}
-html += '</div>';
-
+        html += `<div class='survey-template-prompt'>${trial.items[item_order[i]]}</div>`;
+        for (var j = 0; j < values.length; j++) {
+          html += '<div class="survey-template-response">';
+          html += '<div class="pseudo-input"></div>';
+          html += `<input type="radio" name="Q${qid}" value="${values[j]}" id=${j} tabindex="-1" required>`;
+          html += "</div>";
+        }
+        html += '</div>';
 
       }
       html += '</div>';
@@ -341,11 +333,8 @@ html += '</div>';
         // Check honeypot.
         var honeypot = serializeArray(display_element.querySelector('#survey-template-form'));
         honeypot = (honeypot.length > 0) ? 1 : 0;
-        
-        // Highlighted: Check if the question is required before logging the response
-  if (!(trial.required === false && honeypot.length === 0)) {
-        // Store data
 
+        // Store data
         var trialdata = {
           "responses": responses,
           "rt": response_time,
@@ -367,10 +356,7 @@ html += '</div>';
 
         // Move onto next trial
         jsPsych.finishTrial(trialdata);
-      } else {
-        // Highlighted: If the question is not required and skipped, move onto the next trial
-        jsPsych.finishTrial();
-      }
+
       });
 
       var startTime = performance.now();

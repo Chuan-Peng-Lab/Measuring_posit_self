@@ -609,8 +609,8 @@ var EW_exercise = {
           font: `${40}px '微软雅黑'`, //字体和颜色设置 文字视角：3.6° x 1.6°
           text_color: '#D3D3D3',
           show_start_time: 1000, // ms after the start of the trial
-          response_ends_trial: true,
-          //show_end_time: 2000,//出现1000ms
+          response_ends_trial: false,
+          show_end_time: 2500,//出现1500ms
           origin_center: true
         },
         //  文字与图形同时呈现 100ms，上图下文，两者与十字等距
@@ -622,8 +622,8 @@ var EW_exercise = {
           font: `${60}px '微软雅黑'`, //字体和颜色设置 文字视角：3.6° x 1.6°
           text_color: 'white',
           show_start_time: 1000, // ms after the start of the trial
-          //show_end_time: 2000,//出现1000ms
-          response_ends_trial: true,
+          show_end_time: 2500,//出现1500ms
+          response_ends_trial: false,
           origin_center: true
         },
         { 
@@ -634,8 +634,8 @@ var EW_exercise = {
           font: `${25}px '微软雅黑'`, 
           text_color: "#D3D3D3",
           show_start_time: 1000, // ms after the start of the trial
-          //show_end_time: 2000,//出现1000ms
-          response_ends_trial:true,
+          show_end_time: 2500,//出现1500ms
+          response_ends_trial:false,
           origin_center: true
           }
 
@@ -643,7 +643,7 @@ var EW_exercise = {
 
       choices: ['f', 'j'],
       response_start_time: 1000,//开始作答时间，第二个刺激开始计算
-      //trial_duration:3100,//结束时间，一共作答时间持续1200ms
+      trial_duration:3000,//结束时间，一共作答时间持续1200ms
 
       on_finish: function (data) {
         data.person = jsPsych.timelineVariable("person", true);
@@ -722,8 +722,8 @@ var EW_formal = {
           font: `${40}px '微软雅黑'`, //字体和颜色设置 文字视角：3.6° x 1.6°
           text_color:'#D3D3D3',
           show_start_time: 1000, // ms after the start of the trial
-          //show_end_time: 2000,//出现1000ms
-          response_ends_trial: true,
+          show_end_time: 2500,//出现1500ms
+          response_ends_trial: false,
           origin_center: true
         },
         //  文字与图形同时呈现 100ms，上图下文，两者与十字等距
@@ -735,8 +735,8 @@ var EW_formal = {
           font: `${60}px '微软雅黑'`, //字体和颜色设置 文字视角：3.6° x 1.6°
           text_color: 'white',
           show_start_time: 1000, // ms after the start of the trial
-          //show_end_time: 2000,//出现1000ms
-          response_ends_trial: true,
+          show_end_time: 2500,//出现1500ms
+          response_ends_trial: false,
           origin_center: true
         },
         { 
@@ -747,15 +747,15 @@ var EW_formal = {
           font: `${25}px '微软雅黑'`, 
           text_color:"#D3D3D3",
           show_start_time: 1000, // ms after the start of the trial
-          //show_end_time: 2000,//出现1000ms
-          response_ends_trial:true,
+          show_end_time: 2500,//出现1500ms
+          response_ends_trial:false,
           origin_center: true
       }
       ],
 
       choices: ['f', 'j'],
       response_start_time: 1000,//开始作答时间，第二个刺激开始计算
-      //trial_duration:4000,//结束时间，一共作答时间持续1200ms
+      trial_duration:3000,//结束时间，一共作答时间持续1200ms
 
       on_finish: function (data) {
         data.person = jsPsych.timelineVariable("person", true);
@@ -900,6 +900,7 @@ var Instruct_RJ = {
     <p style='color:yellow;font-size:25px; line-height:20px;'><b>如果先前出现过且能回忆起该词伴随的条件细节，则归为 “ 旧词 ”，按 “ 3 ”。 </b></p>`,
       `<p style='color:white;font-size:25px; line-height:20px;'>对于 “ 熟悉 ”和 “ 旧词 ”，您还需要进行二次判断：</p>
       <p style='color:white;font-size:25px; line-height:20px;'>判断该词是在 “ 朋友 ” 还是 “ 自己 ” 条件下出现过。</p><p style='color:lightgreen;font-size:25px; line-height:30px;'><b>如果是在 “ 自己 ” 条件下出现过，则按 ${key[0]} 键 ；<b></p><p style='color:yellow;font-size:25px; line-height:30px;'><b>如果是在 “ 朋友 ” 条件下出现过，则按 ${key[1]} 键。</b></p>
+      
     <p class='footer' style='font-size:25px; line-height:20px;'>如果对本实验还有不清楚之处，请立即向实验员咨询。</p><p style='font-size:25px; line-height:20px;'>如果您明白了规则：</p><p style='font-size:22px; line-height:20px;'>请按 继续 进入练习</p>`
     ];
   },
@@ -930,6 +931,7 @@ var Instruct_RJ2 = {
       `<p style='color:lightgreen;font-size:25px; line-height:20px;'><b>如果感觉该词先前出现过，但不能回忆起细节，对该词的印象模糊，则归为 “ 熟悉 ”，按 “ 2 ”；</b></p>
     <p style='color:yellow;font-size:25px; line-height:20px;'><b>如果先前出现过且能回忆起该词伴随的条件细节，则归为 “ 旧词 ”，按 “ 3 ”。 </b></p>`,
       `<p>对于“熟悉”和“旧词”，您还需要进行二次判断：判断该词是在 “ 朋友 ”还是 “ 自己 ”条件下出现过。</p><p style='color:lightgreen;font-size:25px; line-height:20px;'><b>如果是在 “ 自己 ” 条件下出现过，则按 ${key[0]} 键 ；</b></p><p style='color:yellow;font-size:25px; line-height:20px;'><b>如果是在 “ 朋友 ” 条件下出现过，则按 ${key[1]} 键。</b></p>
+      <p style='color:red;font-size:25px; line-height:20px;'><b>如果回忆的正确率等于或者低于随机水平，数据将被视为无效，请认真作答。</b></p>
     <p class='footer' style='font-size:25px; line-height:20px;'>如果对本实验还有不清楚之处，请立即向实验员咨询。</p><p style='font-size:25px; line-height:20px;'>如果您明白了规则：</p><p style='font-size:22px; line-height:20px;'>请按 继续 进入正式实验</p>`
     ];
   },

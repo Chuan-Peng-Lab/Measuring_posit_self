@@ -44,6 +44,7 @@ var lot = {
 
     false,
 
+
   ],
   scoring_index:1,
   instructions: `<p><div style='color:white; font-size: 25px'>以下条目是描述您在日常中的一些心理感受或做法，</div>

@@ -26,7 +26,7 @@ var SGPS = {
 
     "我经常在做几天前就该做的事情。",
 
-    "即使是必需品，我通常也会拖到最后一刻才买。",
+    "即使是必需品，我通常也会拖到最后一刻才买。"
 
   ],
   scale: [
@@ -67,8 +67,7 @@ var SGPS = {
       SGPS_3: responses.Q03, SGPS_4: responses.Q04,
       SGPS_5: responses.Q05,
       SGPS_6: responses.Q06, SGPS_7: responses.Q07,
-      SGPS_8: responses.Q08, SGPS_9: responses.Q09,
-      
+      SGPS_8: responses.Q08, SGPS_9: responses.Q09
     });
   }
 }

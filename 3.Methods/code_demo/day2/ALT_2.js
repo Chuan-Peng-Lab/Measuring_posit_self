@@ -85,7 +85,8 @@ var welcome = {
    <p><div style='color:white; font-size: 25px'>为充分保障您的权利，请确保您已经知晓并同意《参与实验同意书》以及《数据公开知情同意书》。</div></p>
    <p><div style='color:white; font-size: 25px'>如果您未见过上述内容，请咨询实验员。</div></p>
    <p style='color:white; font-size: 25px'>如果您选择继续实验，则表示您已经清楚两份知情同意书的内容并同意。</p>
-   <p><div style = "color: red;font-size:30px;">请确保您记得day0的实验编号，您将在本次实验输入该编号，若您忘记，请咨询实验员后作答。</div></p>
+   <p><div style = "color: pink;font-size:30px;">请确保您记得day0的实验编号，您将在本次实验输入该编号，若您忘记，请咨询实验员后作答。</div></p>
+   <p><div style = "color:lightblue;font-size:25px;">请您尽可能认真地作答，我们将依据您在各问卷和按键任务中的作答质量发放报酬。</div></p>
    <p> <div style = "color: green"><按空格键至下页></div> </p>
    `,
   choices: [' '],
@@ -123,7 +124,7 @@ var information = {
     dataAsArray: true,
     on_finish: function (data) {
       var response = data.response;
-      var subj_idx=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.userId;
+  var subj_idx=$.ajax("https://www.naodao.com/api/register-server/user/getInfo", {async: false}).responseJSON.data.userId;
       var sex = "";
       var friend_name = "";
       var ParticipantID = "";

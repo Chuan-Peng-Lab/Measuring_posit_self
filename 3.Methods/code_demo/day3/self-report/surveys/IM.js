@@ -4,10 +4,7 @@
 * IM的α系数为0.75-0.86
 *
 **/
-
-var IM = {
-  type: jsPsychSurveyTemplate,
-  items: [
+IM_items =  [
 
     "如果迫不得已，我有时说些谎话。",
     "我从不掩盖自己的错误。",
@@ -29,8 +26,11 @@ var IM = {
     "我从来没有损坏了图书馆的书或商店的东西而又不说的情况。",
     "我有些很不好的习惯。",
     "我不对别人的事情说长道短。"
+  ];
 
-  ],
+var IM = {
+  type: jsPsychSurveyTemplate,
+  items: IM_items,
   scale: [
     "1",
     "2",
@@ -61,7 +61,6 @@ var IM = {
     false,//18
     true,//19
     false,  //20
-
   ],
   scoring_index: 1,
   instructions: `<p style='color:white; font-size: 25px;'>以下条目是描述您在日常中的一些心理感受或做法，</p>
@@ -90,6 +89,7 @@ var IM = {
       IM_16: responses.Q16, IM_17: responses.Q17,
       IM_18: responses.Q18, IM_19: responses.Q19,
       IM_20: responses.Q20,
+     
     });
   }
 }
