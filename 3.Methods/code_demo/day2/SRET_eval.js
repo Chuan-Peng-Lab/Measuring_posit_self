@@ -900,7 +900,7 @@ var Instruct_RJ = {
     <p style='color:yellow;font-size:25px; line-height:20px;'><b>如果先前出现过且能回忆起该词伴随的条件细节，则归为 “ 旧词 ”，按 “ 3 ”。 </b></p>`,
       `<p style='color:white;font-size:25px; line-height:20px;'>对于 “ 熟悉 ”和 “ 旧词 ”，您还需要进行二次判断：</p>
       <p style='color:white;font-size:25px; line-height:20px;'>判断该词是在 “ 朋友 ” 还是 “ 自己 ” 条件下出现过。</p><p style='color:lightgreen;font-size:25px; line-height:30px;'><b>如果是在 “ 自己 ” 条件下出现过，则按 ${key[0]} 键 ；<b></p><p style='color:yellow;font-size:25px; line-height:30px;'><b>如果是在 “ 朋友 ” 条件下出现过，则按 ${key[1]} 键。</b></p>
-      
+      <p style='color:red;font-size:25px; line-height:20px;'><b>如果回忆的正确率等于或者低于随机水平，数据将被视为无效，请认真作答。</b></p>
     <p class='footer' style='font-size:25px; line-height:20px;'>如果对本实验还有不清楚之处，请立即向实验员咨询。</p><p style='font-size:25px; line-height:20px;'>如果您明白了规则：</p><p style='font-size:22px; line-height:20px;'>请按 继续 进入练习</p>`
     ];
   },

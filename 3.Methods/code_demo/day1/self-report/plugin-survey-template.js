@@ -256,7 +256,7 @@ html += `<div class='survey-template-prompt'>${trial.items[item_order[i]]}</div>
 for (var j = 0; j < values.length; j++) {
   html += '<div class="survey-template-response">';
   html += '<div class="pseudo-input"></div>';
-  const requiredAttribute = trial.required ? 'required' : ''; // Highlighted: Add required attribute based on the parameter
+  const requiredAttribute = trial.required =="true"? 'required' : ''; // Highlighted: Add required attribute based on the parameter
   html += `<input type="radio" name="Q${qid}" value="${values[j]}" id=${j} tabindex="-1" ${requiredAttribute}>`;
   html += "</div>";
 }

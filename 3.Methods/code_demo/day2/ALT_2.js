@@ -137,7 +137,7 @@ var information = {
           ParticipantID = item.value;
         }
       });
-      info["subj_idx"] = subj_idx;
+     info["subj_idx"] = subj_idx;
       info["friend_name"] = friend_name;
       info["ParticipantID"] = ParticipantID;
       info["Sex"] = sex == 0 ? "Male" : "Female";//将性别转为female，male

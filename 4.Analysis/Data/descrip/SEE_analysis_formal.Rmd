@@ -13,7 +13,7 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
   install.packages("pacman") }   # 如果未安装，则安装包
 #install.packages("cowplot")
 # 加载所需要的R包
-pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor")
+pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles"," xaringan","igraph")
 source("R_rainclouds.R")
 ```
 
@@ -32,11 +32,9 @@ The preview shows you a rendered HTML copy of the contents of the editor. Conseq
       var_name <- tools::file_path_sans_ext(basename(csv_file))
       assign(var_name, read.csv(csv_file, fileEncoding = 'UTF-8', header = TRUE))
     }
-  
-
 ```
-
-
+# ALT1 
+## ALT1 每个被试的反应时和正确率的记录
 ```{r 按匹配与不匹配绘制acc和RT}
 ALT1_data <- ALT1_all%>%mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
@@ -69,6 +67,7 @@ ALT1_data2 <- ALT1_data%>%
 )
 print(ALT1_data2)
 ```
+## ALT1各图形*匹配/不匹配的反应时
 ```{r bar_plot of rt in ALT1}
 ALT1_plot_rt <- ALT1_data2%>%
   ggplot(., aes(x = condition, y = mean_rt, fill = conditionType)) +
@@ -103,6 +102,9 @@ ALT1_plot_rt <- ALT1_data2%>%
   )  
 print(ALT1_plot_rt)
 ```
+
+
+## ALT1各图形*匹配/不匹配的正确率
 ```{r bar_plot of acc in ALT1}
 ALT1_plot_ACC <- ALT1_data2%>%
   ggplot(., aes(x = condition, y = mean_acc, fill = conditionType)) +
@@ -137,7 +139,7 @@ ALT1_plot_ACC <- ALT1_data2%>%
   )  
 print(ALT1_plot_ACC)
 ```
-
+## ALT1各图形*匹配/不匹配的反应时与正确率的雨云图
 ```{r 按匹配与不匹配绘制acc和RT}
 acc_and_rt_plots <- function(data,output_file) {
   print(data)
@@ -177,7 +179,7 @@ acc_and_rt_plots <- function(data,output_file) {
 ALT1_plot <- acc_and_rt_plots(ALT1_data,"../../Data/all/ALT1_plot.png")
 
 ```
-
+## ALT1各图形*匹配/不匹配的正确率的方差分析
 ```{r ALT1_ACC_ANOVA}
   ALT1_ACC <-ALT1_data%>% 
   #ungroup()%>%
@@ -187,11 +189,10 @@ ALT1_plot <- acc_and_rt_plots(ALT1_data,"../../Data/all/ALT1_plot.png")
     EMMEANS("conditionType", by = "condition") %>%
     EMMEANS("condition", by = "conditionType")
 
-
   print(ALT1_ACC)
 ```
 
-
+## ALT1各图形*匹配/不匹配的反应时的方差分析
 ```{r ALT1_RT_ANOVA}
   ALT1_RT <-ALT1_data%>% 
   #ungroup()%>%
@@ -204,11 +205,6 @@ ALT1_plot <- acc_and_rt_plots(ALT1_data,"../../Data/all/ALT1_plot.png")
 
   print(ALT1_RT)
 ```
-
-```{r}
-
-```
-
 
 
 
@@ -379,7 +375,7 @@ IAT_RT_plot(IAT_data1,IAT_data)
 ```
 
 
-
+#IAT的D值计算
 
 ```{r IAT的D值计算}
 IAT_data_D<-IAT_data1%>%
@@ -469,11 +465,9 @@ IAT_D_plot <- function(data, D) {
 IAT_D_plot(IAT_data, IAT_data_D)
 
 ```
-```{r}
 
-```
-
-# SRET的评估阶段按键“yes”，RT
+# SRET
+## SRET的评估阶段按键“yes”，RT
 ```{r SRET EW}
 SRET_EW<-function(data){
   
@@ -483,18 +477,32 @@ SRET_EW<-data %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
   mutate(correct= as.numeric(correct))%>% ##重编码correct
   filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
-   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) %>%#去掉干扰词
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) 
+                                                                                                                                                SRET_EW_rt<-SRET_EW%>%                                                                                                                           select(-ID)%>%                                                                                                                                 group_by(person,valence,domain)%>%
+     summarize(
+             avg_rt_mean= mean(rt, na.rm = TRUE),
+            avg_sd_rt=sd(rt, na.rm = TRUE),
+            all_max_rt = max(rt, na.rm = TRUE),
+            all_min_rt = min(rt, na.rm = TRUE),)                                                                                                         
+    print(SRET_EW_rt)                                                                                                                                             
+SRET_EW<-SRET_EW%>%#去掉干扰词
   group_by(ID,person,valence,domain)%>%
   summarize(N_Yes = sum(responses == "yes"),
             N_No = sum(responses == "no"),
             N=n(),
             pro_yes=N_Yes/N,
             avg_rt = mean(rt, na.rm = TRUE),
-            sd_rt=sd(rt, na.rm = TRUE)
+            sd_rt=sd(rt, na.rm = TRUE),
            )
 print(SRET_EW)
 a<-describe(SRET_EW)
 print(a)
+
+SRET_EW_subj<- SRET_EW %>%
+  left_join(SRET_EW_rt, by = c("person", "valence", "domain")) %>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt)
+print(SRET_EW_subj)
+assign("SRET_EW_subj", SRET_EW_subj, envir = .GlobalEnv)
 
  # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，yes比例
 SRET_EW_ANOVA<-SRET_EW%>%
@@ -591,11 +599,14 @@ SRET_math<-data %>%
   mutate(correct= as.numeric(correct))%>% ##重编码correct
   filter(screen_id%in%c("SRET_math_calculate") )%>% #选择正式实验的数据
   group_by(ID)%>%
-  summarize(n_correct = sum(correct == "1"),
+  summarize(total_rt = sum(rt, na.rm = TRUE),
+    n_correct = sum(correct == "1"),
             N=n(),
             mean_rt=mean(rt, na.rm = TRUE),
 acc=n_correct/N  )
 print(SRET_math)
+
+assign("SRET_math", SRET_math, envir = .GlobalEnv)
 
 rt_SRET_math <- ggplot(SRET_math, aes(x = mean_rt)) +
   geom_density(fill = "skyblue", alpha = 0.7) +
@@ -616,7 +627,7 @@ acc_SRET_math <-ggplot(SRET_math, aes(x = acc)) +
 }
 SRET_math(SRET_all)
 ```
-
+#SRET第一步新旧词判断
 ```{r SRET RJ_formal1}
 SRET_RJ <- function(data) {
   SRET_RJ <- data %>%
@@ -628,10 +639,12 @@ SRET_RJ <- function(data) {
     mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
                           (identity == "old" & (responses == "new" )) ~ "miss",
                           (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
-                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
-    group_by(ID,domain, valence ) %>%#, valence
+                          (identity == "new" & (responses == "new")) ~ "cr"),) 
+  
+###########计算每个被试的再认正确率#####
+ SRET_RJ <- SRET_RJ %>%
+    group_by(ID,domain,valence) %>%#, valence
     summarize(
-     
       H = sum(sdt == "hit"),
       M = sum(sdt == "miss"),
       FA = sum(sdt == "fa"),
@@ -639,12 +652,10 @@ SRET_RJ <- function(data) {
       new= sum(responses %in% c("new")),#按键为新词
       old=sum(responses %in% c("old")),
       familiar=sum(responses %in% c("familiar")),
-    
      self_H = sum(sdt == "hit"& person=="self")/10,
      friend_H = sum(sdt == "hit"& person=="friend")/10,
      P_H = H/(H+M),
      P_FA = FA/(FA+CR),
-   
       recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
       avg_rt = mean(rt, na.rm = TRUE),
       sd_rt = sd(rt, na.rm = TRUE),
@@ -658,10 +669,66 @@ SRET_RJ <- function(data) {
       Z_P_H = qnorm(P_H),
       Z_P_FA = qnorm(P_FA),
       d_prime = Z_P_H - Z_P_FA) 
-  print(SRET_RJ)
-  a<-describe(SRET_RJ)
-print(a)
-  
+ 
+   print(SRET_RJ)
+   a<-describe(SRET_RJ)
+   print(a)
+   
+   assign("SRET_RJ", SRET_RJ, envir = .GlobalEnv)
+   
+###### 计算总体的统计值####################
+ SRET_RJ_rt <- data %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   select(-ID)%>%
+    group_by(domain, valence ) %>%#, valence
+    summarize(
+      all_H = sum(sdt == "hit"),
+      all_M = sum(sdt == "miss"),
+      all_FA = sum(sdt == "fa"),
+      all_CR = sum(sdt == "cr"),
+      all_new= sum(responses %in% c("new")),#按键为新词
+      all_old=sum(responses %in% c("old")),
+      all_familiar=sum(responses %in% c("familiar")),
+    
+     all_self_H = sum(sdt == "hit"& person=="self")/10,
+     all_friend_H = sum(sdt == "hit"& person=="friend")/10,
+     all_P_H = all_H/(all_H+all_M),
+     all_P_FA = all_FA/(all_FA+all_CR),
+   
+all_recognition = (all_H + all_CR)/(all_H + all_CR + all_M + all_FA),## valence * domain,4个条件 *（20 new+ 20 old）,20 old = 10 self +10 friend
+      avg_rt_mean = mean(rt, na.rm = TRUE),
+      avg_sd_rt = sd(rt, na.rm = TRUE),
+      all_max_rt = max(rt, na.rm = TRUE),
+    all_min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+      all_P_H = ifelse(all_P_H == 1, 1 - 1 / (2 * (all_H + all_M)),all_P_H),# if hit rate is 1, standardize it
+      all_P_FA = ifelse(all_P_FA == 0, 1 / (2 * (all_H + all_M)), all_P_FA), # if FA rate is 0, standardize it
+      all_Correct_recognition = all_P_H - all_P_FA,
+      all_Z_P_H = qnorm(all_P_H),
+      all_Z_P_FA = qnorm(all_P_FA),
+      all_d_prime = all_Z_P_H - all_Z_P_FA) 
+print(SRET_RJ_rt)
+ ###################排除被试，反应时在3个标准差以外，再认正确率小于等于0.5，矫正的正确率是负######################## 
+SRET_RJ_subj<- SRET_RJ%>%
+  left_join(SRET_RJ_rt, by = c("valence", "domain"))%>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt|recognition<=0.5|Correct_recognition<0|d_prime<0) 
+
+print(SRET_RJ_subj)
+assign("SRET_RJ_subj", SRET_RJ_subj, envir = .GlobalEnv)
+
+SRET_RJ_ID<-unique(SRET_RJ_subj$ID)
+print(SRET_RJ_ID)
+###########################################################
+
    SRET_RJ_plot <- SRET_RJ %>% 
     ggplot(.,aes(x=valence,y=avg_rt, fill =valence, colour =valence))+
   geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
@@ -726,6 +793,7 @@ ylab('d_prime')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FAL
 SRET_RJ(SRET_all)
 ```
 
+#SRET第二步词汇来源判断
 ```{r SRET RJ_formal2_source_memory}
 SRET_Source_M<-function(data){
 SRET_RJ_2 <- data %>%
@@ -770,20 +838,68 @@ SRET_RJ_2<-SRET_RJ_2%>%
   )
 print(SRET_RJ_2)
 
+########################################
 # 使用group_by和summarize检查每个ID的行数
 id_counts <- SRET_RJ_2 %>%
   ungroup()%>%
   group_by(ID) %>%
   summarize(row_count = n())
 
-# 输出结果
-print(id_counts)
-
 # 检查是否每个ID都有4行数据
 all_ids_have_four_rows <- all(id_counts$row_count == 4)
+select_subj<- id_counts %>%
+  filter(row_count != 4) %>%
+  pull(ID)
+print(select_subj)
+assign("select_subj", select_subj, envir = .GlobalEnv)
 
-# 输出结果
-print(all_ids_have_four_rows)
+SRET_RJ_2rt<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )%>%
+  group_by(valence,domain) %>%
+  summarize(
+    all_n=n(), #所有按键反应了的试次
+   all_count_self = sum(responses == "self"),#所有反应是“self”的试次
+   all_count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   all_self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   all_friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+    all_self_M = 10-all_self_H,# 信号为self，没有被反应为“self
+   all_friend_M = 10-all_friend_H, # 信号为friend，没有被反应为“friend
+      all_FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      all_CR = 20-all_FA,#总共20新词，去掉被判断为旧词（信号），正确拒绝旧词
+      all_self_recognition = all_self_H /all_count_self,
+   # number of correct source attributions for self/ number of hits for self
+   all_friend_recognition = all_friend_H/ all_count_friend,
+      avg_rt_mean = mean(rt, na.rm = TRUE),
+      avg_sd_rt = sd(rt, na.rm = TRUE),
+   all_max_rt = max(rt, na.rm = TRUE),
+    all_min_rt = min(rt, na.rm = TRUE),
+  )%>%
+  pivot_longer(cols = c(all_self_recognition, all_friend_recognition),
+               names_to = "person",
+               values_to = "all_recognition")%>%
+  mutate(person = case_when(
+    person == "all_self_recognition" ~ "self",
+    person == "all_friend_recognition" ~ "friend",
+  ))            
+print(SRET_RJ_2rt)
+
+#########################################
+
 
 SRET_RJ_2<-SRET_RJ_2%>%
   pivot_longer(cols = c(self_recognition, friend_recognition),
@@ -792,9 +908,17 @@ SRET_RJ_2<-SRET_RJ_2%>%
   mutate(person = case_when(
     person == "self_recognition" ~ "self",
     person == "friend_recognition" ~ "friend",
-  ))
+  ))                   
 print(SRET_RJ_2)
 
+SRET_RJ_2_subj<- SRET_RJ_2%>%
+  left_join(SRET_RJ_2rt, by = c("person","valence", "domain"))%>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt|recognition<0.1) %>%
+  select(ID,person,valence,domain,avg_rt,avg_rt_mean,recognition,all_recognition,)
+print(SRET_RJ_2_subj)
+SRET_RJ_2_ID<-unique(SRET_RJ_2_subj$ID)
+print(SRET_RJ_2_ID)
+assign("SRET_RJ_2_subj", SRET_RJ_2_subj, envir = .GlobalEnv)
 
 
  SRET_RJ2_plot <- SRET_RJ_2 %>% 
@@ -830,7 +954,100 @@ ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
 }
 SRET_Source_M(SRET_all)
 ```
+```{r}
+check_SRET<-function(data){
+  SRET_EW_Time<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) %>%
+   group_by(ID) %>%
+  summarize(EW_rt = sum(rt, na.rm = TRUE),
+            EW_rt=EW_rt/60000)
+print(SRET_EW_Time)
 
+ SRET_RJ_Time <- data %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   group_by(ID) %>%
+  summarize(RJ_rt = sum(rt, na.rm = TRUE),
+            RJ_rt=RJ_rt/60000)
+print(SRET_RJ_Time)
+
+
+SRET_RJ_2_Time <- data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )%>%
+   group_by(ID) %>%
+  summarize(RJ2_rt = sum(rt, na.rm = TRUE),
+            RJ2_rt=RJ2_rt/60000)
+print(SRET_RJ_2_Time)
+SRET_Time <- left_join(SRET_EW_Time, SRET_RJ_Time, by = "ID")%>%
+  left_join(., SRET_RJ_2_Time, by = "ID")
+print(SRET_Time)
+assign("SRET_Time", SRET_Time, envir = .GlobalEnv)
+SRET_Time_avg<-SRET_Time%>%
+  select(-ID)%>%
+  summarise(avg_EW_rt = mean(EW_rt, na.rm = TRUE),
+    avg_RJ_rt = mean(RJ_rt, na.rm = TRUE),
+    avg_RJ2_rt = mean(RJ2_rt, na.rm = TRUE))
+    print(SRET_Time_avg)
+
+}
+
+check_SRET(SRET_all)
+
+```
+
+```{r}
+
+# 将三个被试 ID 合并为一个数据框
+all_IDs_df <- data.frame(ID = unique(c(SRET_EW_subj$ID, SRET_RJ_subj$ID, SRET_RJ_2_subj$ID)))
+SRET_Time<-SRET_Time%>%
+   left_join(., SRET_math, by = "ID")%>%
+  filter(ID %in% all_IDs_df$ID)
+# 输出结果
+print(SRET_Time)
+```
+```{r}
+SRET_RJ_avg<-SRET_RJ%>%
+   filter(!ID %in% all_IDs_df$ID)%>%
+  select(-ID)%>%
+  group_by(domain,valence)%>%
+  summary(avg_recognition=mean(recognition),
+          avg_Correct_recognition=mean(Correct_recognition),
+          avg_d_prime=mean(d_prime))
+print(SRET_RJ_avg)
+```
+
+```{r}
+
+```
+
+
+#被试的人口学特质
 ```{r}
 # 选择ID列以及age到Fri_ses2之间的所有列
 day0_democr <- day0_all %>%
@@ -1131,7 +1348,8 @@ print(reliabilities)
 
 
 day0t3_q_reliability<-bind_rows(day0t2_1, day3_q_2)
-
+```
+```{r}
 
 # 假设你的数据框名为day0t3_q_reliability
 sde_retest_reliability <- day0t3_q_reliability %>%
