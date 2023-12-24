@@ -42,7 +42,7 @@ subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.na
 
 
 for (subfolder in subfolders) {
-  phase_folder <- file.path(subfolder, "phase_004")# 循环读取每个子文件夹下的 phase_0xx 文件夹内的 CSV 文件
+  phase_folder <- file.path(subfolder, "phase_006")# 循环读取每个子文件夹下的 phase_0xx 文件夹内的 CSV 文件
 
   # 检查 phase_0xx 文件夹是否存在
   if (dir.exists(phase_folder)) {
@@ -62,15 +62,16 @@ for (subfolder in subfolders) {
 
 # 选出完整参与了day0 ~ day3 实验的被试
 ```{r select subjects join all experiments}
-subj_phase_004 <- unique(day3_q_phase_004$ID)
-print(subj_phase_004)
+subj_phase_006 <- unique(day3_q_phase_006$ID)
+
+print(subj_phase_006)
 ```
 ```{r 将clean data内的数据根据day3的最终被试选取这部分数据存入select}
 
 select_files <- function(phase) {
   main_folder <- "../../Data/clean/"
-  day3_q <- read.csv( file=paste0("../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
-
+ # day3_q <- read.csv( file=paste0("../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
+day3_q <- read.csv( file=paste0("../../Data/clean/clean_day2/",phase,"/day2_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
   # 获取所有子文件夹的路径
   subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.names = TRUE)
   select_subj <- unique(day3_q$ID)
@@ -101,7 +102,7 @@ select_files <- function(phase) {
   }
 }
 
-select_files("phase_005")
+select_files("phase_007")
 ```
 
 ```{r 合并select内的各问卷和任务的目前所有阶段的数据储存在all内}
@@ -143,7 +144,14 @@ merge_files("SRET")
 ```
 
 ```{r}
-
+all_folder<- "../../Data/all/"
+csv_files <- list.files(path = all_folder, pattern = "\\.csv$", full.names = TRUE)
+    print(csv_files)
+    # 循环读取每个 CSV 文件
+    for (csv_file in csv_files) {
+      var_name <- tools::file_path_sans_ext(basename(csv_file))
+      assign(var_name, read.csv(csv_file, fileEncoding = 'UTF-8', header = TRUE))
+    }
 ```
 ######*前面储存的是clean data未筛选day3的被试所有数据，所以以下步骤都要先选出最终完整参与全程的被试*
 
@@ -157,8 +165,8 @@ ALT2
 3.within MANOVA(within.3, dvs="A1B1C1:A2B2C2", dvs.pattern="A(.)B(.)C(.)",
        within=c("A", "B", "C"))
 ```{r 按匹配与不匹配绘制acc和RT}
-ALT1_plot_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
- # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+
+ ALT1_all_P<-ALT1_all%>%
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
@@ -175,28 +183,11 @@ ALT1_plot_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
     correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
     acc = correct_count /all_count #计算正确率= 正确/总数
   )
+print(ALT1_all)
+```
 
-```
-```{r}
-ALT1_p2_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
- # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
-  mutate(ID = as.character(ID)) %>%
-   mutate(ParticipantID = as.character(ParticipantID)) %>%
-  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
-  mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
-  group_by(screen_id) %>%  #按被试与条件分组
-  summarise(
-    avg_rt = mean(rt, na.rm = TRUE),
-    max_rt = max(rt, na.rm = TRUE),
-    min_rt = min(rt, na.rm = TRUE),
-    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
-    all_count=n(),#每个条件的总trial数量
-    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
-    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
-    acc = correct_count /all_count #计算正确率= 正确/总数
-  )
-print(ALT1_p2_phase_004)
-```
+
+
 
 
 # 查看ALT1的匹配与不匹配的正确率和反应时的分布
@@ -245,15 +236,14 @@ ylab('RT')+xlab('conditionType')+coord_flip()+theme_cowplot()+guides(fill = FALS
 }
 
 # 使用函数并传递ALT1_plot_phase_003作为参数
-ALT1_plot <- acc_and_rt_plots(ALT1_plot_phase_004)
+ALT1_plot <- acc_and_rt_plots( ALT1_all_P)
 
-# 显示结果
-print(ALT1_plot)
 ```
 
 ```{r 按condition图形绘制acc和RT}
 ALT1_plot2_phase_004 <- subset(ALT1_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+   ALT1_all_P2<-ALT1_all%>%
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
@@ -305,10 +295,9 @@ ylab('RT')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, c
 }
 
 # 使用函数并传递ALT1_plot_phase_003作为参数
-ALT1_plot2 <- acc_and_rt_plots2(ALT1_plot2_phase_004)
+ALT1_plot2 <- acc_and_rt_plots2(ALT1_all_P2)
 
-# 显示拼接后的图
-print(ALT1_plot2)
+
 ```
 
 # 查看ALT2的匹配与不匹配的正确率和反应时的分布
@@ -316,6 +305,7 @@ print(ALT1_plot2)
 ```{r 先准备ALT2数据acc和RT}
 ALT2_plot_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
+  ALT2_all_P<-ALT2_all%>%
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
@@ -332,12 +322,12 @@ ALT2_plot_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
     acc = correct_count /all_count #计算正确率= 正确/总数
   )
 
-ALT2_p_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
+ALT2_all_P2<-ALT2_all%>%
  # filter(., ID != "phase_003_subj_14")%>%#不需要每次有这行代码，本次去除是因为被试重复作答
   mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
-  group_by(screen_id,identity,person,valence) %>%  #按被试与条件分组
+  group_by(ID,domain,identity,person,valence) %>%  #按被试与条件分组
   summarise(
     avg_rt = mean(rt, na.rm = TRUE),
     max_rt = max(rt, na.rm = TRUE),
@@ -348,7 +338,7 @@ ALT2_p_phase_004 <- subset(ALT2_phase_004, ID %in% subj_phase_004)%>%
     correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
     acc = correct_count /all_count #计算正确率= 正确/总数
   )
-print(ALT2_p_phase_004)
+print(ALT2_all_P2)
 ```
 # ALT2按match/nonmatch
 ```{r ALT2_identity}
@@ -383,7 +373,7 @@ ylab('Acc')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, 
   
   return(final_plot)
 }
-ALT2_acc_plot(ALT2_plot_phase_004)
+ALT2_acc_plot(ALT2_all_P)
 ```
 ```{r ALT2_valence}
 ALT2_acc_plot2 <- function(data) {
@@ -416,7 +406,7 @@ ylab('Acc')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, 
   
   return(final_plot)
 }
-ALT2_acc_plot2(ALT2_plot_phase_004)
+ALT2_acc_plot2(ALT2_all_P2)
 ```
 
 ```{r ALT2_identity}

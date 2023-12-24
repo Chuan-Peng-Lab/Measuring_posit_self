@@ -73,7 +73,7 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
-subj_phase_day1("phase_006","10","11.24")
+subj_phase_day1("phase_007","10","12.19")
 
 ```
 
@@ -83,7 +83,7 @@ subj_phase_day1("phase_006","10","11.24")
 ```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_006/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
+list.files("../../../Data/raw/day1/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
 
 #汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -109,7 +109,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
 
 
 # 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_006", 1,18)
+combine_csv_files("phase_007", 1,17)
 
 
 ```
@@ -207,12 +207,17 @@ day1_all <- day10 %>%
   write.csv(ALT1, output_path)
    output_path <- paste0("../../../Data/clean/clean_day1/",phase,"/day1_q_",phase, ".csv")
     write.csv(day1_all, output_path)
+    
+    trap1<-day10%>%
+ filter(grepl("请", trap1_item))%>%
+ select(c("ID","ParticipantID","trap1","trap1_item","correct"))
+assign("trap1", trap1, envir = .GlobalEnv)
 }
 
 ## 运行范例，[标记不同批次]
 
 
-day1_process("phase_006")
+day1_process("phase_007")
 ```
 
 
@@ -295,12 +300,21 @@ select_day1 <- subj_day1 %>%
 # 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
 write.xlsx(select_day1, file = paste0("../../../Data/raw/day1/", phase, "/select_day1_", phase, ".xlsx"))
 
+invalid_day1 <- subj_day1 %>%
+  filter(Eligible == "no")
+write.xlsx(invalid_day1, file = paste0("../../../Data/raw/day1/", phase, "/invalid_day1_", phase, ".xlsx"))
+
+
+
 }
 
 ##仅需修改此代码；分别为“批次号”
 
-select_day1("phase_006")
+select_day1("phase_007")
 ```
+
+
+
 
 # 实验设计的随机性检查
  1.查看是否被试随机被分配到先完成ALT or IAT,trial_index越小，代表先完成

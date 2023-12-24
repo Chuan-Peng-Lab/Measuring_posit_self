@@ -75,7 +75,7 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数
-subj_phase_day2("phase_006","10","12.12")
+subj_phase_day2("phase_007","10","12.20")
 
 ```
 
@@ -84,7 +84,7 @@ subj_phase_day2("phase_006","10","12.12")
 ```{r check environment}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day2/phase_006/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
+list.files("../../../Data/raw/day2/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -110,7 +110,7 @@ combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入�
 
 
 # 使用示例，每次运行仅需修改此3个参数，[批次号，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_006",1,23)
+combine_csv_files("phase_007",1,15)
 
 ```
 
@@ -217,7 +217,7 @@ select(-c("subj_idx"))
   write.csv(day2_q, output_path)
   
  trap2<-day20%>%
- filter(grepl("我", trap2_item) | trial_index == 0)%>%
+ filter(grepl("我", trap2_item) )%>%
  select(c("ID","ParticipantID","trap2","trap2_item"))%>%
   mutate(correct = ifelse(trap2 %in% c(1, 2, 3), 1, 0))#选1-3都是正确的
 assign("trap2", trap2, envir = .GlobalEnv)
@@ -225,9 +225,9 @@ assign("trap2", trap2, envir = .GlobalEnv)
   
 }
 
-day2_process("phase_006")
+day2_process("phase_007")
 
-  day20 <- read.csv("../../../Data/raw/day2/phase_006/day2_phase_006.csv", fileEncoding = "UTF-8")
+  
 
  
 ```
@@ -409,7 +409,7 @@ print(ex_subj)
                           (identity == "old" & (responses == "new" )) ~ "miss",
                           (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
                           (identity == "new" & (responses == "new")) ~ "cr"),) %>%
-    group_by(ID,domain, valence ) %>%#, valence
+    group_by(ID, valence,domain) %>%#, 
     summarize(
       H = sum(sdt == "hit"),
       M = sum(sdt == "miss"),
@@ -450,7 +450,7 @@ subj_day2 <- subj_day2 %>%
   mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
 
 # 将结果写入 Excel 文件，导出day1所有被试数据
-write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+#write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
 
 # 从 subj_day2 中筛选 Eligible 列的值为 "yes" 的行，导出符合要求的被试数据
 select_day2 <- subj_day2 %>%
@@ -458,17 +458,77 @@ select_day2 <- subj_day2 %>%
 
 invalid_day2 <- subj_day2 %>%
   filter(Eligible == "no")
-write.xlsx(invalid_day2, file = paste0("../../../Data/raw/day2/", phase, "/invalid_day2_", phase, ".xlsx"))
+#write.xlsx(invalid_day2, file = paste0("../../../Data/raw/day2/", phase, "/invalid_day2_", phase, ".xlsx"))
 
 # 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
-write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
+#write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
+
+
+
+
+
+SRET_RJ_2 <- SRET %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )
+print(SRET_RJ_2)
+
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  group_by(ID,valence,domain) %>%
+  summarize(
+    n=n(), #所有按键反应了的试次
+   count_self = sum(responses == "self"),#所有反应是“self”的试次
+   count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+    self_M = 10-self_H,# 信号为self，没有被反应为“self
+   friend_M = 10-friend_H, # 信号为friend，没有被反应为“friend
+      FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      CR = 20-FA,#总共20新词，去掉被判断为旧词（信号），正确拒绝旧词
+      self_recognition = self_H /count_self,
+   # number of correct source attributions for self/ number of hits for self
+   friend_recognition = friend_H/ count_friend,
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+   max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+  )
+print(SRET_RJ_2)
+
+########################################
+# 使用group_by和summarize检查每个ID的行数
+id_counts <- SRET_RJ_2 %>%
+  ungroup()%>%
+  group_by(ID) %>%
+  summarize(row_count = n())
+
+# 检查是否每个ID都有4行数据
+all_ids_have_four_rows <- all(id_counts$row_count == 4)
+select_subj<- id_counts %>%
+  filter(row_count != 4) %>%
+  pull(ID)
+print(select_subj)
 
 }
 
 
 ##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
 
-select_day2("phase_006")
+select_day2("phase_007")
 ```
 
 ```{r}

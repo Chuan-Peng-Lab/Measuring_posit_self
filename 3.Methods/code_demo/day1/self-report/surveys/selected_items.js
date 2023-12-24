@@ -1,5 +1,5 @@
 var selected_items = [
-    { selection: "请跳过本题，无需按键。", correct_answer: "null" },
+    { selection: "请跳过本题，无需按键。", correct_answer: "NA" },
     { selection: "为了验证浏览器是否正常工作，请您选择量表中的数字2。", correct_answer: "2" },
     {selection: "为了验证浏览器是否正常工作，请您在以下量表中选择“不符合”对应的数字。", correct_answer: "1" },
     {selection: "为了验证浏览器是否正常工作，请您在以下量表中选择“有点符合”对应的数字。", correct_answer: "4" },

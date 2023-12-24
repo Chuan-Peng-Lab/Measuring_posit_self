@@ -56,13 +56,13 @@ write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_
 }
 # 调用函数并传入相应的 phase 参数,“批次号”，“是否符合要求”，“报酬金额”，“发放报酬的日期”
 
-subj_phase_day3 ("phase_005","yes","109","12.9")
+subj_phase_day3 ("phase_006","yes","109","12.20")
 ```
 
 ### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
 ```{r check environment}
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day3/phase_005/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day3/phase_006/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) 
@@ -93,7 +93,7 @@ merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修
 
 
 # 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_005",1,18)#修改phase_002
+combine_csv_files("phase_006",1,15)#修改phase_002
 
 
 ```
@@ -137,16 +137,21 @@ day3_q <- day3 %>%
 
   output_path <- paste0("../../../Data/clean/clean_day3/",phase,"/day3_q_",phase,".csv")
   write.csv(day3_q, output_path)
+  
+  trap3<-day3%>%
+ filter(grepl("在", trap3_item) )%>%
+ select(c("ID","ParticipantID","trap3","trap3_item"))# 1 代表“完全不同意”，2 代表“不同意”，3 代表“不确定”，4 代表“同意”，5 代表“完全同意”。
+assign("trap3", trap3, envir = .GlobalEnv)
 
 }
 
-day3_process("phase_005")#修改phase_002
+day3_process("phase_006")#修改phase_002
 
 ```
 
 
 ```{r}
-day3_q <-read.csv("../../../Data/clean/clean_day3/phase_005/day3_q_phase_005.csv")#修改phase_002
+day3_q <-read.csv("../../../Data/clean/clean_day3/phase_006/day3_q_phase_006.csv")#修改phase_002
 day3_q_1  <- day3_q  %>%
     rename(ability_rating = domain_rating_1, 
            physical_attraction = domain_rating_2,
@@ -190,8 +195,8 @@ day3_q_1  <- day3_q  %>%
 
 # 选出完整参与了day0 ~ day3 实验的被试
 ```{r select subjects join all experiments}
-subj_phase_005 <- unique(day3_q$ID)
-print(subj_phase_005)
+subj_phase_006 <- unique(day3_q$ID)
+print(subj_phase_006)
 ```
 
 ```{r}
@@ -199,9 +204,9 @@ plot_bar(day3_q )
 ```
 
 ```{r}
-day2_q <-read.csv("../../../Data/clean/clean_day2/phase_005/day2_q_phase_005.csv")#修改phase_002
-day0_q <-read.csv("../../../Data/clean/clean_day0/phase_005/day0_all_phase_005.csv")#修改phase_002
-day1_q<-read.csv("../../../Data/clean/clean_day1/phase_005/day1_q_phase_005.csv")#修改phase_002
+day2_q <-read.csv("../../../Data/clean/clean_day2/phase_006/day2_q_phase_006.csv")#修改phase_002
+day0_q <-read.csv("../../../Data/clean/clean_day0/phase_006/day0_all_phase_006.csv")#修改phase_002
+day1_q<-read.csv("../../../Data/clean/clean_day1/phase_006/day1_q_phase_006.csv")#修改phase_002
 
 #合并day0到day2的问卷数据
 day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
@@ -209,7 +214,7 @@ day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
 # %>%filter(ID != "phase_002_subj_1" & ID != "phase_002_subj_3")#这行代码不是每次都需要，这是被试流失，去除流失的被试
 
 #对合并day0到day2的问卷数据，进行总分计算
-day0t2_q<- subset(day0t2_q, ID %in% subj_phase_005)%>%
+day0t2_q<- subset(day0t2_q, ID %in% subj_phase_006)%>%
   mutate(
     phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
     gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
@@ -493,6 +498,36 @@ bruceR::Corr(.,
   plot.height =20,
   plot.dpi = 500)
 ```
+```{r}
+efa_data<-day0t3_q%>%
+  select(-ID,-gad,-phq,-Sex,-age,-national,-education,-MotherOccupation,-FatherOccupation,-fatherEdu,-motherEdu,-obj_ses1,-fri_ses2,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),ends_with("_al"))
+
+ efa_data%>%
+  cor(.,method = "pearson")%>%
+  cortest.bartlett(.,21)%>% # p<0.05变量间相关，可用于因子或主成分分析
+  print()
+
+# 1.2.6 Kaiser-Meyer-Olkin Measure of Sampling Adequacy(KMO采样充分性检验)
+ efa_data%>%
+  cor(.,method = "pearson")%>%
+  psych::KMO()%>% # 根据Kaiser提出的经验原则，变量适合性处于一般到良好。
+ print()
+```
 
 
 ```{r}
@@ -530,6 +565,14 @@ bruceR::Describe()
 
 
 ```
+
+```{r}
+
+```
+
+
+
+
 ```{r}
 # 1.2.5 Bartlett's test of sphericity(球形检验)
 cor <-day3_q_2.1%>%

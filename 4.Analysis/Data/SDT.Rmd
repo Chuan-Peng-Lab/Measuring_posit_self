@@ -1,0 +1,371 @@
+---
+title: "SDT"
+output: html_document
+date: "2023-12-23"
+---
+# 前置知识：
+
+- Probability density function [连续变量的概率密度函数]
+
+概率可解释为随机变量所落在区间内的面积与整个曲线和𝑥轴围成面积大小的比值。
+概率密度函数可解释为随机变量落在一个区间内的概率与这个区间大小的比值在区间大小趋向于0时的极限。
+y是 density [概率密度，概率的变化率]
+
+- Cumulative distribution function (cdf) [累积正态密度函数]
+
+y是probability(X ≤ x) [概率，事件发生的可能性]
+
+
+# 信号检测论
+ 
+ 一项再认实验，这个实验向被试呈现了一组图片，这些图片中有些是新的（被试之前没有见过的），而有些是旧的（被试之前已看过的）。被试需要对呈现的每一张图片进行反应：“新（未见过）”或者“旧（见过）”。SDT通过分别测量被试的敏感性以及判断标准（一种对反应偏向(response bias)测量）来建立每个被试再认过程的模型。SDT模型的基本理念是：在每个试次中，当刺激呈现时，被试心里会产生一种“熟悉”（或者记忆强度）的信号。随后被试会依据这些信号，判断当前的刺激是“新”或“旧”。
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#案例数据
+library(tidyverse)
+#devtools::install_github("cran/sdtalt")
+library(sdtalt)
+data(confcontr)
+```
+
+## 等方差高斯SDT模型
+SDT模型，即假定*被试对两种信号的熟悉程度的分布属于高斯分布（即正态分布），且这两个分布的方差是齐性的*，但均值可能不同（例如，对旧刺激的熟悉程度更高）。
+该模型就称为*EVSDT* (Equal Variance Gaussian SDT Model) 模型。我们用三种方法来估算单个被试的模型：
+
+1.依据计算公式，使用R进行“手动”点估计运算；
+2.使用贝叶斯广义线性模型（GLM；Generalized linear models）来进行估算；
+3.使用贝叶斯非线性模型来进行估算。
+
+---*某个被试*在等方差SDT模型下的参数d’ （辨别力指标/感觉敏感性指标）和 c（报告标准）
+
+1.在*手动点估计*运算时才需要进行这种数据处理，对数据包中每一位被试的EVSDT参数进行最大似然估计。
+ 
+Φ 是累积正态密度函数(cumulative normal density function)，可将z分数转换为概率，其反函数Φ^(-1) 将概率（例如击中率或虚报率）转换为z分数。标准化后的击中率和虚报率分别表示为 zHR 和zFAR。反应标准c则由-zFAR（负虚报率的标准分数）表示(DeCarlo，1998)。
+qnorm()进行z分数转化（即Φ^(-1)）。接下来，根据每个被试反应类型（击中，虚报，漏报，正确拒斥）的数量计算出d’ 和c 。垂直虚线表示c（报告标准），两个分布峰值之间的距离为d'。
+
+```{r cars}
+#计算被试每个试次的反应（击中(hit)、虚报(false alarm)、正确拒斥(correct rejection)、漏报(miss)）并将其放到新变量type，d'=phi^-1(HR) - phi^-1(FAR)
+sdt <- confcontr %>% 
+    mutate(type = "hit",
+           type = ifelse(isold==1 & sayold==0, "miss", type),
+           type = ifelse(isold==0 & sayold==0, "cr", type),  # Correct rejection
+           type = ifelse(isold==0 & sayold==1, "fa", type))%>%  # False alarm
+    group_by(subno, type) %>% 
+    summarise(count = n()) %>% 
+    spread(type, count) %>%  # Format data to one row per person 
+    mutate(zhr = qnorm(hit / (hit+miss)),
+           zfa = qnorm(fa / (fa+cr)),
+           dprime = zhr-zfa,
+           crit = -zfa)
+round(sdt, 2)
+```
+
+
+## GLM估算*EVSDT*模型
+每个试次都有一种回答，“旧”(sayold = 1) 或者 “新” (sayold = 0)；我们用GLM对刺激类型的反应进行回归：需要判断的刺激（图片）可能是新的(isold = 0)也可能是旧的(isold = 1)。在二项反应的GLM中，我们假定反应属于贝努里（Bernoulli）分布（即只有一个试次的二项分布），且其概率p_i为y_i=1。
+广义线性模型对概率p进行估计，但概率p本身有上限和下限（分别为1和0），因此，我们不用线性模型直接对p进行建模。相反，我们用一个连结函数将p转化为‘线性预测值’ η，并用线性回归模型对 η建模。如果该连结函数是一个概率(probit)，那我们就得到了一个‘probit GLM’。
+y_i ~ Bernnoulli(p_i) , p_i = phi(η_i), η_i = β0 + β1 isold_i ,
+
+模型的截距是标准化的虚报率（当η为0时报告1的概率），我们将其作为标准，用c表示。模型的斜率是由z分数所表示的击中率（当η为1时报告1）相对于截距（即标准化的虚报率）的提升，这是d’的另一种表达形式。
+*c = -zFAR = -β0, d'= β1*
+可以容易得到c和d'两个预测值以及可用层级模型来估计包含各种相关系数的SDT模型(DeCarlo,2010; Rouder & Lu, 2005)。第二点意味着多个被试（和项目）可同时用该模型进行拟合。
+
+brms的模型语法用了数据中的变量名。我们用公式sayold ~ isold来回归二元预测值isold 的二项反应sayold。
+family = bernoulli(link="probit")这一语法来表示有概率连结函数的贝努里分布。这里我们只需要第一个被试的数据(subno 53)，因此，用data = filter(confcontr, subno==53)来表示该数据。cores设置为4以运行多个马氏链（chains；这能使模型估计得更快）。根据以上的设置，我们可以把SDT作为一个probit GLM进行估计。
+```{r pressure, echo=FALSE}
+library(brms)
+glmfit <- brm(sayold ~ isold, 
+              family = bernoulli(link="probit"), 
+              data = filter(confcontr, subno==53),
+              cores = 4,
+              file = here::here("static/data/sdtmodel1-1"))
+summary(glmfit)#summary()可以输出估计的参数值
+```
+回归参数（Intercept (c=−β0)和 isold (d′=β1))显示在以上代码结果中 “Population-Level Effects”部分。Estimate是后验均值，相当于最大似然估计，Est.Error 是后验标准差，相当于标准误。其后的两列是参数95%的可信区间(credible intervals; CIs)。估计参数的均值与手动计算的点估计值相符。
+```{r}
+round(sdt[1,], 2)#手动计算
+```
+
+## 非线性模型估计等方差高斯信号检测论
+我们用与GLM类似的方式编写EVSDT模型，只是简单地了翻转c和d'。我们将直接给出参数c，不需要再翻转估计的参数值。p_i = phi(d' isold_i - c)
+如果想要进一步了解如何使用Brms的非线性建模语法编写模型，请参照：(vignette("brms_nonlinear", package = "brms")。
+```{r}
+m2 <- bf(sayold ~ Phi(dprime*isold - c), 
+         dprime ~ 1, c ~ 1, 
+         nl = TRUE)
+```
+
+非线性模型的参数可能难以估计，因此当nl = TRUE时，brms要求用户设定先验。我们在dprime和c 上设置了一些任意的先验值（注意:这里的scale参数是标准差，而不是方差）
+
+```{r}
+Priors <- c(prior(normal(.5, 1.5), nlpar = "dprime"),
+          prior(normal(0, 1.5), nlpar = "c"))
+```
+在指定模型和先验之后，仅需进行少量调整即可使用 brm()再次进行模型拟合：由于我们在 bf()中指定了相应函数，我们需要在 family 参数中设置link="identity" 。此外，由于非线性模型难以估计，因此我们还调整了Stan采样器的基础参数adapt_delta（这会使MCMC变慢一些，但会得到更准确的结果）
+```{r}
+fit2 <- brm(m2, 
+            family = bernoulli(link="identity"), 
+            data = filter(confcontr, subno==53),
+            prior = Priors,
+            control = list(adapt_delta = .99),
+            cores = 4,
+            file = here::here("static/data/sdtmodel1-2"))
+summary(fit2)
+```
+
+两个模型的结果非常相似，但需要注意的是：先验仅包含在非线性语法模型中。唯一的不同点是，MCMC算法探索fit2后验的效率较低，正如两个参数的Eff.Sample 较小所反映的。这意味着对于fit2，从后验分布中随机样本拥有更大的自相关，因此我们应该抽取更多样本以进行更准确的推断。
+
+- 用不同的方法拟合单个被试的EVSDT模型
+本篇博客中，我们使用了三种方法来估计单个被试数据的等方差高斯SDT模型的参数：手动计算点估计值，使用probit GLM，和使用Brms的非线性建模语法的Probit模型。目前为止，这些方法之间的主要区别在于建模方法可以提供参数估计的不确定性，而手动计算则不能。这个原因直接引领我们更偏向层级模型(Rouder and Lu 2005; Rouder et al. 2007)，我们将在第2部分中对其进行讨论。但是，使用回归模型框架估算SDT模型还有其他好处。例如，通过“手动”计算可能会涉及到一些运算错误，这可能比直接使用原始数据的方法更容易出错。如果使用建模方法的话，贝叶斯建模方法易于应用并为广大读者所使用 (Bü rkner 2017)。建模能够通过交叉的“随机”效应(Rouder et al. 2007)以及可能影响SDT参数的协变量来包含多种变异源，比如跨项目和被试之间的异质性（Rouder等，2007）。通过更改连接函数，我们还可以使用其他分布（例如逻辑回归分布；logistic）来表示信号和噪声的分布（DeCarlo 1998，2010）。
+
+- 先验分布
+刚开始接触贝叶斯建模方法的新手可能会反对使用先验分布，并认为他们过分地影响了结果。但是适度提供信息的先验对推理的影响并没有想象中那么大。上述我们指定的GLM模型并没有使用任何先验信息。另外，使用非线性建模功能会使情况变得更加复杂：在这种情况下，先验主要用来帮助从合理的参数值中提取后验样本。此外，先验在估计SDT模型方面非常有用：如果参与者的命中率或误报率是0或1（一种相当普遍的情况），原则上可以使用适度的先验（mild prior information can be used in a principled manner to release the estimated quantities from hostile captivity of the boundary values）。Stanislaw 和 Todorov在文献中讨论了对0和1比率的各种校正(Stanislaw and Todorov 1999)。但是，贝叶斯先验可以更有原则性地处理这些极端情况。在下一篇文章中，我们将重点介绍层级SDT模型，贝叶斯的优点将变得尤为突出。
+
+##  
+```{r}
+# Create a variable in data indicating if trial was hit/miss/etc.
+sdt <- confcontr %>% 
+    mutate(type = "hit",
+           type = ifelse(isold==1 & sayold==0, "miss", type),
+           type = ifelse(isold==0 & sayold==0, "cr", type),  # Correct rejection
+           type = ifelse(isold==0 & sayold==1, "fa", type))  # False alarm
+# Count hits/misses/etc. and format data to one row per person
+sdt <- sdt %>% 
+    group_by(subno, type) %>% 
+    summarise(count = n()) %>% 
+    spread(type, count)  # Format data to one row per person
+# Calculate point estimates of EVSDT parameters 
+sdt <- sdt %>% 
+    mutate(zhr = qnorm(hit / (hit+miss)),
+           zfa = qnorm(fa / (fa+cr)),
+           dprime = zhr-zfa,
+           crit = -zfa)
+```
+
+- 总体水平EVSDT模型
+基于整合被试点估计的参数估计
+```{r}
+sdt_sum <- select(sdt, subno, dprime, crit) %>%  # Select these variables only
+    gather(parameter, value, -subno) %>%  # Convert data to long format
+    group_by(parameter) %>%  # Prepare to summarise on these grouping variables
+    # Calculate summary statistics for grouping variables
+    summarise(n=n(), mu=mean(value), sd=sd(value), se=sd/sqrt(n))
+sdt_sum
+```
+
+样本均值（mu）是对群体均值的估计，样本标准差（sd）除以是对样本分布标准差的估计，也就是标准误差（se）。由于抽样分布的标准差是未知的，而且只能通过数据进行估计，因此，研究者几乎总是用t分布来代替高斯分布来获得p值和置信区间（也就是说，我们进行t检验，而不是z检验）。
+
+在这里需要注意的是该方法涉及到对未知参数的点估计（被试水平（subject-specific）的参数），接着用额外的模型来整合这些参数。换而言之，我们首先拟合包含了P个参数的N个模型（这里N=被试数量，P=2个参数），紧接着再用P个模型来总结被试水平的参数。这包含了相当多的模型！
+
+- *基于层级模型的参数估计（GLMM）*
+我们可以使用EVSDT模型来估计每一位被试的参数，随后用广义线性混合模型（GLMM）进一步估计总体的均值。
+现在被试特有的d’和c是来自同一个多元正态分布。该模型中的“超参数（hyperparameter）”描述了总体水平的参数。我们用*下标j描述被试j的参数，下标i描述数据的第 i 行*，因此模型可以写成，
+y_ij ~ Bernoulli (p_ij)
+phi (p_ij) = β0j + β1j isold_ij
+
+当被试 j 在第 i 次试验（trial）上的反应是新的（“new!”），那么结果y_ij = 0,反应是“旧"，y_ij = 1,被试j在第i次试验上的反应为旧的概率为p_ij
+
+被试水平的截距（回忆上一部分，β0）和斜率（β1）是由一个具有均值和协方差矩阵的多元正态分布来描述的。
+[β0j β1j] ~ N([μ0 μ1],∑)
+平均值μ0和μ1是总体水平的参数，可以解释为所有人的平均参数（Bolger and laurenceau 2013）.协方差矩阵Σ包含了被试水平参数的（协）方差。但是我发现讨论标准差（我称之为τ）和相关会更加简单。标准差描述了总体中个体之间的异质性。相关描述了d’和c的协方差，即有更高d’的样本是否有更大可能性有更高的c?
+```{r}
+fitglmm <- brm(sayold ~ 1 + isold + (1 + isold | subno), 
+               family = bernoulli(link="probit"), 
+               data = confcontr,
+               cores = 4,
+               file = here::here("static/data/sdtmodel2-1"))
+summary(fitglmm)
+```
+
+聚焦输出结果中的“总体水平效应（Population-Level Effects）”。这两个参数分别是平均判断标准c（截距Intercept，μ0）和d'（斜率isold,μ1)。我们正在查看的是参数后验分布（中随机抽取的样本）的数值综合情况: Estimate是后验平均值。
+
+假设有两个组别的样本，即数据中变量group，我们可以扩展brms
+GLMM语法（“...”表示上面使用的其他参数的占位符，我也删除了“1”，因为它们是默认包含的）：
+这个模型将会两个额外的参数：group表述c在不同组别之间的差异，交互项isold:group将会描述d'在不同组别之间的差异。
+```{r}
+brm(sayold ~ isold*group + (isold | subno), ...)
+```
+
+*如果我们对一个被试内变量condition的影响感兴趣*，我们可以写作：
+```{r}
+brm(sayold ~ isold*condition + (isold*condition | subno), ...)
+```
+
+- 基于GLMM（非线性语法）的参数估计
+
+ p_ij = phi (d'isoldij - cj)
+ 
+ 变化的d’和标准c被建模为一个多元正态分布,在上面GLMM中，被试水平的效应是通过(1 + isold | subno)进行设定的。借助非线性模型语法，我们使用 |s|而不是 |来设定多参数间变化的效应，告诉brms这些参数应该在同一个协方差矩阵中。这个语法让我们得到Rouder et. al（2007）所讨论的“相关随机效应信号检测模型”。除了这个语法，这个模型与上述的GLMM模型一样，但是截距的符号相反
+```{r}
+glmm2 <- bf(sayold ~ Phi(dprime*isold - c), 
+            dprime ~ 1 + (1 |s| subno), 
+            c ~ 1 + (1 |s| subno), 
+            nl = TRUE)
+```
+
+我们将设置平均值和（协）方差参数的先验。值得注意的是， lkj(4)参数将d’和标准c的相关系数设置为接近0（McElreath，2016;Stan Development Team，2016）
+
+```{r}
+Priors <- c(prior(normal(0, 3), nlpar = "dprime", lb = 0),
+            prior(normal(0, 3), nlpar = "c"),
+            prior(student_t(10, 0, 1), class = "sd", nlpar = "dprime"),
+            prior(student_t(10, 0, 1), class = "sd", nlpar = "c"),
+            prior(lkj(4), class = "cor"))
+```
+
+ 我们像之前一样拟合这个模型，但是调整control的参数，设置inits为0来提高采样效率（感谢Tom Wallis 给的建议）
+ 
+```{r}
+fitglmm2 <- brm(glmm2, 
+                family = bernoulli(link="identity"), 
+                data = confcontr,
+                prior = Priors,
+                control = list(adapt_delta = .99),
+                cores = 4, inits = 0,
+                file = here::here("static/data/sdtmodel2-2"))
+```
+ 
+ 尽管这个模型采样没有第一个GLMM公式的效率高，但我们也能（不出意外地）观测到相似的结果：
+```{r}
+summary(fitglmm2)
+```
+
+# 案例数据：评级任务
+在每个试次（trial）中呈现的实验材料依旧是旧的或者新的，但是被试需要对他们关于刺激材料的判断做出确信度评级。例如，在下面的数据中，参与者可以用数字来回答，表示他们认为这个项目是旧的确信度：1 =肯定是新的，…，6 =肯定是旧的。
+对于结果数据的一个解释是，被试为确信度评级设置了许多标准，例如：反应为6比反应为4需要更多的证据。也就是说，在回答“肯定是新的”、“可能是新的”等问题时，*会有不同的标准。然而，被试的辨别力应该不受影响*。
+```{r}
+library(tidyverse)
+d <- tibble( 
+      isold = c(rep(0, 174), rep(0, 172), rep(0, 104), rep(0, 92), rep(0, 41), rep(0, 8),
+      rep(1, 46), rep(1, 57), rep(1, 66), rep(1, 101), rep(1, 154), rep(1, 173)),
+      y = c(rep(1, 174), rep(2, 172), rep(3, 104), rep(4, 92), rep(5, 41), rep(6, 8),
+      rep(1, 46), rep(2, 57), rep(3, 66), rep(4, 101), rep(5, 154), rep(6, 173)) 
+  ) 
+dsum
+```
+
+- EVSDT：一个被试的评级反应（噪音与信号方差相等）
+p_i = phi(d' isold_i - c) ----该模型呈现了对新的实验材料反应为旧（c=zFAR）的概率（z分数），以及对旧的实验材料反应依然为旧（d'）的增量（z分数）。
+p(y_i ≤ K_i) = phi(d' isold_i - c_ki) ---------序数概率Φ模型（Ordinal Probit Model）
+```{r}
+fit1 <- brm(y ~ isold, 
+            family = cumulative(link="probit"), 
+            data = d,
+            cores = 4,
+          file = here::here("static/data/sdtmodel3-1"))
+```
+该模型估计了每个反应类别的截距（反应标准）和isold的效应，即d'。模型的后验分布总结如下：
+```{r}
+summary(fit1)
+```
+d'是信号和噪音分布峰值之间的距离：表示被试分辨信号和噪音的能力。这5个截距是指对不同确信度评级的标准（z分数）。如果把z分数换算成比例（例如使用R语言中的pnorm()函数），他们测量的是在噪音分布下z分数左边的累积面积(模型图见图1)。
+
+- UVSDT：一个被试的评级反应
+噪音与信号分布方差不相等
+p(y_i ≤ K_i) = phi([d' isold_i - c_k] / [exp(aisold_i)])
+有一个“discrimination”参数disc，默认情况下设置为1。这里是brms如何参数化序数概率模型的：
+p(y_i ≤ K_i) = phi(disc * [c_ki - d' isold_i])
+我们还可以在disc上包含预测变量。在这种情况下，当isold为1时，我们想对disc进行估计。因此，新实验材料的disc为1，但是旧实验材料的disc需要从实验数据中估计得来。默认情况下，该参数是通过对数链接函数（a log linkfunction）进行建模，因此包含一个0/1预测因子（isold）就应该可以正常工作：
+p(y_i ≤ K_i) = phi(exp[disc isold_i] * [c_ki - d' isold_i])
+编写disc ~ 0 + isold以防止模型对噪声分布的这个参数进行估计：回忆一下，我们已经将噪声分布的标准差设置为1（通过exp(disc * 0) = 1。建模语法0 + ...意味着从模型中除去截距。通过仅包含isold，我们可以实现如上所述的0/1预测因子。
+我们需要翻转disc参数的符号以获得log(σ_old)。对其求幂为我们提供了信号分布的标准差，并且由于我们是在贝叶斯框架中估算模型，因此我们得到的是该参数的后验分布
+
+噪音与信号标准差之比exp^(-a),以disc_isold形式返回-a，这也是z-ROC曲线的斜率
+```{r}
+uvsdt_m <- bf(y ~ isold, disc ~ 0 + isold)
+```
+
+```{r}
+fit2 <- brm(uvsdt_m,
+            family = cumulative(link="probit"),
+            data = d,
+            control = list(adapt_delta = .99),
+            cores = 4,
+            file = here::here("static/data/sdtmodel3-2"))
+summary(fit2)
+```
+我们将首先获取disc_isold的后验样本，然后计算比率，并汇总后验样本分布中2.5％，50％和97.5％所对应的量。
+```{r}
+as.data.frame(fit2, pars = "b_disc_isold") %>%   
+transmute(ratio = exp(b_disc_isold)) %>%
+    pull(ratio) %>%
+    quantile(probs = c(.025, .5, .975))
+##  2.5%   50% 97.5%
+## 0.618 0.699 0.788
+
+
+```
+将后验分布绘制为直方图
+```{r}
+as.data.frame(fit2, pars = "b_disc_isold") %>%
+    transmute(ratio = exp(b_disc_isold)) %>%
+    ggplot(aes(ratio)) +
+    geom_histogram(col="black", fill="gray70") +
+theme(aspect.ratio = 1)
+```
+- 分层EVSDT模型
+
+```{r}
+uvsdt_m <-bf(y ~ isold, disc ~ 0 + isold)
+```
+上述语法是由以下7个参数组成的：在y[1]上的5个截距(在累计概率(cumulative probit)模型中又称为阈限(thresholds))；isold 对y的影响；和isold 对辨别参数disc[2]的影响。之所以存在5个截距(阈限)是因为存在6种反应类别。
+```{r}
+uvsdt_h <-bf(y ~ isold + (isold |s| id),
+              disc~ 0 + isold + (0 + isold |s| id))
+```
+
+使用|s|来估计各种变量间相关的博客。与这些阈值相关的只有一个标准差。也就是说，这个模型假设被试所有的阈限相对于均值的变化是相似的。
+[1] 截距是自动被包含在模型中，但是截距也能通过添加1到这个公式的右侧来明确地被包含在模型中。
+
+[2] 0 + ...移除了这个模型的截距。
+先验分布
+我设置辨别力指标d’的先验为N(1, 3)(即均值为1，标准差为3的正态分布[3])，因为我知道被试的任务表现通常都很好。可能这个先验分布也受到了我阅读这篇文献的影响！我设置a的先验为N(0, 1)：这个参数通常来说是在-1/4左右，但是这里我忽略了这个信息。
+我设定被试间标准差的先验分布为 t(7, 0, .33)，这反映出我假设被试间应该存在中等程度的相似，但也允许存在更大的偏差(该先验分布表示自由度为7，平均数为0，标准差为0.33的t分布)。
+```{r}
+Prior <- c(prior(normal(1, 3), class = "b", coef = "isold"),
+          prior(normal(0, 1), class = "b", coef = "isold", dpar = "disc"),
+          prior(student_t(7, 0, .33), class = "sd"),
+          prior(student_t(7, 0, .33), class = "sd", dpar = "disc"),
+          prior(lkj(2), class = "cor"))
+```
+估计并总结参数
+我们可以像之前一样(参见本系列先前文章)估计这个模型。但请注意，这个模型的估计耗时相当长(注意我已经将默认的2000次迭代次数减少到了500次)。
+```{r}
+fit <- brm(uvsdt_h,
+           family =cumulative(link="probit"),
+           data =d,
+           prior =Prior,
+           control= list(adapt_delta = .9), inits = 0,
+           cores = 4, iter = 500,
+           file =here::here("static/data/sdtmodel4-1"))
+summary(fit)
+```
+
+我们接着展示该模型的参数估计结果。请注意这里有效样本量偏小，并且Rhat说明从后验中提取更多的样本对我们更有利。实际应用的时候，我建议每个链条(chain)要超过500次迭代。
+“群体水平的效应(Group-Level Effects)”：“人均(average person)”isold的效应就是辨别力指标d’，它非常接近论文中所报告的结果(目测Koen et al. (2013)中的图3得到；这个d’在该论文中未被报告)。由于模型的参数化，disc_isold为−log(σsignal)=−a。这篇论文探讨了Vo=σsignal，因此我们将来自-a中的每个后验样本转换为符合Vo的后验分布样本。
+```{r}
+samples <- posterior_samples(fit, "b_") %>%
+    mutate(Vo =exp(-b_disc_isold))
+```
+我们由此可以对于模型中包括Vo在内的每个样本群体水平的效应绘制密度曲线(Gabry 2017) 。图1表明我们对于Vo的估计与论文报告的结果非常接近(Figure 3 in Koen et al. (2013)).
+```{r}
+library(bayesplot)
+mcmc_areas(samples, point_est = "mean", prob = .8)
+```
+图1:UVSDT模型中群体水平效应的后验分布的密度图。不同的参数标注在y轴上，而分布值在x轴上表示。垂直线为后验均值，阴影区域为80%可信区间。
+异质性参数
+尽管“群体水平估计”(或许更应称为“平均效应”)通常是研究中推断的主要目标，但它们并不是故事的全部，也不一定是所有故事中最有趣的部分。可以确定的是，当允许信号分布的标准差变化时，它通常大于1。但是这个参数在被试间的差异却很少有人关注。图2揭示了a的被试间异质性是相当大的：个体差异的标准差大概在0.5左右。
+```{r}
+samples_h <- posterior_samples(fit, c("sd_", "cor_"))
+mcmc_areas(samples_h, point_est = "mean", prob = .8)
+```
+图2：UVSDT模型参数的标准偏差和相关参数的密度图。带有“ sd_id__”的参数是-id间的标准差，带有“ cor_id__”的参数是-id间的相关性。
+
+
+
+图2还告诉我们，个体差异的辨别力指标d’和与a是相关的(‘cor_id__isold__disc_isold’)。我们可以通过同时绘制信号方差和辨别力指数d’的个体差异来进一步研究这种关系：
+图3:个体差异标准差(左)和辨别力指数d’(右)后验分布的脊线图。被试在y轴上的顺序是相同的，以此更好地展现两变量间的关系。
+
+
+
+从图3的山脊线图(Wilke 2017)中可以看出，信号标准差(σsignal)越大的被试越倾向于有更大的辨别力指数d’：伴随着信号分布变异性的提高，被试再认的敏感性同样提高。图2的密度图还清楚地表明，我们并不确定哪些被试的(哪一个指标)是更大的，正如后验分布所展示的那样。图4所示的后验均值散点图是可视化这种关系的另一种方法。
