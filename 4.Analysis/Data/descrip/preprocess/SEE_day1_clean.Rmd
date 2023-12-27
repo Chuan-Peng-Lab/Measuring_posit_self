@@ -32,6 +32,7 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
 
 # 加载所需要的R包
 pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer")
+
 ```
 
 ```{r 初步生成day1被试信息的文件}
@@ -73,7 +74,7 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
-subj_phase_day1("phase_007","10","12.19")
+subj_phase_day1("phase_008","10","12.24")
 
 ```
 
@@ -83,7 +84,7 @@ subj_phase_day1("phase_007","10","12.19")
 ```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
+list.files("../../../Data/raw/day1/phase_008/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
 
 #汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -109,7 +110,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
 
 
 # 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_007", 1,17)
+combine_csv_files("phase_008", 1,19)
 
 
 ```
@@ -217,7 +218,7 @@ assign("trap1", trap1, envir = .GlobalEnv)
 ## 运行范例，[标记不同批次]
 
 
-day1_process("phase_007")
+day1_process("phase_008")
 ```
 
 
@@ -310,7 +311,7 @@ write.xlsx(invalid_day1, file = paste0("../../../Data/raw/day1/", phase, "/inval
 
 ##仅需修改此代码；分别为“批次号”
 
-select_day1("phase_007")
+select_day1("phase_008")
 ```
 
 

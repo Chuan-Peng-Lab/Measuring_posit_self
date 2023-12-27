@@ -13,7 +13,7 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
   install.packages("pacman") }   # 如果未安装，则安装包
 #install.packages("cowplot")
 # 加载所需要的R包
-pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles"," xaringan","igraph")
+pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles"," xaringan","igraph","brms","here")
 source("R_rainclouds.R")
 ```
 
@@ -421,6 +421,354 @@ print(ALT2)
   
 }
 ALT2_analysis(ALT2_all)
+```
+# ALT2的SDT计算
+```{r}
+# function for SDT with Match by identity by valence design
+fun_sdt_ALT2 <- function(data) {
+# 固定效应：0 + Valence 表示对 Valence 进行虚拟编码（dummy coding），Reference:Valence 表示 Reference 和 Valence 之间的交互效应，ismatch:Reference:Valence 表示 ismatch、Reference 和 Valence 之间的三重交互效应。(0 + Valence + Reference:Valence + ismatch:Reference:Valence | ID): 这部分定义了模型的随机效应。0 + Valence + Reference:Valence + ismatch:Reference:Valence 表示在 ID 水平上存在的每个效应都有一个对应的随机效应。这一部分表达了模型中的个体差异。
+        m <- data %>%##
+          filter(!is.na(correct))%>%
+                dplyr::mutate(ismatch = ifelse(identity=="match", 1, 0),
+                              saymatch = ifelse((identity=="match" & correct == 1) | 
+                                                        (identity == 'nonmatch' & correct == 0), 1, 0),
+                              Valence = factor(valence, levels = c('negative','positive')),
+                              Reference = factor(person, levels = c('self', 'friend'))) %>%
+                brms::brm(saymatch ~ 0 +Reference:Valence + ismatch:Reference:Valence + 
+                                  (0 +Reference:Valence + ismatch:Reference:Valence | ID),
+                          family = bernoulli(link="probit"),
+                          data = .,
+                          control = list(adapt_delta = .99),
+                          iter = 4000,
+                          thin = 2,
+                          cores = parallel::detectCores(),
+                          file = here::here("ALT2_SDT"))
+        return(m)
+}
+```
+虚报。所有都是0，代值进去以后的结果，哪个条件的虚报
+
+```{r 计算ALT2_moral的SDT}
+ALT2_moral_SDT<-ALT2_all%>%
+  filter(domain=="ability")%>%
+  fun_sdt_ALT2(.)
+```
+```{r}
+(1+Reference)
+(0 +Reference:Valence + ismatch:Reference:Valence)
+```
+
+
+```{r}
+here::here()
+getwd()
+```
+
+```{r}
+print(ALT2_moral_SDT)
+
+
+```
+# Population-Level Effects: 
+                                        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Referenceself:Valencenegative              -1.19      0.07    -1.34    -1.06 1.00     2540     2985  # c_self_negative =1.19
+Referencefriend:Valencenegative            -1.13      0.07    -1.26    -1.00 1.00     2474     3373
+Referenceself:Valencepositive              -1.08      0.07    -1.22    -0.95 1.00     2668     3388
+Referencefriend:Valencepositive            -1.07      0.07    -1.21    -0.93 1.00     2213     3257
+Referenceself:Valencenegative:ismatch       2.46      0.13     2.21     2.73 1.00     2321     2643  # d_prime_self_negative=2.46
+Referencefriend:Valencenegative:ismatch     2.13      0.13     1.87     2.39 1.00     2544     3130
+Referenceself:Valencepositive:ismatch       2.77      0.20     2.37     3.17 1.00     2945     3242
+Referencefriend:Valencepositive:ismatch     2.35      0.15     2.08     2.65 1.00     2313     2664
+
+
+c_self_positive-c_friend_positive
+c_self_negative-c_friend_negative
+
+回归系数的意义
+
+d_prime_self_positive-d_prime_friend_positive
+d_prime_self_negative-d_prime_friend_negative
+
+```{r}
+fun_plot_sdt_val <- function(m_sdt) {
+        # extract c
+        tmp_c <- m_sdt %>% 
+                tidybayes::gather_draws(b_Valencenegative, b_Valencepositive) %>%
+                dplyr::rename(Valence = .variable, sdt_c = .value) %>% dplyr::ungroup() %>%
+                dplyr::mutate(Valence = gsub("b_", "", Valence)) %>%
+                dplyr::mutate(Valence = ifelse(stringr::str_detect(Valence, 'negative'), 'negative',
+                                               ifelse(stringr::str_detect(Valence, 'positive'), 'positive')))
+        
+        # dprime
+        tmp_d <- m_sdt %>%                                                                                                                  
+                tidybayes::gather_draws(`b_Valencenegative:ismatch`,  
+                                        `b_Valencepositive:ismatch`) %>%
+                dplyr::rename(Valence = .variable, sdt_d = .value) %>% dplyr::ungroup() %>%
+                dplyr::mutate(Valence = gsub("b_", "", Valence)) %>%
+                dplyr::mutate(Valence = ifelse(stringr::str_detect(Valence, 'negative'), 'negative',
+                                               ifelse(stringr::str_detect(Valence, 'positive'), 'positive')))
+        
+        # plot summaries with densities
+        p_sdt_d_sum <- tmp_d %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative','positive'))) %>%
+                ggplot2::ggplot(aes(x = sdt_d, y = Valence)) +
+                tidybayes::stat_halfeyeh() + 
+                labs(x = "sensitivity (d')", y = 'Posterior') +
+                theme_classic()
+        
+        p_sdt_c_sum <- tmp_c %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                ggplot2::ggplot(aes(x = sdt_c, y = Valence)) +
+                tidybayes::stat_halfeyeh() + 
+                labs(x = "criteria (c)", y = 'Posterior') +
+                theme_classic()
+        
+        # plot comparison
+        p_sdt_d <- tmp_d %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                tidybayes::compare_levels(sdt_d, by = Valence) %>%
+                ggplot2::ggplot(aes(x = sdt_d, y = Valence, fill = after_stat(x > 0))) +
+                tidybayes::stat_halfeyeh() + 
+                geom_vline(xintercept =0, linetype = "dashed") +
+                scale_fill_manual(values = c("gray80", "skyblue")) +
+                labs(x = "sensitivity (d')", y = 'Comparison') +
+                theme_classic()
+        
+        p_sdt_c <- tmp_c %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                tidybayes::compare_levels(sdt_c, by = Valence) %>%
+                ggplot2::ggplot(aes(x = sdt_c, y = Valence, fill = after_stat(x > 0))) +
+                tidybayes::stat_halfeyeh() + 
+                geom_vline(xintercept =0, linetype = "dashed") +
+                scale_fill_manual(values = c("gray80", "skyblue")) +
+                labs(x = "criteria (c)", y = 'Comparison') +
+                theme_classic()
+        
+        return(list(p_sdt_d_sum, p_sdt_c_sum, p_sdt_d, p_sdt_c))
+}
+```
+
+```{r}
+df_m1_std_fixed_effect <- bayestestR::describe_posterior(
+        ALT2_moral_SDT,
+        effects = "fixed",
+        component = "all",
+        ci = 0.95,
+        ci_method = 'hdi',
+        test = c("p_direction", "p_significance"),
+        centrality = "all") %>%
+        dplyr::mutate(Valence = dplyr::case_when(
+                grepl("Valencenegative", Parameter) ~ "negative",
+                grepl("Valencepositive", Parameter) ~ "positive"),
+                params = dplyr::case_when(grepl("ismatch", Parameter) ~ "d prime",
+                                           !grepl("ismatch", Parameter) ~"criterion"),
+                params = factor(params, levels = c('d prime', 'criterion')),
+                Valence = factor(Valence, levels = c('positive','negative'))) 
+###################################################################
+df_m1_std_fixed_effect2 <- bayestestR::describe_posterior(
+        ALT2_moral_SDT,
+        effects = "fixed",
+        component = "all",
+        ci = 0.95,
+        ci_method = 'hdi',
+        test = c("p_direction", "p_significance"),
+        centrality = "all") %>%
+        dplyr::mutate(Valence = dplyr::case_when(
+                grepl("Referenceself", Parameter) ~ "self",
+                grepl("Referencefriend", Parameter) ~ "friend"),
+                params = dplyr::case_when(grepl("ismatch", Parameter) ~ "d prime",
+                                           !grepl("ismatch", Parameter) ~"criterion"),
+                params = factor(params, levels = c('d prime', 'criterion')),
+                Valence = factor(Valence, levels = c('self','friend'))) 
+#####################################################################
+```
+
+
+```{r}
+
+df_m1_post_sdt_exp <- ALT2_moral_SDT%>% 
+        tidybayes::spread_draws(r_ExpID_new[condition, term]) %>%
+        dplyr::rename(value = r_ExpID_new)
+
+pop_mean <- ALT2_moral_SDT %>%
+        tidybayes::gather_draws(`b_.*`, regex = TRUE) %>%
+        group_by(.variable) %>%       # this line not necessary (done automatically by spread_draws)
+        tidybayes::mean_hdci(.value)  # get the high density continuous intervals
+
+# extract the population level parameters
+df_sdt_m1_pop <- ALT2_moral_SDT %>% 
+        tidybayes::gather_draws(`b_.*`, regex = TRUE) %>%
+        dplyr::rename(term = .variable,
+                      pop_mean = .value) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(term = gsub("b_", "", term))
+
+# Add the population mean to the experimental level and only keep the value after.
+df_m1_post_sdt_exp_update <- merge(df_sdt_m1_pop, df_m1_post_sdt_exp, by = c('term','.chain','.iteration', '.draw'), all = T) %>%
+        dplyr::mutate(mean_value = pop_mean + value) %>%  # add the population level value to each experiment
+        dplyr::select(condition, term, `.chain`, `.iteration`, `.draw`, mean_value) %>% # select the added value
+        dplyr::rename(value = mean_value)  # rename the value
+
+# Plot the difference between conditions 
+df_m1_plot_sdt <- df_sdt_m1_pop %>%
+        dplyr::mutate(condition = 'Overall') %>%
+        dplyr::rename(value = pop_mean) %>%
+        dplyr::select(condition, term, `.chain`, `.iteration`, `.draw`, value) %>%
+        dplyr::bind_rows(., df_m1_post_sdt_exp_update) %>%
+        dplyr::mutate(condition = factor(Reference, levels = c("self", "friend")),
+                      condition = forcats::fct_rev(Rference), # reverse the order because the plot function auto reverse.
+                      term = dplyr::case_when((term == "ValenceBad") ~ "c_Bad",
+                                              (term == "ValenceNeutral") ~ "c_Neutral",
+                                              (term == "ValenceGood") ~ "c_Good",
+                                              (term == "ValenceBad:ismatch") ~ "dprime_Bad",
+                                              (term == "ValenceNeutral:ismatch") ~ "dprime_Neutral",
+                                              (term == "ValenceGood:ismatch") ~ "dprime_Good"),
+                      term = factor(term, levels = c("c_Bad", "c_Neutral", "c_Good",
+                                                     "dprime_Bad", "dprime_Neutral", "dprime_Good"))) 
+
+df_m1_plot_sdt_diff_wide <- df_m1_plot_sdt %>%
+  tidyr::pivot_wider(names_from = c(term), values_from = value) %>%   # long to wide
+  dplyr::mutate(diff_GB_c = c_Good - c_Bad,                           # calculate the differences between conditions
+                diff_GN_c = c_Good - c_Neutral,
+                diff_BN_c = c_Bad - c_Neutral,
+                diff_GB_dprm = dprime_Good - dprime_Bad,
+                diff_GN_dprm = dprime_Good - dprime_Neutral,
+                diff_BN_dprm = dprime_Bad - dprime_Neutral) %>%
+  dplyr::select(condition, `.chain`, `.iteration`, `.draw`,
+               diff_GB_c,diff_GN_c, diff_BN_c,
+               diff_GB_dprm, diff_GN_dprm, diff_BN_dprm)
+
+df_m1_plot_sdt_diff <- df_m1_plot_sdt_diff_wide%>%
+  tidyr::pivot_longer(cols = diff_GB_c:diff_BN_dprm, names_to = "term_diff", values_to =  "value") %>%  # wide to long
+  dplyr::mutate(term_diff = factor(term_diff, levels = c('diff_GB_c','diff_GN_c', 'diff_BN_c',
+                                                         'diff_GB_dprm', 'diff_GN_dprm', 'diff_BN_dprm')))
+
+# plot the posterior of the d prime
+# use the overall mean values as the vlines
+vlines_df_m1_sdt <- df_m1_plot_sdt %>% 
+        tidyr::separate(term, c('params', 'Valence')) %>% 
+        dplyr::mutate(Valence = factor(Valence, levels = c('Good', 'Neutral', 'Bad'))) %>%
+        dplyr::filter(params == 'dprime') %>%
+        dplyr::filter(condition == "Overall") %>%
+        dplyr::group_by(Valence) %>% 
+        dplyr::summarize(Mean = mean(value)) 
+
+# THIS is the one which the final plot will based on!!!
+p_dprime1 <- df_m1_plot_sdt %>%
+        tidyr::separate(term, c('params', 'Valence')) %>%
+        dplyr::mutate(Valence = factor(Valence, levels = c('Good', 'Neutral', 'Bad'))) %>%
+        dplyr::filter(params == 'dprime') %>%
+        dplyr::rename(Experiments = condition) %>%
+        ggplot2::ggplot(aes(y = Experiments, x = value, color = Valence)) +
+        tidybayes::stat_halfeye(aes(fill = Valence), alpha = 0.7) +
+        geom_vline(data = vlines_df_m1_sdt, aes(xintercept = Mean,colour = Valence), linetype = "dashed") +
+        labs(x=expression('Posteior distribution of '~italic(d)~' prime')) + 
+        scale_colour_brewer(palette = "Dark2") +
+        scale_fill_brewer(palette = "Dark2") +
+        theme_apa(base_size = 20)
+
+# define facet titles
+contrast_names_m_sdt <- c(`diff_GN_dprm` = "Good vs Neutral", 
+                           `diff_BN_dprm` = "Bad vs Neutral"
+                           )
+# plot the posterior of the difference between d prime
+p_dprime1_diff <- df_m1_plot_sdt_diff %>%
+        dplyr::filter(str_detect(term_diff, '_dprm')) %>%
+        dplyr::filter(!str_detect(term_diff, '_GB_')) %>%
+        dplyr::rename(Experiments = condition) %>%
+        ggplot2::ggplot(aes(y = Experiments, x = value, fill = after_stat(x > 0))) +
+        tidybayes::stat_halfeye() +
+        geom_vline(xintercept = 0, linetype = "dashed") +
+        # scale_fill_manual(values = c('gray80', 'skyblue')) +
+        scale_fill_manual(values = c('skyblue', 'gray80'),
+                    breaks = c(TRUE, FALSE),
+                    name = "Effect" , labels = c("Yes", "No")) + 
+        xlab(expression(paste("Effect of valence on ", italic("d"), " prime", sep = ' '))) + 
+        facet_wrap( ~ term_diff, # scales = "free_y",
+                    nrow = 1,
+                    labeller = as_labeller(contrast_names_m_sdt)) + # label_parsed
+        theme_apa(base_size = 20) + 
+        theme(strip.text.x = element_text(size = 8)) # colour = "orange", angle = 90))
+
+### get results that will be reported in the text
+med_d_m1_good <- df_m1_std_fixed_effect$Median[df_m1_std_fixed_effect$Valence == 'Good' & df_m1_std_fixed_effect$params == 'd prime']
+ll_d_m1_good <- df_m1_std_fixed_effect$CI_low[df_m1_std_fixed_effect$Valence == 'Good' & df_m1_std_fixed_effect$params == 'd prime']
+ul_d_m1_good <- df_m1_std_fixed_effect$CI_high[df_m1_std_fixed_effect$Valence == 'Good' & df_m1_std_fixed_effect$params == 'd prime']
+
+med_d_m1_neut <- df_m1_std_fixed_effect$Median[df_m1_std_fixed_effect$Valence == 'Neutral' & df_m1_std_fixed_effect$params == 'd prime']
+ll_d_m1_neut <- df_m1_std_fixed_effect$CI_low[df_m1_std_fixed_effect$Valence == 'Neutral' & df_m1_std_fixed_effect$params == 'd prime']
+ul_d_m1_neut <- df_m1_std_fixed_effect$CI_high[df_m1_std_fixed_effect$Valence == 'Neutral' & df_m1_std_fixed_effect$params == 'd prime']
+
+med_d_m1_bad <- df_m1_std_fixed_effect$Median[df_m1_std_fixed_effect$Valence == 'Bad' & df_m1_std_fixed_effect$params == 'd prime']
+ll_d_m1_bad <- df_m1_std_fixed_effect$CI_low[df_m1_std_fixed_effect$Valence == 'Bad' & df_m1_std_fixed_effect$params == 'd prime']
+ul_d_m1_bad <- df_m1_std_fixed_effect$CI_high[df_m1_std_fixed_effect$Valence == 'Bad' & df_m1_std_fixed_effect$params == 'd prime']
+
+bayestestR::sexit(df_m1_plot_sdt_diff_wide[, 9:10])
+```
+
+
+
+
+
+
+```{r}
+fun_plot_sdt_val <- function(m_sdt) {
+        # extract c
+        tmp_c <- m_sdt %>% 
+                tidybayes::gather_draws(b_Valencenegative, b_Valencepositive) %>%
+                dplyr::rename(Valence = .variable, sdt_c = .value) %>% dplyr::ungroup() %>%
+                dplyr::mutate(Valence = gsub("b_", "", Valence)) %>%
+                dplyr::mutate(Valence = ifelse(stringr::str_detect(Valence, 'negative'), 'negative',
+                                               ifelse(stringr::str_detect(Valence, 'positive'), 'positive')))
+        
+        # dprime
+        tmp_d <- m_sdt %>%                                                                                                                  
+                tidybayes::gather_draws(`b_Valencenegative:ismatch`,  
+                                        `b_Valencepositive:ismatch`) %>%
+                dplyr::rename(Valence = .variable, sdt_d = .value) %>% dplyr::ungroup() %>%
+                dplyr::mutate(Valence = gsub("b_", "", Valence)) %>%
+                dplyr::mutate(Valence = ifelse(stringr::str_detect(Valence, 'negative'), 'negative',
+                                               ifelse(stringr::str_detect(Valence, 'positive'), 'positive')))
+        
+        # plot summaries with densities
+        p_sdt_d_sum <- tmp_d %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative','positive'))) %>%
+                ggplot2::ggplot(aes(x = sdt_d, y = Valence)) +
+                tidybayes::stat_halfeyeh() + 
+                labs(x = "sensitivity (d')", y = 'Posterior') +
+                theme_classic()
+        
+        p_sdt_c_sum <- tmp_c %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                ggplot2::ggplot(aes(x = sdt_c, y = Valence)) +
+                tidybayes::stat_halfeyeh() + 
+                labs(x = "criteria (c)", y = 'Posterior') +
+                theme_classic()
+        
+        # plot comparison
+        p_sdt_d <- tmp_d %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                tidybayes::compare_levels(sdt_d, by = Valence) %>%
+                ggplot2::ggplot(aes(x = sdt_d, y = Valence, fill = after_stat(x > 0))) +
+                tidybayes::stat_halfeyeh() + 
+                geom_vline(xintercept =0, linetype = "dashed") +
+                scale_fill_manual(values = c("gray80", "skyblue")) +
+                labs(x = "sensitivity (d')", y = 'Comparison') +
+                theme_classic()
+        
+        p_sdt_c <- tmp_c %>%
+                dplyr::mutate(Valence = factor(Valence, levels = c('negative', 'positive'))) %>%
+                tidybayes::compare_levels(sdt_c, by = Valence) %>%
+                ggplot2::ggplot(aes(x = sdt_c, y = Valence, fill = after_stat(x > 0))) +
+                tidybayes::stat_halfeyeh() + 
+                geom_vline(xintercept =0, linetype = "dashed") +
+                scale_fill_manual(values = c("gray80", "skyblue")) +
+                labs(x = "criteria (c)", y = 'Comparison') +
+                theme_classic()
+        
+        return(list(p_sdt_d_sum, p_sdt_c_sum, p_sdt_d, p_sdt_c))
+}
+fun_plot_sdt_val (ALT2_moral_SDT)
 ```
 
 

@@ -480,6 +480,8 @@ ALT2_rt_plot2(ALT2_plot_phase_004)
 ```
 
 
+
+
 #Built-in error penalty procedure (preferred) Each trial’s latency is recorded to occurrence of the trial’s correct response; trials on which errors preceded the correct responses are included
 #IAT only 3,4,6,7 block，区分联合任务为A相容,B;不相容;e.g. 3=A1,4=A2
   -   ① Designate combined tasks as A (for which faster performance will produce a positive score) and B (for which faster performance will produce a negative score). With counterbalancing, half of subjects will encounter A in Blocks 3 & 4, half in Blocks 6 & 7
