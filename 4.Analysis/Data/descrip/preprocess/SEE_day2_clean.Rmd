@@ -41,7 +41,7 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
 
   # 读取 subj_day2_phase_003 数据
-  subj_day2 <- read.csv(list.files(paste0("../../../Data/raw/day2/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
+  subj_day2 <- read.csv(list.files(paste0("../../../Data/raw/day2/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8",colClasses=c("UserId"="character")) %>%
     slice(-1) %>%
     select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) %>%
     rename(
@@ -75,7 +75,7 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数
-subj_phase_day2("phase_007","10","12.20")
+subj_phase_day2("phase_008","10","12.27")
 
 ```
 
@@ -226,10 +226,6 @@ assign("trap2", trap2, envir = .GlobalEnv)
 }
 
 day2_process("phase_007")
-
-  
-
- 
 ```
 
 
@@ -247,7 +243,7 @@ ALT2_select<-ALT2%>%
   mutate(ID = as.character(ID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
   mutate(correct= as.numeric(correct))%>% ##重编码correct
-  #选择正式实验的数据
+  mutate(con=paste(con,valence,sep = "_"))%>%#选择正式实验的数据
   group_by(ID,con) %>%  #按被试与条件分组
   summarise(
     avg_rt = mean(rt, na.rm = TRUE),
@@ -260,13 +256,13 @@ ALT2_select<-ALT2%>%
     acc = correct_count /  all_count #计算正确率= 正确/总数
   )%>%
     mutate(note = "") %>%
-  mutate(note = ifelse(acc < 0.2, "invalid", note))%>%#各个图形的正确率不低于20%
+  mutate(note = ifelse(acc < 0.2, "invalid", note))%>%#**各个图形的正确率不低于20%（ability_friend_match_negative）**
   ungroup()
 print(ALT2_select)
 
 invalid_ALT2_select<-ALT2_select%>%
 filter(note == "invalid")
-  print(invalid_ALT2_select)#####查看ALT的各个图形的正确率低于20%的被试
+  print(invalid_ALT2_select)##**查看ALT的各个图形的正确率低于20%的被试**
   
   ALT2_select2<-ALT2%>%
    filter(screen_id%in%c("ability","moral") )%>%
@@ -283,13 +279,13 @@ filter(note == "invalid")
     all_count2 = n(),
     correct_count2 = sum(correct == 1 & rt >= 200 & rt <= 1200, na.rm = TRUE),
     acc2 = correct_count2 / all_count2,
-    note = ifelse(acc2 < 0.5, "invalid", note)#道德、能力领域的总正确率不低于60%
+    note = ifelse(acc2 < 0.6, "invalid", note)#**道德、能力领域的总正确率不低于60%**
   )
 print(ALT2_select2)
 
 invalid_ALT2_select2<-ALT2_select2%>%
 filter(note == "invalid")
-  print(invalid_ALT2_select2)#####查看道德、能力领域的总正确率低于60%的被试
+  print(invalid_ALT2_select2)#**查看道德、能力领域的总正确率低于60%的被试**
 
 
 
@@ -324,23 +320,27 @@ SRET_EW<-SRET %>%
             avg_sd_rt=sd(rt, na.rm = TRUE),
             all_max_rt = max(rt, na.rm = TRUE),
             all_min_rt = min(rt, na.rm = TRUE),) 
-SRET_EW2<-SRET %>%
+SRET_EW2_rt<-SRET %>%
   mutate(ID = as.character(ID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
   mutate(correct= as.numeric(correct))%>% ##重编码correct
   filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
    filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) %>%#去掉干扰词
-  group_by(ID,person,valence,domain)%>%
+  group_by(ID)%>%
   summarize(N_Yes = sum(responses == "yes"),
             N_No = sum(responses == "no"),
             N=n(),
             pro_yes=N_Yes/N,
-            avg_rt = mean(rt, na.rm = TRUE),
+            avg_rt = mean(rt, na.rm = TRUE),max_rt = max(rt, na.rm = TRUE),
+            min_rt = min(rt, na.rm = TRUE),
             sd_rt=sd(rt, na.rm = TRUE),
            ) %>%
-  left_join(SRET_EW_1, by = c("person", "valence", "domain")) %>% 
-  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt)
-print(SRET_EW2)#####查看评价词汇阶段反应时在3个标准差之外的被试
+  filter(max_rt>2000|min_rt<1500)
+print(SRET_EW2_rt)##**查看评价词汇阶段反应时在1500-2000之外的被试**
+
+
+
+
 
 ###########计算每个被试的再认正确率#####
  SRET_RJ <- SRET  %>%
@@ -387,13 +387,13 @@ print(SRET_EW2)#####查看评价词汇阶段反应时在3个标准差之外的�
    
 invalid_SRET_RJ<-SRET_RJ%>%
 filter(note == "invalid")
-  print(invalid_SRET_RJ)#####查看SRET的再认正确率低于或等于0.55
+  print(invalid_SRET_RJ)##**查看SRET的再认正确率低于或等于0.55，**
  
-#合并ALT2两种筛选标准下排除的无效数据
+#**合并ALT2两种筛选标准下排除的无效数据**
 ex_subj <- bind_rows(
   ALT2_select %>% filter(note == "invalid"),
   ALT2_select2 %>% filter(note == "invalid"),
-  SRET_RJ%>% filter(note == "invalid"),)
+  SRET_RJ%>% filter(note == "invalid"))
    
 #查看两个组合后的无效数据
 print(ex_subj)
@@ -409,7 +409,7 @@ print(ex_subj)
                           (identity == "old" & (responses == "new" )) ~ "miss",
                           (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
                           (identity == "new" & (responses == "new")) ~ "cr"),) %>%
-    group_by(ID, valence,domain) %>%#, 
+    group_by(ID, valence,domain) %>%#, 道德/能力*积极/消极
     summarize(
       H = sum(sdt == "hit"),
       M = sum(sdt == "miss"),
@@ -422,7 +422,7 @@ print(ex_subj)
      friend_H = sum(sdt == "hit"& person=="friend")/10,
      P_H = H/(H+M),
      P_FA = FA/(FA+CR),
-      recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      recognition = (H + CR) / (H + CR + M + FA),#  40个
       avg_rt = mean(rt, na.rm = TRUE),
       sd_rt = sd(rt, na.rm = TRUE),
       max_rt = max(rt, na.rm = TRUE),
@@ -436,7 +436,7 @@ print(ex_subj)
       Z_P_H = qnorm(P_H),
       Z_P_FA = qnorm(P_FA),
       d_prime = Z_P_H - Z_P_FA,
-      note = ifelse(recognition<=0.55, "invalid", note))%>%
+      )%>%
 filter(note == "invalid")
  
    print(SRET_RJ2)
@@ -450,7 +450,7 @@ subj_day2 <- subj_day2 %>%
   mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
 
 # 将结果写入 Excel 文件，导出day1所有被试数据
-#write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
 
 # 从 subj_day2 中筛选 Eligible 列的值为 "yes" 的行，导出符合要求的被试数据
 select_day2 <- subj_day2 %>%
@@ -458,10 +458,10 @@ select_day2 <- subj_day2 %>%
 
 invalid_day2 <- subj_day2 %>%
   filter(Eligible == "no")
-#write.xlsx(invalid_day2, file = paste0("../../../Data/raw/day2/", phase, "/invalid_day2_", phase, ".xlsx"))
+write.xlsx(invalid_day2, file = paste0("../../../Data/raw/day2/", phase, "/invalid_day2_", phase, ".xlsx"))
 
 # 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
-#write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
+write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
 
 
 
@@ -517,10 +517,9 @@ id_counts <- SRET_RJ_2 %>%
   summarize(row_count = n())
 
 # 检查是否每个ID都有4行数据
-all_ids_have_four_rows <- all(id_counts$row_count == 4)
-select_subj<- id_counts %>%
-  filter(row_count != 4) %>%
-  pull(ID)
+
+select_subj<- id_counts 
+
 print(select_subj)
 
 }
@@ -528,7 +527,7 @@ print(select_subj)
 
 ##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
 
-select_day2("phase_007")
+select_day2("phase_003")
 ```
 
 ```{r}

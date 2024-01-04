@@ -54,7 +54,7 @@ write.xlsx(combined_data,"../../../../phase_06_exclud_subj.xlsx", rowNames = FAL
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_002”，查看对应的文件夹内的文件
 
-list.files("../../../Data/raw/day0/phase_008/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day0/phase_010/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据，##[批次号，输入文件列表的文件起始编号，终止编号]
 combine_csv_files <- function(phase, firstnum, lastnum) {
@@ -80,7 +80,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {
 
 
 # 使用示例，每次运行仅需修改此3个参数,[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_008",1,20)
+combine_csv_files("phase_010",1,25)
 ```
 
 
@@ -114,7 +114,7 @@ day0_all <- day0 %>%
 }
 
 ## 运行范例，每次运行仅需要修改批次号"phase_002"
-day0_process("phase_008")
+day0_process("phase_010")
 
 ```
 
@@ -171,7 +171,7 @@ write.csv(day0_all,paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",p
 
 }
 
-subj_phase_day0("phase_008","yes","1","12.20      ")
+subj_phase_day0("phase_010","yes","1","1.4 ")
 ```
 
 
@@ -269,20 +269,20 @@ day0_all <- day0_all %>%
   ))%>%
   mutate(phq_al = rowSums(select(., starts_with("phq_")))) %>%
   mutate(phq = case_when(
-    phq_al >= 0 & phq_al <= 4 ~ "无",
-    phq_al >= 5 & phq_al <= 9 ~ "轻度",
-    phq_al >= 10 & phq_al <= 14 ~ "中度",
-    phq_al >= 15 & phq_al <= 19 ~ "中重度",
-     phq_al >= 20  ~ "重度",
+    phq_al >= 0 & phq_al <= 4 ~ "none",
+    phq_al >= 5 & phq_al <= 9 ~ "mild",
+    phq_al >= 10 & phq_al <= 14 ~ "moderate",
+    phq_al >= 15 & phq_al <= 19 ~ "mod to severe",
+     phq_al >= 20  ~ "severe",
     TRUE ~ NA_character_
   ))%>%
 mutate(selfclarity_al = rowSums(select(., starts_with("selfclarity_")))) %>%
 mutate(gad_al = rowSums(select(., starts_with("gad_")))) %>%
   mutate(gad = case_when(
-    gad_al >= 0 & gad_al <= 4 ~ "无",
-    gad_al >= 5 & gad_al <= 9 ~ "轻度",
-    gad_al >= 10 & gad_al <= 14 ~ "中度",
-    gad_al >= 15 ~ "重度",
+    gad_al >= 0 & gad_al <= 4 ~ "none",
+    gad_al >= 5 & gad_al <= 9 ~ "mild",
+    gad_al >= 10 & gad_al <= 14 ~ "moderate",
+    gad_al >= 15 ~ "severe",
     TRUE ~ NA_character_
   ))
 day0_1<-day0_all%>%
@@ -297,7 +297,7 @@ plot_bar(day0_all)
 plot_histogram(day0_all)
 
 }
-plot_descript_day0("phase_008")
+plot_descript_day0("phase_010")
 
 ```
 

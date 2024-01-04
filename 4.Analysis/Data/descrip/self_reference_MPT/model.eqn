@@ -1,0 +1,18 @@
+# Two-high-threshold source-monitoring model
+SG	    SG_SG     DSG*dSG
+SG	    SG_SG     DSG*(1-dSG)*a
+SG	    SG_NSG    DSG*(1-dSG)*(1-a)
+SG	    SG_SG     (1-DSG)*b*g
+SG	    SG_NSG    (1-DSG)*b*(1-g)
+SG	    SG_Nw     (1-DSG)*(1-b)
+NSG	    NSG_NSG   DNSG*dNSG
+NSG	    NSG_SG    DNSG*(1-dNSG)*a
+NSG	    NSG_NSG   DNSG*(1-dNSG)*(1-a)
+NSG	    NSG_SG    (1-DNSG)*b*g
+NSG	    NSG_NSG   (1-DNSG)*b*(1-g)
+NSG	    NSG_Nw    (1-DNSG)*(1-b)
+Nw	    Nw_Nw     DNw
+Nw	    Nw_SG     (1-DNw)*b*g
+Nw	    Nw_NSG    (1-DNw)*b*(1-g)
+Nw	    Nw_Nw     (1-DNw)*(1-b)
+

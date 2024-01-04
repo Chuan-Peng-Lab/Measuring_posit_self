@@ -12,11 +12,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 ```{r setup, include=FALSE}
 getwd() #查看工作目录，
 ```
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 ### 加载R包
 
 ```{r create environment}
@@ -62,19 +58,20 @@ for (subfolder in subfolders) {
 
 # 选出完整参与了day0 ~ day3 实验的被试
 ```{r select subjects join all experiments}
-subj_phase_006 <- unique(day3_q_phase_006$ID)
+subj_phase_007 <- unique(day3_q_phase_007$ID)
 
-print(subj_phase_006)
+print(subj_phase_007)
 ```
 ```{r 将clean data内的数据根据day3的最终被试选取这部分数据存入select}
 
 select_files <- function(phase) {
   main_folder <- "../../Data/clean/"
- # day3_q <- read.csv( file=paste0("../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
-day3_q <- read.csv( file=paste0("../../Data/clean/clean_day2/",phase,"/day2_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
+ 
+#day3_q <- read.csv( file=paste0("../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
+ subj_day3 <- read.xlsx(paste0("../../../Data/raw/day2/",phase,"/select_day2_",phase,".xlsx"))
   # 获取所有子文件夹的路径
   subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.names = TRUE)
-  select_subj <- unique(day3_q$ID)
+  select_subj <- unique(subj_day3$ID)##根据day3的被试选择数据
 
   for (subfolder in subfolders) {
     phase_folder <- file.path(subfolder, phase)
@@ -102,7 +99,7 @@ day3_q <- read.csv( file=paste0("../../Data/clean/clean_day2/",phase,"/day2_q_",
   }
 }
 
-select_files("phase_007")
+select_files("phase_003")
 ```
 
 ```{r 合并select内的各问卷和任务的目前所有阶段的数据储存在all内}
@@ -137,10 +134,11 @@ merge_files("day0")
 merge_files("ALT2")
 merge_files("day1_q")
 merge_files("day2_q")
-merge_files("day3_q")
+
 merge_files("ALT1")
 merge_files("IAT")
 merge_files("SRET")
+merge_files("day3_q")
 ```
 
 ```{r}

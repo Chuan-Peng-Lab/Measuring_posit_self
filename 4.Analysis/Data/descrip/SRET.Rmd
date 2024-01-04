@@ -1,0 +1,483 @@
+---
+title: "SRET"
+output: html_notebook
+---
+
+## SRET
+## SRET的评估阶段按键“yes”，RT
+```{r SRET EW}
+SRET_EW<-function(data){
+  
+  # EW阶段的yes比例和rt汇总
+SRET_EW<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) 
+                                                                                                                                                SRET_EW_rt<-SRET_EW%>%                                                                                                                           select(-ID)%>%                                                                                                                                 group_by(person,valence,domain)%>%
+     summarize(
+             avg_rt_mean= mean(rt, na.rm = TRUE),
+            avg_sd_rt=sd(rt, na.rm = TRUE),
+            all_max_rt = max(rt, na.rm = TRUE),
+            all_min_rt = min(rt, na.rm = TRUE),)                                                                                                         
+    print(SRET_EW_rt)                                                                                                                                             
+SRET_EW<-SRET_EW%>%#去掉干扰词
+  group_by(ID,person,valence,domain)%>%
+  summarize(N_Yes = sum(responses == "yes"),
+            N_No = sum(responses == "no"),
+            N=n(),
+            pro_yes=N_Yes/N,
+            avg_rt = mean(rt, na.rm = TRUE),
+            sd_rt=sd(rt, na.rm = TRUE),
+           )
+print(SRET_EW)
+a<-describe(SRET_EW)
+print(a)
+
+SRET_EW_subj<- SRET_EW %>%
+  left_join(SRET_EW_rt, by = c("person", "valence", "domain")) %>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt)
+print(SRET_EW_subj)
+#assign("SRET_EW_subj", SRET_EW_subj, envir = .GlobalEnv)
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，yes比例
+SRET_EW_ANOVA<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="pro_yes",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),)%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+ #  EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+  EMMEANS("person", by=c("domain", "valence")) 
+print(SRET_EW_ANOVA)
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，rt
+SRET_EW_ANOVA2<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="avg_rt",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),)%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+  # EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+  EMMEANS("person", by=c("domain", "valence")) 
+print(SRET_EW_ANOVA2)
+
+ 
+
+
+
+  #print(rt_EW_moral)
+   pro_yes_EW <- SRET_EW %>%
+    ggplot(., aes(x = valence, y = pro_yes, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = pro_yes), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('pro_yes') + xlab('valence') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+     facet_wrap(~domain)+
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: pro_yes of SRET_EW")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
+
+ 
+  print(pro_yes_EW)
+  ###############################
+  # rt plot
+  rt_EW_rt <- SRET_EW %>%
+    ggplot(., aes(x = valence, y = avg_rt, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') + xlab('valence') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+     facet_wrap(~domain)+
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: RT of SRET_EW")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
+
+ 
+  print(rt_EW_rt)
+}
+SRET_EW(SRET_all)
+```
+
+```{r 计算题}
+SRET_math<-function(data){
+  
+  # EW阶段的yes比例和rt汇总
+SRET_math<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("SRET_math_calculate") )%>% #选择正式实验的数据
+  group_by(ID)%>%
+  summarize(total_rt = sum(rt, na.rm = TRUE),
+    n_correct = sum(correct == "1"),
+            N=n(),
+            mean_rt=mean(rt, na.rm = TRUE),
+acc=n_correct/N  )
+print(SRET_math)
+print(describe(SRET_math))
+assign("SRET_math", SRET_math, envir = .GlobalEnv)
+
+rt_SRET_math <- ggplot(SRET_math, aes(x = mean_rt)) +
+  geom_density(fill = "skyblue", alpha = 0.7) +
+  labs(title = "Density Plot of mean_rt",
+       x = "mean_rt") +
+  theme_minimal()
+
+# 绘制acc的概率密度分布图
+acc_SRET_math <-ggplot(SRET_math, aes(x = acc)) +
+  geom_density(fill = "lightcoral", alpha = 0.7) +
+  labs(title = "Density Plot of acc",
+       x = "acc") +
+  theme_minimal()
+
+  print(rt_SRET_math/acc_SRET_math)
+
+
+}
+SRET_math(SRET_all)
+```
+
+### SRET第一步新旧词判断
+```{r SRET RJ_formal1}
+SRET_RJ <- function(data) {
+  SRET_RJ <- data %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) 
+   #############################
+   SRET_RJ_rt <- SRET_RJ %>%
+     group_by(ID,domain,valence,person) %>%#, valence
+    summarize(
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+      max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    )%>%
+    ggplot(., aes(x = valence, y = avg_rt, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') + xlab('valence') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+     facet_wrap(~domain)+
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: RT of SRET_RJ")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
+   print(SRET_RJ_rt)
+###########计算每个被试的再认正确率#####
+ SRET_RJ <- SRET_RJ %>%
+    group_by(ID,domain,valence) %>%#, valence
+    summarize(
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),
+      CR = sum(sdt == "cr"),
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+     self_H = sum(sdt == "hit"& person=="self")/10,
+     friend_H = sum(sdt == "hit"& person=="friend")/10,
+     P_H = H/(H+M),
+     P_FA = FA/(FA+CR),
+      recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+      max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+      P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),# if hit rate is 1, standardize it
+      P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), # if FA rate is 0, standardize it
+      Correct_recognition = P_H - P_FA,
+      Z_P_H = qnorm(P_H),
+      Z_P_FA = qnorm(P_FA),
+      d_prime = Z_P_H - Z_P_FA) 
+ 
+   print(SRET_RJ)
+   a<-describe(SRET_RJ)
+   print(a)
+   
+   assign("SRET_RJ", SRET_RJ, envir = .GlobalEnv)
+   
+###### 计算总体的统计值####################
+ SRET_RJ_rt <- data %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   select(-ID)%>%
+    group_by(domain, valence ) %>%#, valence
+    summarize(
+      all_H = sum(sdt == "hit"),
+      all_M = sum(sdt == "miss"),
+      all_FA = sum(sdt == "fa"),
+      all_CR = sum(sdt == "cr"),
+      all_new= sum(responses %in% c("new")),#按键为新词
+      all_old=sum(responses %in% c("old")),
+      all_familiar=sum(responses %in% c("familiar")),
+    
+     all_self_H = sum(sdt == "hit"& person=="self")/10,
+     all_friend_H = sum(sdt == "hit"& person=="friend")/10,
+     all_P_H = all_H/(all_H+all_M),
+     all_P_FA = all_FA/(all_FA+all_CR),
+   
+all_recognition = (all_H + all_CR)/(all_H + all_CR + all_M + all_FA),## valence * domain,4个条件 *（20 new+ 20 old）,20 old = 10 self +10 friend
+      avg_rt_mean = mean(rt, na.rm = TRUE),
+      avg_sd_rt = sd(rt, na.rm = TRUE),
+      all_max_rt = max(rt, na.rm = TRUE),
+    all_min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+      all_P_H = ifelse(all_P_H == 1, 1 - 1 / (2 * (all_H + all_M)),all_P_H),# if hit rate is 1, standardize it
+      all_P_FA = ifelse(all_P_FA == 0, 1 / (2 * (all_H + all_M)), all_P_FA), # if FA rate is 0, standardize it
+      all_Correct_recognition = all_P_H - all_P_FA,
+      all_Z_P_H = qnorm(all_P_H),
+      all_Z_P_FA = qnorm(all_P_FA),
+      all_d_prime = all_Z_P_H - all_Z_P_FA) 
+print(SRET_RJ_rt)
+ ###################排除被试，反应时在3个标准差以外，再认正确率小于等于0.5，矫正的正确率是负######################## 
+SRET_RJ_subj<- SRET_RJ%>%
+  left_join(SRET_RJ_rt, by = c("valence", "domain"))%>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt|recognition<=0.5|Correct_recognition<0|d_prime<0) 
+
+print(SRET_RJ_subj)
+assign("SRET_RJ_subj", SRET_RJ_subj, envir = .GlobalEnv)
+
+SRET_RJ_ID<-unique(SRET_RJ_subj$ID)
+print(SRET_RJ_ID)
+###########################################################
+   
+    SRET_RJ_plot2 <- SRET_RJ %>% 
+    ggplot(.,aes(x=valence,y=recognition, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =valence, y =recognition),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('recognition')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: recognition of SRET_RJ ")
+    print(SRET_RJ_plot2)
+    
+     SRET_RJ_plot3 <- SRET_RJ %>% 
+    ggplot(.,aes(x=valence,y=d_prime, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =valence, y =d_prime),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('d_prime')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 11: d_prime of SRET_RJ ")
+    print(SRET_RJ_plot3)
+    
+    SRET_RJ_ANOV<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="avg_rt",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+    print(SRET_RJ_ANOV)
+    
+     SRET_RJ_ANOV2<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="recognition",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+     print(SRET_RJ_ANOV2)
+     
+ SRET_RJ_ANOV3<-SRET_RJ%>%
+      MANOVA(.,subID="ID",dv="Correct_recognition",#Correct_recognition
+       within=c("domain","valence"))%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")
+     print(SRET_RJ_ANOV3)
+     
+}
+
+# 调用函数并存储结果
+SRET_RJ(SRET_all)
+```
+
+### SRET第二步词汇来源判断
+```{r SRET RJ_formal2_source_memory}
+SRET_Source_M<-function(data){
+SRET_RJ_2 <- data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )
+print(SRET_RJ_2)
+
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  group_by(ID,valence,domain) %>%
+  summarize(
+    n=n(), #所有按键反应了的试次
+   count_self = sum(responses == "self"),#所有反应是“self”的试次
+   count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+    self_M = 10-self_H,# 信号为self，没有被反应为“self
+   friend_M = 10-friend_H, # 信号为friend，没有被反应为“friend
+      FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      CR = 20-FA,#总共20新词，去掉被判断为旧词（信号），正确拒绝旧词
+      self_recognition = self_H /count_self,
+   # number of correct source attributions for self/ number of hits for self
+   friend_recognition = friend_H/ count_friend,
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+   max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+  )
+print(SRET_RJ_2)
+
+########################################
+# 使用group_by和summarize检查每个ID的行数
+id_counts <- SRET_RJ_2 %>%
+  ungroup()%>%
+  group_by(ID) %>%
+  summarize(row_count = n())
+
+# 检查是否每个ID都有4行数据
+all_ids_have_four_rows <- all(id_counts$row_count == 4)
+select_subj<- id_counts %>%
+  filter(row_count != 4) %>%
+  pull(ID)
+print(select_subj)
+assign("select_subj", select_subj, envir = .GlobalEnv)
+
+SRET_RJ_2rt<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )%>%
+  group_by(valence,domain) %>%
+  summarize(
+    all_n=n(), #所有按键反应了的试次
+   all_count_self = sum(responses == "self"),#所有反应是“self”的试次
+   all_count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   all_self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   all_friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+    all_self_M = 10-all_self_H,# 信号为self，没有被反应为“self
+   all_friend_M = 10-all_friend_H, # 信号为friend，没有被反应为“friend
+      all_FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      all_CR = 20-all_FA,#总共20新词，去掉被判断为旧词（信号），正确拒绝旧词
+      all_self_recognition = all_self_H /all_count_self,
+   # number of correct source attributions for self/ number of hits for self
+   all_friend_recognition = all_friend_H/ all_count_friend,
+      avg_rt_mean = mean(rt, na.rm = TRUE),
+      avg_sd_rt = sd(rt, na.rm = TRUE),
+   all_max_rt = max(rt, na.rm = TRUE),
+    all_min_rt = min(rt, na.rm = TRUE),
+  )%>%
+  pivot_longer(cols = c(all_self_recognition, all_friend_recognition),
+               names_to = "person",
+               values_to = "all_recognition")%>%
+  mutate(person = case_when(
+    person == "all_self_recognition" ~ "self",
+    person == "all_friend_recognition" ~ "friend",
+  ))            
+print(SRET_RJ_2rt)
+
+#########################################
+
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  pivot_longer(cols = c(self_recognition, friend_recognition),
+               names_to = "person",
+               values_to = "recognition")%>%
+  mutate(person = case_when(
+    person == "self_recognition" ~ "self",
+    person == "friend_recognition" ~ "friend",
+  ))                   
+print(SRET_RJ_2)
+
+SRET_RJ_2_subj<- SRET_RJ_2%>%
+  left_join(SRET_RJ_2rt, by = c("person","valence", "domain"))%>% 
+  filter(avg_rt < avg_rt_mean - 3 * avg_sd_rt | avg_rt > avg_rt_mean + 3 * avg_sd_rt|recognition<0.1) %>%
+  select(ID,person,valence,domain,avg_rt,avg_rt_mean,recognition,all_recognition,)
+print(SRET_RJ_2_subj)
+SRET_RJ_2_ID<-unique(SRET_RJ_2_subj$ID)
+print(SRET_RJ_2_ID)
+assign("SRET_RJ_2_subj", SRET_RJ_2_subj, envir = .GlobalEnv)
+
+
+ SRET_RJ2_plot <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=person,y=recognition, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =person, y =recognition),outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+ylab('ACC')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: acc of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot)
+   
+   SRET_RJ2_plot2 <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=person,y=avg_rt, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =person, y =avg_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+ facet_wrap(~domain)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 11: RT of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot2)
+   
+ 
+
+}
+SRET_Source_M(SRET_all)
+```

@@ -39,10 +39,10 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 subj_phase_day1 <- function(phase,Moneny, Paid_date) {
   # 读取 subj_day0_phase_003 数据
   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
- 
+print(subj_day0)
   # 读取 subj_day1_phase_003 数据
-  subj_day1 <- read.csv(list.files(paste0("../../../Data/raw/day1/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
-    slice(-1) %>%
+  subj_day1 <- read.csv(list.files(paste0("../../../Data/raw/day1/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8", colClasses=c("UserId"="character"))%>%
+    slice(-1)%>%
     select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) %>%#去除无关列
     rename(
       USERID = UserId,#脑岛ID
@@ -63,8 +63,10 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
     mutate(Eligible = "",
            Moneny = Moneny,
            Paid_date = Paid_date) %>%
-    merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
-  
+    merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID")
+  str(subj_day1)
+  print(subj_day1)
+  assign("subj_day1", subj_day1, envir = .GlobalEnv)
   #####由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
  # subj_day0_row <- subj_day0[subj_day0$ID == "phase_005_subj_17", c("USERID", "Subject.Name", "ParticipantID", "ID")]
  # subj_day1 <- bind_rows(subj_day1, subj_day0_row)
@@ -74,7 +76,7 @@ subj_phase_day1 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
-subj_phase_day1("phase_008","10","12.24")
+subj_phase_day1("phase_009","10","12.30")
 
 ```
 
@@ -84,7 +86,7 @@ subj_phase_day1("phase_008","10","12.24")
 ```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_008/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
+list.files("../../../Data/raw/day1/phase_009/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
 
 #汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -110,19 +112,25 @@ combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入
 
 
 # 使用示例，每次运行仅需修改此3个参数，[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_008", 1,19)
+combine_csv_files("phase_009", 1,23)
 
 
 ```
 
 ```{r 预处理本轮day1的数据 }
 
-day1_process<-function(phase){
-  
+day1_process<-function(phase){ 
   #创建子文件夹"../../../Data/clean/clean_day1/phase"用于储存清洗后的文件
-  
-  dir.create(paste0("../../../Data/clean/clean_day1/",phase), recursive = TRUE)
-  
+  folder_path <- paste0("../../../Data/clean/clean_day1/",phase)
+
+# 检查文件夹是否存在
+if (file.exists(folder_path)) {
+  # 如果存在，则删除原文件夹
+  unlink(folder_path, recursive = TRUE)
+}
+# 创建新的空白文件夹
+dir.create(folder_path, recursive = TRUE)
+
   #读取文件
   
    filePath<-paste0("../../../Data/raw/day1/",phase,"/day1_",phase,".csv")
@@ -218,7 +226,7 @@ assign("trap1", trap1, envir = .GlobalEnv)
 ## 运行范例，[标记不同批次]
 
 
-day1_process("phase_008")
+day1_process("phase_009")
 ```
 
 
@@ -287,6 +295,7 @@ print(ex_subj)
 # 读取 subj_day1 数据
 subj_day1 <- read.xlsx(paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
 
+
 # 根据 ex_subj 的 ID 列填充 Eligible 列，如果在无效数据中，则填入no,否则为yes，上传到飞书subj_info的所有参加day1的被试信息
 subj_day1 <- subj_day1 %>%
   mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
@@ -311,7 +320,7 @@ write.xlsx(invalid_day1, file = paste0("../../../Data/raw/day1/", phase, "/inval
 
 ##仅需修改此代码；分别为“批次号”
 
-select_day1("phase_008")
+select_day1("phase_007")
 ```
 
 

@@ -257,9 +257,15 @@ ALT1 <-ALT1_all%>% #选择正式实验的数据
     acc = correct_count /all_count )
 ```
 
-
-
 # ALT2
+```{r ALT2数据选择}
+ALT2_all <- ALT2_all%>%mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  filter(screen_id%in%c("ability","moral"))
+```
+
+
 快同效应的检查
 ```{r}
 ALT2_fastSame<-function(data){
@@ -283,7 +289,8 @@ print(ALT2)
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure a: ACC of ALT2")
+    ggtitle("Figure a: ACC of ALT2")+
+  guides(fill = guide_legend(title = "identity"), colour = guide_legend(title = "identity"))
 
   # RT plot
   rt_plot <- ggplot(ALT2, aes(x = domain, y = avg_rt, fill = identity, colour = identity)) +
@@ -294,7 +301,8 @@ print(ALT2)
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure b: RT of ALT2")
+    ggtitle("Figure b: RT of ALT2")+
+  guides(fill = guide_legend(title = "identity"), colour = guide_legend(title = "identity"))
 
   # Combine plots vertically
   final_plot <- acc_plot | rt_plot
@@ -323,12 +331,7 @@ Self-relevance × Valence
 d'prime,rt,acc
 
 
-```{r}
-ALT2_all <- ALT2_all%>%mutate(ID = as.character(ID)) %>%
-   mutate(ParticipantID = as.character(ParticipantID)) %>%
-  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
-  filter(screen_id%in%c("ability","moral"))
-```
+
 ```{r}
 ALT2_analysis<-function(data){
   
@@ -376,11 +379,11 @@ print(ALT2)
     geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
     geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
     geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
-    ylab('Acc') +  coord_flip() +
+    ylab('RT') +  coord_flip() +
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure 2a: ACC of ALT2_moral")+
+    ggtitle("Figure 2a: RT of ALT2_moral")+
   guides(fill = guide_legend(title = "reference"), colour = guide_legend(title = "reference"))
 # rt_ability
   rt_plot2 <- ALT2%>%
@@ -389,11 +392,11 @@ print(ALT2)
     geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
     geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
     geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
-    ylab('Acc') +  coord_flip() +
+    ylab('RT') +  coord_flip() +
     theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
     scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
-    ggtitle("Figure 2b: ACC of ALT2_ability")+
+    ggtitle("Figure 2b: RT of ALT2_ability")+
   guides(fill = guide_legend(title = "reference"), colour = guide_legend(title = "reference"))
 
   # Combine plots vertically
@@ -453,7 +456,19 @@ ALT2_moral_SDT<-ALT2_all%>%
   filter(domain=="ability")%>%
   fun_sdt_ALT2(.)
 ```
+
 ```{r}
+?stats::model.matrix
+
+ALT2_ability_SDT<-ALT2_all%>%
+ filter(domain=="ability") %>%##
+          filter(!is.na(correct))%>%
+                dplyr::mutate(ismatch = ifelse(identity=="match", 1, 0),
+                              saymatch = ifelse((identity=="match" & correct == 1) | 
+                                                        (identity == 'nonmatch' & correct == 0), 1, 0),
+                              Valence = factor(valence, levels = c('negative','positive')),
+                              Reference = factor(person, levels = c('self', 'friend')))
+a<-  model.matrix(saymatch ~ 0 +Reference:Valence + ismatch:Reference:Valence  ,data = ALT2_ability_SDT)
 (1+Reference)
 (0 +Reference:Valence + ismatch:Reference:Valence)
 ```

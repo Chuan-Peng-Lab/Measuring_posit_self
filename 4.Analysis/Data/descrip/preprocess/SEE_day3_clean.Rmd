@@ -35,7 +35,7 @@ subj_phase_day3 <- function(phase,Eligible,Moneny, Paid_date) {
   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/",phase, "/subj_day0_",phase, ".xlsx"))
 
 # 导入文件，修改phase_002
-subj_day3<-read.csv(list.files(paste0("../../../Data/raw/day3/", phase, "/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
+subj_day3<-read.csv(list.files(paste0("../../../Data/raw/day3/", phase, "/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8",colClasses=c("UserId"="character"))%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","Node","Env_Q1","Env_Q2","Env_Q3","Env_Q4","Env_Q5","X"))%>%
   rename(
@@ -56,13 +56,13 @@ write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_
 }
 # 调用函数并传入相应的 phase 参数,“批次号”，“是否符合要求”，“报酬金额”，“发放报酬的日期”
 
-subj_phase_day3 ("phase_006","yes","109","12.20")
+subj_phase_day3 ("phase_007","yes","109","12.28")
 ```
 
 ### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
 ```{r check environment}
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day3/phase_006/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day3/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) 
@@ -93,7 +93,7 @@ merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修
 
 
 # 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_006",1,15)#修改phase_002
+combine_csv_files("phase_007",1,15)#修改phase_002
 
 
 ```
@@ -145,7 +145,7 @@ assign("trap3", trap3, envir = .GlobalEnv)
 
 }
 
-day3_process("phase_006")#修改phase_002
+day3_process("phase_007")#修改phase_002
 
 ```
 
