@@ -3,16 +3,6 @@ title: "SEE_day0_clean"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 
 ```{r setup, include=FALSE}
 getwd() #查看工作目录，work directory is 'Measuring_Pos_Self/4.Analysis/Data/descrip/preprocess'
@@ -33,26 +23,11 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
 pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer","jmv")
 ```
 
-```{r}
-files<-list.files("../../../../",pattern = "\\.xlsx$", full.names = TRUE)
-combined_data <- NULL
-for (file in files) {
-    tmp <- read.xlsx(file)  # 逐个读取csv文件，fileEncoding可能为UTF-8 或 GBK
-    
-    if (is.null(combined_data)) {
-      combined_data <- tmp
-    } else {
-      combined_data <- rbind(combined_data, tmp)
-    }}
-write.xlsx(combined_data,"../../../../phase_06_exclud_subj.xlsx", rowNames = FALSE)
-```
-
-
 
 ### 检查工作环境，查看文件列表
 ```{r check environment}
 
-#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_002”，查看对应的文件夹内的文件
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_00x”，查看对应的文件夹内的文件
 
 list.files("../../../Data/raw/day0/phase_010/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
@@ -86,7 +61,7 @@ combine_csv_files("phase_010",1,25)
 
 ### Prepare clean data for variables.
 
-##先在../../../Data/clean/clean_day0/建立子文件phase_004
+##先在../../../Data/clean/clean_day0/建立子文件phase_00x
 
 ```{r day0 处理合并后的raw data}
 
@@ -122,12 +97,12 @@ day0_process("phase_010")
 
 subj_phase_day0 <- function(phase,Eligible,Moneny,Paid_date) {
 
-# 导入文件，修改文件地址“/phase_002/day0_all_phase_002.csv”中的批次号“phase_002”
+# 导入文件，修改文件地址“/phase_00x/day0_all_phase_00x.csv”中的批次号“phase_00x”
 day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%
   rename(No=X)#重命名列
 
 
-# 导入文件，修改文件地址"../../../Data/raw/day0/phase_002/"中的批次号“phase_002”
+# 导入文件，修改文件地址"../../../Data/raw/day0/phase_00x/"中的批次号“phase_00x”
 subj_day0<-read.csv(list.files(paste0("../../../Data/raw/day0/",phase,"/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")%>%
     slice(-1)%>%
   select(-c("Subject.IDs","NodeId","X"))%>%#去除这些列
@@ -150,7 +125,7 @@ subj_day0<-read.csv(list.files(paste0("../../../Data/raw/day0/",phase,"/"),patte
   mutate(No= row_number())%>%#按行依次编号
 merge(.,day0_all[, c("No", "ID","ParticipantID","subj_idx")], by = "No", all.x = TRUE)#将ID合并进文件
 
-# 导出文件，输出的文件地址"../../../Data/raw/day0/phase_002/subj_day0_phase_002.xlsx",修改批次号“phase_002”
+# 导出文件，输出的文件地址"../../../Data/raw/day0/phase_00x/subj_day0_phase_00x.xlsx",修改批次号“phase_00x”
 write.xlsx(subj_day0, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))
 
 #subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
@@ -181,30 +156,32 @@ subj_phase_day0("phase_010","yes","1","1.4 ")
 ## 18-35岁
 ## income_scale = ["A.无收入", "B.2000 元以下", "C.2000—5000 元", "D.5000—10000 元", "E.10000—30000 元", "F.30000—50000 元", "G.50000—100000 元","H.100000—150000 元", "I.150000—200000元", "J.200000 元以上"];
 ## phq 0、1、2、3分值。PHQ-9总分值范围从0～27分。分值5、10、15、20分别相对应代表轻、中、中重、重度抑郁分界值。
-## gad 0、1、2、3分。ＧＡＤ－7总分范围为0～21分。分值 5、10、15分别对应代表“轻度”、“中度”、“重度”焦 虑程度分界值。国外大规模样本研究显示当分 界值取10分时，ＧＡＤ－7的敏感度和特异度最佳，分别为89％和82%
+## gad 0、1、2、3分。ＧＡＤ－7总分范围为0～21分。分值 5、10、15分别对应代表“轻度”、“中度”、“重度”焦虑程度分界值。国外大规模样本研究显示当分 界值取10分时，ＧＡＤ－7的敏感度和特异度最佳，分别为89％和82%
 ## selfclarity 该量表使用 5 点计分法，1 表示“完全不符”，5 表示“完全符合”，共 12 题，其中 6、11 采用正向计分题，其余题目均需反向计分[js代码中已经反向计分]。最终总分越高说明自我概念清晰性越高。
 
 
 ```{r day0 数据总分计算，分类}
 plot_descript_day0<-function(phase){
   
-  day0_subj<-read.xlsx(paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))
+  day0_subj<-read.xlsx(paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))  # 参加day0实验的所有被试
   
-day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), fileEncoding = "UTF-8")
+day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), fileEncoding = "UTF-8")  # day0问卷数据
 
 invalid_day0<-day0_all%>%
   filter(age>59|age<18)%>%
-print()
-write.xlsx(invalid_day0, file = paste0("../../../Data/raw/day0/", phase, "/invalid_day0_", phase, ".xlsx"))
+print()  ## day0中年龄小于18或大于59岁
+
+write.xlsx(invalid_day0, file = paste0("../../../Data/raw/day0/", phase, "/invalid_day0_", phase, ".xlsx"))  ##输出无效被试
+
 day0_subj<-day0_subj%>%
   filter(!ID %in% invalid_day0$ID)
-write.xlsx(day0_subj, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))
+
+write.xlsx(day0_subj, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))  ## 输出参加day0符合条件的被试
 
 day0_all <- day0_all %>%
    filter(age<=59&age>=18)%>%
   select(-birthday,-ID,No,ParticipantID)%>%
   mutate(
-     
     age=case_when(
           between(age, 18, 28) ~ "18~28",
           between(age, 28, 38) ~ "28~38",
@@ -288,8 +265,6 @@ mutate(gad_al = rowSums(select(., starts_with("gad_")))) %>%
 day0_1<-day0_all%>%
   select(age,obj_ses1,fri_ses2,sex,fatherEdu, motherEdu,FatherOccupation,MotherOccupation,income,phq,gad)
   
-  #print(prop.table(day0_1$age))
-print(table(day0_1$phq,day0_1$gad))
 #绘制离散变量的棒图
 plot_bar(day0_all)
 

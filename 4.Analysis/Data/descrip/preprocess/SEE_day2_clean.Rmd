@@ -3,16 +3,7 @@ title: "SEE_day2_clean"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 ```{r setup, include=FALSE}
 getwd() #查看工作目录，
 
@@ -75,7 +66,7 @@ subj_phase_day2 <- function(phase,Moneny, Paid_date) {
 }
 
 # 调用函数并传入相应的 phase 参数
-subj_phase_day2("phase_008","10","12.27")
+subj_phase_day2("phase_009","10","1.5")
 
 ```
 
@@ -84,7 +75,7 @@ subj_phase_day2("phase_008","10","12.27")
 ```{r check environment}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day2/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
+list.files("../../../Data/raw/day2/phase_009/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
@@ -110,7 +101,7 @@ combine_csv_files <- function(phase,firstnum, lastnum) {  ##[批次号，输入�
 
 
 # 使用示例，每次运行仅需修改此3个参数，[批次号，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_007",1,15)
+combine_csv_files("phase_009",1,22)
 
 ```
 
@@ -220,12 +211,12 @@ select(-c("subj_idx"))
  filter(grepl("我", trap2_item) )%>%
  select(c("ID","ParticipantID","trap2","trap2_item"))%>%
   mutate(correct = ifelse(trap2 %in% c(1, 2, 3), 1, 0))#选1-3都是正确的
-assign("trap2", trap2, envir = .GlobalEnv)
+assign("trap2", trap2, envir = .GlobalEnv)  # 将陷阱题导入环境
 
   
 }
 
-day2_process("phase_007")
+day2_process("phase_009")
 ```
 
 
@@ -527,7 +518,7 @@ print(select_subj)
 
 ##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
 
-select_day2("phase_003")
+select_day2("phase_009")
 ```
 
 ```{r}

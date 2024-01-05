@@ -37,10 +37,10 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 
 ```{r 初步生成day1被试信息的文件}
 subj_phase_day1 <- function(phase,Moneny, Paid_date) {
-  # 读取 subj_day0_phase_003 数据
+  # 读取 subj_day0_phase_00x 数据
   subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
 print(subj_day0)
-  # 读取 subj_day1_phase_003 数据
+  # 读取 subj_day1_phase_00x 数据
   subj_day1 <- read.csv(list.files(paste0("../../../Data/raw/day1/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8", colClasses=c("UserId"="character"))%>%
     slice(-1)%>%
     select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) %>%#去除无关列
@@ -75,7 +75,7 @@ print(subj_day0)
   write.xlsx(subj_day1, paste0("../../../Data/raw/day1/", phase, "/subj_day1_", phase, ".xlsx"))
 }
 
-# 调用函数并传入相应的 phase 参数,“批次号”，，“报酬金额”，“发放报酬的日期”
+# 调用函数并传入相应的 phase 参数,“批次号”，“报酬金额”，“发放报酬的日期”
 subj_phase_day1("phase_009","10","12.30")
 
 ```
@@ -86,9 +86,9 @@ subj_phase_day1("phase_009","10","12.30")
 ```{r 合并本轮day1所有数据}
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day1/phase_009/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改phase_003为当前批次号，即可查看本次day1收集到的数据文件
+list.files("../../../Data/raw/day1/phase_009/jsPsych",pattern = "\\.csv$", full.names = TRUE)   #修改phase_00x为当前批次号，即可查看本次day1收集到的数据文件
 
-#汇总本轮day1所有被试的数据
+# 汇总本轮day1所有被试的数据
 combine_csv_files <- function(phase, firstnum, lastnum) {  ##[批次号，输入文件列表的文件起始编号，终止编号]
    folder_path<-paste0("../../../Data/raw/day1/",phase,"/jsPsych")
   files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
@@ -220,7 +220,7 @@ day1_all <- day10 %>%
     trap1<-day10%>%
  filter(grepl("请", trap1_item))%>%
  select(c("ID","ParticipantID","trap1","trap1_item","correct"))
-assign("trap1", trap1, envir = .GlobalEnv)
+assign("trap1", trap1, envir = .GlobalEnv)   # 将陷阱题导入环境
 }
 
 ## 运行范例，[标记不同批次]
@@ -289,7 +289,7 @@ ex_subj <- bind_rows(
   IAT_select %>% filter(note == "invalid")
 )
 
-#查看两个组合后的无效数据
+# 查看两个组合后的无效数据
 print(ex_subj)
 
 # 读取 subj_day1 数据
