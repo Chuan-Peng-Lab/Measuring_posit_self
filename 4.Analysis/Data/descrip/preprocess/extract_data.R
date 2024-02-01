@@ -1,15 +1,25 @@
 
 setwd("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess")
 
+
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+#install.packages("cowplot")
+# 加载所需要的R包
+pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles"," TreeBUGS","igraph","brms","here")
+source("../R_rainclouds.R")
+
+
 # 将clean data内的数据根据day3的最终被试选取这部分数据存入select
 select_files <- function(phase) {
   main_folder <- "../../../Data/clean/"
  
-#day3_q <- read.csv( file=paste0("../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
- subj_day3 <- read.xlsx(paste0("../../../Data/raw/day2/",phase,"/select_day2_",phase,".xlsx"))
+day3_q <- read.csv( file=paste0("../../../Data/clean/clean_day3/",phase,"/day3_q_", phase, ".csv"), fileEncoding = 'UTF-8', header = TRUE)
+ #subj_day3 <- read.xlsx(paste0("../../../Data/select/select_day2.xlsx"))
   # 获取所有子文件夹的路径
   subfolders <- list.files(path = main_folder, pattern = "clean_day[0-3]", full.names = TRUE)
-  select_subj <- unique(subj_day3$ID)##根据day3的被试选择数据
+  select_subj <- unique(day3_q$ID)##根据day3的被试选择数据
 
   for (subfolder in subfolders) {
     phase_folder <- file.path(subfolder, phase)
@@ -37,7 +47,7 @@ select_files <- function(phase) {
   }
 }
 
-select_files("phase_008")
+select_files("phase_013")
 
 
 
@@ -86,3 +96,49 @@ merge_files("ALT1")
 merge_files("IAT")
 merge_files("SRET")
 merge_files("day3_q")
+
+
+
+# 设置主文件夹路径
+main_folder <- "../../../Data/clean/clean_day2/"
+
+# 获取所有以"phase"开头的子文件夹的路径
+subfolders <- list.files(path = main_folder,  full.names = TRUE)
+
+# 初始化合并后的数据框
+merged_data <- NULL
+
+# 循环遍历每个子文件夹
+for (subfolder in subfolders) {
+  # 获取当前子文件夹内以"SRET"开头的CSV文件
+  csv_files <- list.files(path = subfolder, pattern = "^SRET.*\\.csv$", full.names = TRUE)
+  
+  # 循环遍历每个CSV文件，并进行合并
+  for (csv_file in csv_files) {
+    temp_data <- read.csv(csv_file)
+    merged_data <- rbind(merged_data, temp_data)
+  }
+}
+
+# 保存合并后的数据框为CSV文件
+write.csv(merged_data, file = "../../../Data/select/SRET/SRET.csv", row.names = FALSE)
+
+
+
+day3_q_all<-read.csv("../../../Data/all/day3_q_all.csv")
+
+SRET<-read.csv("../../../Data/all/SRET_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+ALT1_all<-read.csv("../../../Data/all/ALT1_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+day0_all<-read.csv("../../../Data/all/day0_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+day1_q_all<-read.csv("../../../Data/all/day1_q_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+day2_q_all<-read.csv("../../../Data/all/day2_q_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+IAT_all<-read.csv("../../../Data/all/IAT_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+ALT2_all<-read.csv("../../../Data/all/ALT2_all.csv")%>%
+  subset(., ID %in% day3_q_all$ID)
+

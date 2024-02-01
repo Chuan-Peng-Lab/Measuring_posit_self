@@ -1,0 +1,1410 @@
+---
+title: "RG_self_combinations"
+output: html_document
+date: '2022-07-18'
+---
+
+<!--code to help with formatting for pdfs-->
+```{r, global_options, include=FALSE}
+knitr::opts_chunk$set(message=FALSE)
+
+```
+
+```{r load_packages, echo=FALSE, message=FALSE,warning=FALSE}
+#Load necessary packages and libraries
+library(dplyr) #tidy data
+library(tidyr)#tidy data
+library(languageR) #tidy data
+library(tibble) # tidy data
+library(lme4) # glmer
+library(emmeans) #post hoc glmer analysis
+library(sjPlot) #summary
+library(ggplot2) # figures
+library(forcats) #fct_relevel
+library(DHARMa) #GLMM model validation
+library(brms) #bayesian glmm
+library(stringr)
+library(ggeffects) #plots
+library(papaja) #apa figures
+library(cowplot) #combining plots
+library(ggpubr) #combining plots
+library(patchwork) #combining plots
+
+# Set working directory to the files location
+#*change to file location 
+setwd("C:/Users/becca/OneDrive - University of Aberdeen/PhD/RG joint paper/Write-up/Cognition_submission/Resubmission/Revised_Data_analysis_code")
+```
+
+
+## Experiment1: Person and Emotion 
+```{r E1_SE:_load_data, include=FALSE}
+
+#Load data set - chance ppt removed, ALL TRIALS
+load("SE_data.Rda")
+
+#relabel pairs
+SE_data$Association[SE_data$Association == "youhappy"] <- "Self&Happy"
+SE_data$Association[SE_data$Association == "happyyou"] <- "Self&Happy"
+SE_data$Association[SE_data$Association == "friendneutral"] <- "Friend&Neutral"
+SE_data$Association[SE_data$Association == "neutralfriend"] <- "Friend&Neutral"
+SE_data$Association[SE_data$Association == "youneutral"] <- "Self&Neutral"
+SE_data$Association[SE_data$Association == "neutralyou"] <- "Self&Neutral"
+SE_data$Association[SE_data$Association == "friendhappy"] <- "Friend&Happy"
+SE_data$Association[SE_data$Association == "happyfriend"] <- "Friend&Happy"
+SE_data$Association[SE_data$Association == "you"] <- "self"
+
+#rename condition column (capatilise)
+SE_data <- rename(SE_data, "trial_type" = "condition", "Condition" = "TaskType")
+
+# # count number of trials that are <200ms
+# # Create df with CLASSIFICATION trials
+# SE_CLASS_all <- SE_data[grep("RG", SE_data$Condition), ]
+# sum(SE_CLASS_all$RT<200)
+# #154
+# (154/16920)*100
+# #=0.9101655
+
+
+#Remove RT < 200ms - unlikely to reflect conscious decision making
+SE_data <- SE_data[SE_data[, "RT"] > 200, ] 
+
+# Create df with PMT trials
+SE_PMT <- SE_data[grep("PMT", SE_data$Condition), ]
+
+# Create df with PMT MATCH trials
+SE_PMT_match <- SE_PMT[grep("\\bmatch\\b", SE_PMT$trial_type), ]
+
+# Create df with CLASSIFICATION trials
+SE_CLASS <- SE_data[grep("RG", SE_data$Condition), ]
+
+# # count number of trials that are 'timeout'
+# sum(SE_CLASS$response=="timeout")
+# #53
+# (53/16764)*100
+# #=0.3161537
+
+```
+
+```{r SE_descriptives, include=FALSE}
+#create df with just first column from each column
+SE_descriptives <- SE_data
+
+SE_descriptives$age <- as.numeric(SE_descriptives$age)
+
+
+SE_descriptive_sum <- SE_descriptives %>%
+  summarise( 
+    n=n(),
+    mean=mean(age),
+    sd=sd(age),
+    range=range(age))
+
+summary(SE_descriptive_sum)
+
+write.csv(SE_descriptives, "SE_descriptives.csv")
+```
+
+### Classification task
+
+
+### Run GLMERs with association X condition interactions and participant as a random effect for RT and accuracy.   
+  
+
+Use contrasts:  
+- Self      vs. Friend  
+- Happy     vs. Neutral
+- Congruent vs. Incongruent condition 
+
+
+```{r SE_RT_RQ2:contrasts, include=FALSE}
+
+# Create df with only paired trials
+SE_single <- SE_CLASS[grep("single", SE_CLASS$trial_type), ]
+
+summary(SE_single)
+
+#Convert variables to factor
+SE_single$Condition <- as.factor(SE_single$Condition)     
+SE_single$Association <- as.factor(SE_single$Association)     
+
+#reorder levels
+SE_single <- SE_single %>%
+  mutate(Association = fct_relevel(Association, "self", "friend", "happy", "neutral"))
+
+#check number of levels
+levels(SE_single$Condition)
+levels(SE_single$Association)
+
+
+#Contrast coding - categorical variables (non-orthogonal)#
+contrasts(SE_single$Association) <- cbind("S vs. F" = c(-.5,.5,0,0),
+                                          "H vs. N" = c(0,0,-.5,.5),
+                                          "S vs. H" = c(-.5,0,.5,0))
+
+contrasts(SE_single$Condition) <- cbind("Con vs Inc" = c(-.5,.5))
+
+#Check contrasts
+contrasts(SE_single$Association)
+contrasts(SE_single$Condition)
+
+
+#ACC - rename df
+SE_single_ACC <- SE_single
+
+#RT - only keep correct trials
+SE_single_RT <- SE_single[SE_single[, "correct"] == 1, ] 
+```
+  
+  
+#### Run RT glmer: RT ~ person * prime * condition + (1|participant)  
+
+
+```{r SE_RT_RQ2:glmer, include=FALSE}
+
+#Run glmer with full interactions and RE structure
+# SE_RT_single_int <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association*Condition|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int)
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int, file='C:/SE_RT_single_int.Rda')
+# # Model failed to converge --> simplify RE structure
+
+#Run glmer with full interactions and reduced RE structure
+# SE_RT_single_int2 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject) + (1 + Condition|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int2)
+# isSingular(SE_RT_single_int2) #TRUE
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int2, file='C:/SE_RT_single_int2.Rda')
+# #Singularity issues --> simplify RE structure
+
+# #Run glmer with full interactions and reduced RE structure
+# SE_RT_single_int3 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int3)
+# isSingular(SE_RT_single_int3) #TRUE
+# #singularity and convergence issues --> simplify RE structure
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int3, file='C:/SE_RT_single_int3.Rda')
+
+
+#Run glmer with full interactions and reduced RE structure
+SE_RT_single_int4 <- glmer(RT ~ Association*Condition  +
+                          (1 + Condition|subject),
+                          data=SE_single_RT,
+                          family=inverse.gaussian(link="identity"),
+                          control=glmerControl
+                          (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SE_RT_single_int4)
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SE_RT_single_int4, file='C:/SE_RT_single_int4.Rda')
+```
+
+```{r SE_RT_RQ2 REVISION AGE INCLUSION:glmer, include=FALSE}
+
+#Run glmer with full interactions and RE structure
+# SE_RT_single_int <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association*Condition|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int)
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int, file='C:/SE_RT_single_int.Rda')
+# # Model failed to converge --> simplify RE structure
+
+#Run glmer with full interactions and reduced RE structure
+# SE_RT_single_int2 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject) + (1 + Condition|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int2)
+# isSingular(SE_RT_single_int2) #TRUE
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int2, file='C:/SE_RT_single_int2.Rda')
+# #Singularity issues --> simplify RE structure
+
+# #Run glmer with full interactions and reduced RE structure
+# SE_RT_single_int3 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject),
+#                           data=SE_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_RT_single_int3)
+# isSingular(SE_RT_single_int3) #TRUE
+# #singularity and convergence issues --> simplify RE structure
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_RT_single_int3, file='C:/SE_RT_single_int3.Rda')
+
+
+#Run glmer with full interactions and reduced RE structure
+SE_RT_single_age_int4 <- glmer(RT ~ Association*Condition  +
+                          (1 + Condition|subject) + (1|age),
+                          data=SE_single_RT,
+                          family=inverse.gaussian(link="identity"),
+                          control=glmerControl
+                          (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SE_RT_single_age_int4)
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SE_RT_single_int4, file='C:/SE_RT_single_int4.Rda')
+```
+
+
+```{r SE_RT_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("C:/Users/becca/OneDrive - University of Aberdeen/PhD/RG joint paper/Analysis/SE_RT_single_int4.Rda")
+
+summary(SE_RT_single_int4)  
+
+ tab_model(SE_RT_single_int4, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 1 RT",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "Happy vs. Neutral",
+                           "Self vs. Happy",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "Happy vs. Neutral   X Congruent vs. Incongruent",
+                           "Self vs. Happy   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+  
+#### Posthoc analysis of significant interactions using emmeans  
+
+```{r SE_RT_RQ2: emmeans_test, echo=FALSE}
+#set option so that decimal place is not capped
+emm_options(opt.digits=FALSE)
+
+#Calculate estimated marginal means
+SE_single_RTs_emm <- emmeans(SE_RT_single_int4, specs = ~ Association*Condition)
+summary(SE_single_RTs_emm)
+
+#create df for figures
+SE_single_RTs_emm.df <- as.data.frame(SE_single_RTs_emm)
+
+#Post hoc on interaction effect
+#Create vectors for each group mean for specific pairwise comparisons
+sel.con <- c(1,0,0,0,0,0,0,0)
+fri.con <- c(0,1,0,0,0,0,0,0)
+hap.con <- c(0,0,1,0,0,0,0,0)
+neu.con <- c(0,0,0,1,0,0,0,0)
+sel.inc <- c(0,0,0,0,1,0,0,0)
+fri.inc <- c(0,0,0,0,0,1,0,0)
+hap.inc <- c(0,0,0,0,0,0,1,0)
+neu.inc <- c(0,0,0,0,0,0,0,1)
+
+#SPE across conditions
+SE_sing_per_cond_cont <- contrast(SE_single_RTs_emm, method = 
+                                list("Congruent Self - Congruent Friend" = sel.con - fri.con,
+                                     "Incongruent Self - Incongruent Friend" = sel.inc - fri.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Friend - Incongruent Friend" = fri.con - fri.inc))
+SE_sing_per_cond_cont
+
+#Confidence intervals
+SE_sing_per_cond_cont%>%
+  confint()
+
+
+#PB across conditions
+SE_sing_emo_cond_cont <- contrast(SE_single_RTs_emm, method = 
+                                list("Congruent Happy - Congruent Neutral" = hap.con - neu.con,
+                                     "Incongruent Happy - Incongruent Neutral" = hap.inc - neu.inc,
+                                     "Congruent Happy - Incongruent Happy" = hap.con - hap.inc,
+                                     "Congruent Neutral - Incongruent Neutral" = neu.con - neu.inc))
+SE_sing_emo_cond_cont
+
+#Confidence intervals
+SE_sing_emo_cond_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SE_sing_per_emo_cond_cont <- contrast(SE_single_RTs_emm, method = 
+                                list("Congruent Self - Congruent Happy" = sel.con - hap.con,
+                                     "Incongruent Self - Incongruent Happy" = sel.inc - hap.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Happy - Incongruent Happy" = hap.con - hap.inc))
+SE_sing_per_emo_cond_cont
+
+#Confidence intervals
+SE_sing_per_emo_cond_cont%>%
+  confint()
+```
+
+```{r SE_RT_RQ2:figure, echo=FALSE}
+
+##Plot model
+set_theme(base = theme_classic(),
+          axis.title.color = "black",
+          axis.textcolor.x = "black",
+          axis.textcolor.y = "black",           
+          legend.item.backcol = "white")
+
+plot_model(SE_RT_single_int4, type="int", axis.title = c( "Condition", "Response time [ms]"),
+           se=TRUE, colors =c("darkgray","black","gold", "brown"), 
+           grid = FALSE, title = "" )
+
+```
+```{r SE_RT_RQ2:figure, echo=FALSE}
+###Self & Friend df###
+SE_single_SF_RTs_emm.df <- SE_single_RTs_emm.df %>% 
+  filter(Association == c("self", "friend"))
+
+SE_SF_RT_plot <- ggplot(SE_single_SF_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and Happy \nFriend and Neutral \n", "\nSelf and Neutral \nFriend and Happy\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Self", "Friend")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SE_SF_RT_plot
+
+  
+###£9 & £1 df###
+SE_single_HN_RTs_emm.df <- SE_single_RTs_emm.df %>% 
+  filter(Association == c("happy", "neutral"))
+
+SE_HN_RT_plot <- ggplot(SE_single_HN_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and Happy \nFriend and Neutral \n", "\nSelf and Neutral \nFriend and Happy\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Happy", "Neutral")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SE_HN_RT_plot
+
+
+###Self & £9 df###
+SE_single_SH_RTs_emm.df <- SE_single_RTs_emm.df %>% 
+  filter(Association == "self" | Association == "happy")
+
+SE_SH_RT_plot <- ggplot(SE_single_SH_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and Happy \nFriend and Neutral \n", "\nSelf and Neutral \nFriend and Happy\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Self", "Happy")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SE_SH_RT_plot
+
+#combine plots
+SE_single_combined_RT_plot <- cowplot::plot_grid(SE_SF_RT_plot + 
+                                                   theme(legend.position="none") +
+                                                   xlab(NULL), 
+                                                 SE_HN_RT_plot  + 
+                                                   theme(legend.position="none") +
+                                                   xlab(NULL) +
+                                                   ylab(NULL),
+                                                 align = "vh",
+                                                 labels = c("a", "b"),
+                                                 hjust = -1,
+                                                 nrow = 1,
+                                                 rel_widths = c(1,1,.6)
+                                                 )
+SE_single_combined_RT_plot
+
+#extract legend from one of the plots
+SE_single_combined_RT_legend <- get_legend(
+  SE_SF_RT_plot + theme(legend.box.margin = margin(0, 0, 0, 12)))
+
+
+# add the legend to the combined plot
+SE_single_combined_RT_plot <- plot_grid(SE_single_combined_RT_plot, SE_single_combined_RT_legend, rel_widths = c(3, 1))
+SE_single_combined_RT_plot
+
+#Shared x label
+SE_single_combined_RT_plot<- wrap_elements(panel = SE_single_combined_RT_plot) +
+  labs(tag = "Individual Association") +
+  theme(
+    plot.tag = element_text(size = 12),
+    plot.tag.position = "bottom"
+  )
+SE_single_combined_RT_plot
+
+ggsave("SE_single_combined_RT_plot.png", plot = SE_single_combined_RT_plot, height = 4, width = 10)
+```
+
+#### Run ACC glmer: correct ~ person * prime * condition + (1|paACCicipant)  
+
+
+```{r SE_ACC_RQ2:glmer, include=FALSE}
+
+# #Run glmer with full interactions and RE structure
+# SE_ACC_single_int <- glmer(correct ~ Association*Condition  +
+#                           (1 + Association * Condition|subject),
+#                           data=SE_single_ACC,
+#                      family=binomial,
+#                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SE_ACC_single_int)
+# isSingular(SE_ACC_single_int) #TRUE
+# #SINGULARITY ISSUES
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SE_ACC_single_int, file='C:/SE_ACC_single_int.Rda')
+# 
+
+#Run glmer with full interactions and reduced RE structure
+SE_ACC_single_int2 <- glmer(correct ~ Association*Condition  +
+                          (1 + Association|subject) + (1 + Condition|subject),
+                          data=SE_single_ACC,
+                     family=binomial,                      
+                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SE_ACC_single_int2)
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SE_ACC_single_int2, file='C:/SE_ACC_single_int2.Rda')
+```
+
+```{r SE_ACC_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("C:/Users/becca/OneDrive - University of Aberdeen/PhD/RG joint paper/Analysis/SE_ACC_single_int2.Rda")
+
+summary(SE_ACC_single_int2)  
+
+ tab_model(SE_ACC_single_int2, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 1 ACC",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "Happy vs. Neutral",
+                           "Self vs. Happy",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "Happy vs. Neutral   X Congruent vs. Incongruent",
+                           "Self vs. Happy   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+  
+#### Posthoc analysis of significant interactions using emmeans  
+
+```{r SE_ACC_RQ2: emmeans_test, echo=FALSE}
+#set option so that decimal place is not capped
+emm_options(opt.digits=FALSE)
+
+#Calculate estimated marginal means
+SE_single_ACC_emm <- emmeans(SE_ACC_single_int2, specs = ~ Association*Condition)
+summary(SE_single_ACC_emm)
+
+#Post hoc on interaction effect
+#Create vectors for each group mean for specific pairwise comparisons
+sel.con <- c(1,0,0,0,0,0,0,0)
+fri.con <- c(0,1,0,0,0,0,0,0)
+hap.con <- c(0,0,1,0,0,0,0,0)
+neu.con <- c(0,0,0,1,0,0,0,0)
+sel.inc <- c(0,0,0,0,1,0,0,0)
+fri.inc <- c(0,0,0,0,0,1,0,0)
+hap.inc <- c(0,0,0,0,0,0,1,0)
+neu.inc <- c(0,0,0,0,0,0,0,1)
+
+
+#PB across conditions
+SE_sing_emo_cond_ACC_cont <- contrast(SE_single_ACC_emm, method = 
+                                list("Congruent Happy - Congruent Neutral" = hap.con - neu.con,
+                                     "Incongruent Happy - Incongruent Neutral" = hap.inc - neu.inc,
+                                     "Congruent Happy - Incongruent Happy" = hap.con - hap.inc,
+                                     "Congruent Neutral - Incongruent Neutral" = neu.con - neu.inc))
+SE_sing_emo_cond_ACC_cont
+
+#Confidence intervals
+SE_sing_emo_cond_ACC_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SE_sing_per_emo_cond_ACC_cont <- contrast(SE_single_ACC_emm, method = 
+                                list("Congruent Self - Congruent Happy" = sel.con - hap.con,
+                                     "Incongruent Self - Incongruent Happy" = sel.inc - hap.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Happy - Incongruent Happy" = hap.con - hap.inc))
+SE_sing_per_emo_cond_ACC_cont
+
+#Confidence intervals
+SE_sing_per_emo_cond_ACC_cont%>%
+  confint()
+
+```
+
+```{r SE_ACC_RQ2:figure, echo=FALSE}
+
+load("SE_ACC_single_int2.Rda")
+
+##Plot model
+set_theme(base = theme_classic(),
+          axis.title.color = "black",
+          axis.textcolor.x = "black",
+          axis.textcolor.y = "black",           
+          legend.item.backcol = "white")
+
+plot_model(SE_ACC_single_int2, type="int", axis.title = c( "Condition", "Response time [ms]"),
+           se=TRUE, colors =c("darkgray","black","gold", "brown"), 
+           grid = FALSE, title = "" )
+
+```
+
+
+## Experiment 2: Person and Reward 
+```{r E2_SR:_load_data, include=FALSE}
+
+#Load data set - chance ppt removed, ALL TRIALS
+load("SR_data.Rda")
+
+#relabel pairs
+SR_data$Association[SR_data$Association == "self9"] <- "Self&9"
+SR_data$Association[SR_data$Association == "9self"] <- "Self&9"
+SR_data$Association[SR_data$Association == "friend1"] <- "Friend&1"
+SR_data$Association[SR_data$Association == "1friend"] <- "Friend&1"
+SR_data$Association[SR_data$Association == "self1"] <- "Self&1"
+SR_data$Association[SR_data$Association == "1self"] <- "Self&1"
+SR_data$Association[SR_data$Association == "friend9"] <- "Friend&9"
+SR_data$Association[SR_data$Association == "9friend"] <- "Friend&9"
+
+#create new column with condition - single or pair
+SR_data[,"trial_type"] <- ifelse(SR_data$stim2 == "-", "single","pair")
+
+# # count number of trials that are <200ms
+# # Create df with CLASSIFICATION trials
+# SR_CLASS_all <- SR_data[grep("RG", SR_data$TaskType), ]
+# sum(SR_CLASS_all$RT<200)
+# #118
+# (118/24480)*100
+# #=0.4820261
+
+#Remove RT < 200ms - unlikely to reflect conscious decision making
+SR_data <- SR_data[SR_data[, "RT"] > 200, ] 
+
+#set age as numeric (used for splitting ppts by age)
+SR_data$age <- as.numeric(SR_data$age)
+
+# Create df with PMT trials
+SR_PMT <- SR_data[grep("PMT", SR_data$TaskType), ]
+
+# Create df with PMT MATCH trials
+SR_PMT_match <- SR_PMT[grep("\\bmatch\\b", SR_PMT$Condition), ]
+
+# Create df with CLASSIFICATION trials
+SR_CLASS <- SR_data[grep("RG", SR_data$TaskType), ]
+
+# # count number of trials that are 'timeout'
+# sum(SR_CLASS$RT>=1650)
+# #38
+# (38/24360)*100
+# #=0.1559934
+```
+
+```{r SR_descriptives, include=FALSE}
+#create df with just first column from each column
+SR_descriptives <- SR_data
+
+SR_descriptive_sum <- SR_descriptives %>%
+  summarise(
+    mean=mean(age),
+    sd=sd(age),
+    range=range(age))
+
+summary(SR_descriptive_sum)
+
+write.csv(SR_descriptive_sum, "SR_descriptive_sum.csv")
+
+#1 row per ppt
+SR_descriptive_summary <-
+SR_descriptives %>%
+  group_by(subject) %>%
+  filter(row_number()==1)
+
+```
+
+
+### Classification task
+
+
+### Run GLMERs with bias X condition interactions and participant as a random effect for RT and accuracy.   
+  
+
+Use contrasts:  
+- Self      vs. Friend  
+- £9        vs. £1
+- Congruent vs. Incongruent condition 
+
+
+```{r SR_RT_RQ2:contrasts, include=FALSE}
+
+# Create column based on age
+SR_CLASS <- SR_CLASS %>%
+  add_column(Age_group_40 = 
+               if_else(.$age >= 40, "40+", "<40"),
+             .after="age")
+
+# Create df with only paired trials
+SR_single <- SR_CLASS[grep("single", SR_CLASS$trial_type), ]
+
+summary(SR_single)
+
+#Convert variables to factor
+SR_single$Condition <- as.factor(SR_single$Condition)     
+SR_single$Association <- as.factor(SR_single$Association)      
+
+#reorder levels
+SR_single <- SR_single %>%
+  mutate(Association = fct_relevel(Association, "self", "friend", "9", "1"))
+
+#check number of levels
+levels(SR_single$Condition)
+levels(SR_single$Association)
+
+
+#Contrast coding - categorical variables (non-orthogonal)#
+contrasts(SR_single$Association) <- cbind("S vs. F" = c(-.5,.5,0,0),
+                                          "£9 vs. £1" = c(0,0,-.5,.5),
+                                          "S vs. £9" = c(-.5,0,.5,0))
+
+contrasts(SR_single$Condition) <- cbind("Con vs Inc" = c(-.5,.5))
+
+#Check contrasts
+contrasts(SR_single$Association)
+contrasts(SR_single$Condition)
+
+#ACC - rename df
+SR_single_ACC <- SR_single
+
+#RT - only keep correct trials
+SR_single_RT <- SR_single[SR_single[, "correct"] == 1, ] 
+```
+
+#### Run RT glmer: RT ~ association * condition + (1|participant)  
+```{r SR_RT_RQ2:glmer, include=FALSE}
+
+#Run glmer with full interactions and RE structure
+# SR_RT_single_int <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association*Condition|subject),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_int)
+# #Convergence failure
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_int, file='C:/SR_RT_single_int.Rda')
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_int2 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject) + (1 + Condition|subject),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_int2)
+# isSingular(SR_RT_single_int2) #TRUE
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_int2, file='C:/SR_RT_single_int2.Rda')
+
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_int3 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_int3)
+# isSingular(SR_RT_single_int3) #TRUE
+# #Singularity issues
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_int3, file='C:/SR_RT_single_int3.Rda')
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_int4 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Condition|subject),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_int4)
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_int4, file='C:/SR_RT_single_int4.Rda')
+```
+
+```{r SR_RT_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("C:/Users/becca/OneDrive - University of Aberdeen/PhD/RG joint paper/Analysis/SR_RT_single_int4.Rda")
+
+summary(SR_RT_single_int4)  
+
+tab_model(SR_RT_single_int4, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 2 RT",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "£9 vs. £1",
+                           "Self vs. £9",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "£9 vs. £1   X Congruent vs. Incongruent",
+                           "Self vs. £9   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+#### Posthoc analysis of significant interactions using emmeans  
+```{r SR_RT_RQ2: emmeans_test, echo=FALSE}
+#set option so that decimal place is not capped
+emm_options(opt.digits=FALSE)
+
+#Calculate estimated marginal means
+SR_single_RTs_emm <- emmeans(SR_RT_single_int4, specs = ~ Association*Condition)
+summary(SR_single_RTs_emm)
+
+SR_single_RTs_emm.df <- as.data.frame(SR_single_RTs_emm)
+
+#Post hoc on interaction effect
+#Create vectors for each group mean for specific pairwise comparisons
+sel.con <- c(1,0,0,0,0,0,0,0)
+fri.con <- c(0,1,0,0,0,0,0,0)
+nin.con <- c(0,0,1,0,0,0,0,0)
+one.con <- c(0,0,0,1,0,0,0,0)
+sel.inc <- c(0,0,0,0,1,0,0,0)
+fri.inc <- c(0,0,0,0,0,1,0,0)
+nin.inc <- c(0,0,0,0,0,0,1,0)
+one.inc <- c(0,0,0,0,0,0,0,1)
+
+#SPE across conditions
+SR_sing_per_cond_cont <- contrast(SR_single_RTs_emm, method = 
+                                list("Congruent Self - Congruent Friend" = sel.con - fri.con,
+                                     "Incongruent Self - Incongruent Friend" = sel.inc - fri.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Friend - Incongruent Friend" = fri.con - fri.inc))
+SR_sing_per_cond_cont
+
+#Confidence intervals
+SR_sing_per_cond_cont%>%
+  confint()
+
+
+#HRB across conditions
+SR_sing_rew_cond_cont <- contrast(SR_single_RTs_emm, method = 
+                                list("Congruent 9 - Congruent 1" = nin.con - one.con,
+                                     "Incongruent 9 - Incongruent 1" = nin.inc - one.inc,
+                                     "Congruent 9 - Incongruent 9" = nin.con - nin.inc,
+                                     "Congruent 1 - Incongruent 1" = one.con - one.inc))
+SR_sing_rew_cond_cont
+
+#Confidence intervals
+SR_sing_rew_cond_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SR_sing_per_rew_cond_cont <- contrast(SR_single_RTs_emm, method = 
+                                list("Congruent Self - Congruent £9" = sel.con - nin.con,
+                                     "Incongruent Self - Incongruent £9" = sel.inc - nin.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent £9 - Incongruent £9" = nin.con - nin.inc))
+SR_sing_per_rew_cond_cont
+
+#Confidence intervals
+SR_sing_per_rew_cond_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SR_sing_all_cond_cont <- contrast(SR_single_RTs_emm, method = 
+                                list("Congruent Self - Congruent Friend" = sel.con - fri.con,
+                                     "Incongruent Self - Incongruent Friend" = sel.inc - fri.inc,
+                                     "Congruent 9 - Congruent 1" = nin.con - one.con,
+                                     "Incongruent 9 - Incongruent 1" = nin.inc - one.inc,
+                                     "Congruent Self - Congruent £9" = sel.con - nin.con,
+                                     "Incongruent Self - Incongruent £9" = sel.inc - nin.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Friend - Incongruent Friend" = fri.con - fri.inc,
+                                     "Congruent 9 - Incongruent 9" = nin.con - nin.inc,
+                                     "Congruent 1 - Incongruent 1" = one.con - one.inc))
+SR_sing_all_cond_cont
+
+#Confidence intervals
+SR_sing_all_cond_cont%>%
+  confint()
+```
+##Including age as random effect as requested by reviewer - Exploratory analysis
+```{r SR_RT_RQ2_AGE:glmer, include=FALSE}
+# #Run glmer with full interactions and RE structure
+# SR_RT_single_age_int <- glmer(RT ~ Association*Condition +
+#                           (1 + Association*Condition|subject)  + (1|age),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_age_int)
+# isSingular(SR_RT_single_age_int) #TRUE
+# #singularity issue --> simplify RE structure
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_age_int, file='SR_RT_single_age_int.Rda')
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_age_int2 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject) + (1 + Condition|subject) + ( 1|age),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_age_int2)
+# #Convergence failure --> simplify RE structure
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_age_int2, file='SR_RT_single_age_int2.Rda')
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_age_int3 <- glmer(RT ~ Association*Condition  +
+#                           (1 + Association|subject)  + ( 1|age),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_age_int3)
+# isSingular(SR_RT_single_age_int3) #TRUE --> simplify RE structure
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_age_int3, file='SR_RT_single_age_int3.Rda')
+
+
+#Run glmer with full interactions and reduced RE structure
+SR_RT_single_age_int4 <- glmer(RT ~ Association*Condition  +
+                          (1 + Condition|subject)  + ( 1|age),
+                          data=SR_single_RT,
+                          family=inverse.gaussian(link="identity"),
+                          control=glmerControl
+                          (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SR_RT_single_age_int4)
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SR_RT_single_age_int4, file='SR_RT_single_age_int4.Rda')
+
+#no convergence or singularity issues
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_RT_single_age_int5 <- glmer(RT ~ Association*Condition  +
+#                           (1 |subject)  + ( 1|age),
+#                           data=SR_single_RT,
+#                           family=inverse.gaussian(link="identity"),
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_RT_single_age_int5)
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_RT_single_age_int5, file='SR_RT_single_age_int5.Rda')
+
+
+# load("SR_RT_single_age_int.Rda")
+# load("SR_RT_single_age_int2.Rda")
+# load("SR_RT_single_age_int3.Rda")
+ load("SR_RT_single_age_int4.Rda")
+# load("SR_RT_single_age_int5.Rda")
+# 
+# summary(SR_RT_single_age_int)
+# summary(SR_RT_single_age_int2)
+# summary(SR_RT_single_age_int3)
+# summary(SR_RT_single_age_int4)
+# summary(SR_RT_single_age_int5)
+
+```
+
+```{r SR_RT_AGE_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("SR_RT_single_age_int4.Rda")
+
+summary(SR_RT_single_age_int4)  
+
+tab_model(SR_RT_single_age_int4, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 2 RT",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "£9 vs. £1",
+                           "Self vs. £9",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "£9 vs. £1   X Congruent vs. Incongruent",
+                           "Self vs. £9   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+  
+#### Posthoc analysis of significant interactions using emmeans  
+
+```{r SR_RT_RQ2: emmeans_test, echo=FALSE}
+#set option so that decimal place is not capped
+emm_options(opt.digits=FALSE)
+
+#Calculate estimated marginal means
+SR_single_age_RTs_emm <- emmeans(SR_RT_single_age_int4, specs = ~ Association*Condition)
+summary(SR_single_age_RTs_emm)
+
+SR_single_age_RTs_emm.df <- as.data.frame(SR_single_age_RTs_emm)
+
+#Post hoc on interaction effect
+#Create vectors for each group mean for specific pairwise comparisons
+sel.con <- c(1,0,0,0,0,0,0,0)
+fri.con <- c(0,1,0,0,0,0,0,0)
+nin.con <- c(0,0,1,0,0,0,0,0)
+one.con <- c(0,0,0,1,0,0,0,0)
+sel.inc <- c(0,0,0,0,1,0,0,0)
+fri.inc <- c(0,0,0,0,0,1,0,0)
+nin.inc <- c(0,0,0,0,0,0,1,0)
+one.inc <- c(0,0,0,0,0,0,0,1)
+
+#SPE across conditions
+SR_sing_age_per_cond_cont <- contrast(SR_single_age_RTs_emm, method = 
+                                list("Congruent Self - Congruent Friend" = sel.con - fri.con,
+                                     "Incongruent Self - Incongruent Friend" = sel.inc - fri.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Friend - Incongruent Friend" = fri.con - fri.inc))
+SR_sing_age_per_cond_cont
+
+#Confidence intervals
+SR_sing_age_per_cond_cont%>%
+  confint()
+
+
+#HRB across conditions
+SR_sing_age_rew_cond_cont <- contrast(SR_single_age_RTs_emm, method = 
+                                list("Congruent 9 - Congruent 1" = nin.con - one.con,
+                                     "Incongruent 9 - Incongruent 1" = nin.inc - one.inc,
+                                     "Congruent 9 - Incongruent 9" = nin.con - nin.inc,
+                                     "Congruent 1 - Incongruent 1" = one.con - one.inc))
+SR_sing_age_rew_cond_cont
+
+#Confidence intervals
+SR_sing_age_rew_cond_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SR_sing_age_per_rew_cond_cont <- contrast(SR_single_age_RTs_emm, method = 
+                                list("Congruent Self - Congruent £9" = sel.con - nin.con,
+                                     "Incongruent Self - Incongruent £9" = sel.inc - nin.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent £9 - Incongruent £9" = nin.con - nin.inc))
+SR_sing_age_per_rew_cond_cont
+
+#Confidence intervals
+SR_sing_age_per_rew_cond_cont%>%
+  confint()
+
+
+#SPE & HRB across conditions
+SR_sing_age_all_cond_cont <- contrast(SR_single_age_RTs_emm, method = 
+                                list("Congruent Self - Congruent Friend" = sel.con - fri.con,
+                                     "Incongruent Self - Incongruent Friend" = sel.inc - fri.inc,
+                                     "Congruent 9 - Congruent 1" = nin.con - one.con,
+                                     "Incongruent 9 - Incongruent 1" = nin.inc - one.inc,
+                                     "Congruent Self - Congruent £9" = sel.con - nin.con,
+                                     "Incongruent Self - Incongruent £9" = sel.inc - nin.inc,
+                                     "Congruent Self - Incongruent Self" = sel.con - sel.inc,
+                                     "Congruent Friend - Incongruent Friend" = fri.con - fri.inc,
+                                     "Congruent 9 - Incongruent 9" = nin.con - nin.inc,
+                                     "Congruent 1 - Incongruent 1" = one.con - one.inc))
+SR_sing_age_all_cond_cont
+
+#Confidence intervals
+SR_sing_age_all_cond_cont%>%
+  confint()
+```
+
+```{r SR_RT_RQ2:model figure, echo=FALSE}
+
+##Plot model
+set_theme(base = theme_classic(),
+          axis.title.color = "black",
+          axis.textcolor.x = "black",
+          axis.textcolor.y = "black",           
+          legend.item.backcol = "white")
+
+plot_model(SR_RT_single_age_int4, type="int", axis.title = c( "Condition", "Response time [ms]"),
+           se=TRUE, colors =c("darkgray","black","gold", "brown"), 
+           grid = FALSE, title = "" )
+
+plot_model(SR_RT_single_age_int4, type="int", axis.title = c( "Condition", "Response time [ms]"),
+           se=TRUE, colors =c("darkgray","black","gold", "brown"), 
+           grid = FALSE, title = "" )
+
+
+```
+
+```{r SR_RT_RQ2:figure, echo=FALSE}
+###Self & Friend df###
+SR_single_SF_RTs_emm.df <- SR_single_RTs_emm.df %>% 
+  filter(Association == c("self", "friend"))
+
+SR_SF_RT_plot <- ggplot(SR_single_SF_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and £9 \nFriend and £1 \n", "\nSelf and £1 \nFriend and £9\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Self", "Friend")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SR_SF_RT_plot
+
+
+###£9 & £1 df###
+SR_single_91_RTs_emm.df <- SR_single_RTs_emm.df %>% 
+  filter(Association == c(9, 1))
+
+SR_91_RT_plot <- ggplot(SR_single_91_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and £9 \nFriend and £1 \n", "\nSelf and £1 \nFriend and £9\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("£9", "£1")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SR_91_RT_plot
+
+
+###Self & £9 df###
+SR_single_S9_RTs_emm.df <- SR_single_RTs_emm.df %>% 
+  filter(Association == "self" | Association == 9)
+
+SR_S9_RT_plot <- ggplot(SR_single_S9_RTs_emm.df, aes(x = Association, y = emmean,
+                     group = Condition,
+                     color = Condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 4, position = position_dodge(.2)) +
+  stat_summary(fun = "mean", geom = "line", position = position_dodge(.2), size = 1) +
+  geom_errorbar(aes(ymin = emmean-SE, ymax = emmean+SE), width = 0.2, position = position_dodge(.2), size = 1) +
+  scale_color_manual(values = c("black", "darkgray"),
+                     labels = c("\nSelf and £9 \nFriend and £1 \n", "\nSelf and £1 \nFriend and £9\n"),
+                     name = "Condition (Pairing)") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Self", "£9")) +
+  ylab("Estimated Marginal Means \n of Reaction Time (ms)") +
+  xlab("Individual Association") +
+  ylim(560,660) +
+  theme_apa(base_size = 12) +
+theme(plot.margin = margin(6, 0, 6, 0))
+SR_S9_RT_plot
+
+# #combine plots
+# SR_single_combined_RT_plot <- cowplot::plot_grid(SR_SF_RT_plot + theme(legend.position="none"), 
+#                    SR_91_RT_plot + theme(legend.position="none"),
+#                    labels = c("a", "b"),
+#                    rel_widths = c(1,1),
+#                    nrow = 1)
+# SR_single_combined_RT_plot
+
+
+#combine plots
+SR_single_combined_RT_plot <- cowplot::plot_grid(SR_SF_RT_plot + 
+                                                   theme(legend.position="none") +
+                                                   xlab(NULL), 
+                                                 SR_91_RT_plot  + 
+                                                   theme(legend.position="none") +
+                                                   xlab(NULL) +
+                                                   ylab(NULL),
+                                                 align = "vh",
+                                                 labels = c("a", "b"),
+                                                 hjust = -1,
+                                                 nrow = 1,
+                                                 rel_widths = c(1,1,.6),
+                                                 label_x = 0
+                                                 )
+SR_single_combined_RT_plot
+
+#extract legend from one of the plots
+SR_single_combined_RT_legend <- get_legend(
+  SR_SF_RT_plot + theme(legend.box.margin = margin(0, 0, 0, 12))
+)
+
+# add the legend to the combined plot
+SR_single_combined_RT_plot <- plot_grid(SR_single_combined_RT_plot, SR_single_combined_RT_legend, rel_widths = c(3, 1))
+SR_single_combined_RT_plot
+
+#Shared x label
+SR_single_combined_RT_plot<- wrap_elements(panel = SR_single_combined_RT_plot) +
+  labs(tag = "Individual Association") +
+  theme(
+    plot.tag = element_text(size = 12),
+    plot.tag.position = "bottom"
+  )
+SR_single_combined_RT_plot
+
+#save plot
+ggsave("SR_single_combined_RT_plot.png", plot = SR_single_combined_RT_plot, height = 4, width = 10)
+```
+
+#### Run ACC glmer: correct ~ person * prime * condition + (1|participant)  
+```{r SR_ACC_RQ2:glmer, include=FALSE}
+
+#Run glmer with full interactions and RE structure
+# SR_ACC_single_int <- glmer(correct ~ Association*Condition  +
+#                           (1 + Association * Condition|subject),
+#                           data=SR_single_ACC,
+#                      family=binomial,
+#                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_ACC_single_int)
+# isSingular(SR_ACC_single_int) #TRUE
+# #Singularity issues
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_ACC_single_int, file='C:/SR_ACC_single_int.Rda')
+
+
+#Run glmer with full interactions and reduced RE structure
+SR_ACC_single_int2 <- glmer(correct ~ Association*Condition  +
+                          (1 + Association|subject) + (1 + Condition|subject),
+                          data=SR_single_ACC,
+                     family=binomial,                      
+                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SR_ACC_single_int2)
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SR_ACC_single_int2, file='C:/SR_ACC_single_int2.Rda')
+```
+
+
+```{r SR_ACC_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("C:/Users/becca/OneDrive - University of Aberdeen/PhD/RG joint paper/Analysis/SR_ACC_single_int2.Rda")
+
+summary(SR_ACC_single_int2)  
+
+ tab_model(SR_ACC_single_int2, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 2 ACC",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "£9 vs. £1",
+                           "Self vs. £9",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "£9 vs. £1   X Congruent vs. Incongruent",
+                           "Self vs. £9   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+
+```{r SR_ACC_RQ2_AGE:glmer, include=FALSE}
+# #Run glmer with full interactions and RE structure
+# SR_ACC_single_age_int <- glmer(correct ~ Association*Condition +
+#                           (1 + Association*Condition|subject)  + (1|age),
+#                           data=SR_single_ACC,
+#                           family=binomial,
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_ACC_single_age_int)
+# isSingular(SR_ACC_single_age_int) #TRUE
+# #singularity issue --> simplify RE structure
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_ACC_single_age_int, file='SR_ACC_single_age_int.Rda')
+
+#Run glmer with full interactions and reduced RE structure
+SR_ACC_single_age_int2 <- glmer(correct ~ Association*Condition  +
+                          (1 + Association|subject) + (1 + Condition|subject) + ( 1|age),
+                          data=SR_single_ACC,
+                          family=binomial,
+                          control=glmerControl
+                          (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+summary(SR_ACC_single_age_int2)
+#Convergence failure --> simplify RE structure
+
+#Save model --> for ease in future rather than constantly rerunning model
+save(SR_ACC_single_age_int2, file='SR_ACC_single_age_int2.Rda')
+
+# #Run glmer with full interactions and reduced RE structure
+# SR_ACC_single_age_int3 <- glmer(correct ~ Association*Condition  +
+#                           (1 + Association|subject)  + ( 1|age),
+#                           data=SR_single_ACC,
+#                           family=binomial,
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_ACC_single_age_int3)
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_ACC_single_age_int3, file='SR_ACC_single_age_int3.Rda')
+# 
+# 
+# #Run glmer with full interactions and reduced RE structure
+# SR_ACC_single_age_int4 <- glmer(correct ~ Association*Condition  +
+#                           (1 + Condition|subject)  + ( 1|age),
+#                           data=SR_single_ACC,
+#                           family=binomial,
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_ACC_single_age_int4)
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_ACC_single_age_int4, file='SR_ACC_single_age_int4.Rda')
+# 
+# 
+# #Run glmer with full interactions and reduced RE structure
+# SR_ACC_single_age_int5 <- glmer(correct ~ Association*Condition  +
+#                           (1 |subject)  + ( 1|age),
+#                           data=SR_single_ACC,
+#                           family=binomial,
+#                           control=glmerControl
+#                           (optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# summary(SR_ACC_single_age_int5)
+# 
+# #Save model --> for ease in future rather than constantly rerunning model
+# save(SR_ACC_single_age_int5, file='SR_ACC_single_age_int5.Rda')
+
+
+load("SR_ACC_single_age_int.Rda")
+load("SR_ACC_single_age_int2.Rda")
+load("SR_ACC_single_age_int3.Rda")
+load("SR_ACC_single_age_int4.Rda")
+load("SR_ACC_single_age_int5.Rda")
+
+summary(SR_ACC_single_age_int)
+summary(SR_ACC_single_age_int2)
+summary(SR_ACC_single_age_int3)
+summary(SR_ACC_single_age_int4)
+summary(SR_ACC_single_age_int5)
+
+```
+
+```{r SR_ACC_age_RQ2:model_output_summary, echo=FALSE}
+#Use summary to summarise model
+
+load("SR_ACC_single_age_int2.Rda")
+
+summary(SR_ACC_single_age_int2)  
+
+ tab_model(SR_ACC_single_age_int2, show.stat = TRUE,show.se = TRUE,
+           dv.labels = "Experiment 2 ACC",
+           pred.labels = c("Intercept", 
+                           "Self vs. Friend", 
+                           "£9 vs. £1",
+                           "Self vs. £9",
+                           "Congruent vs. Incongruent", 
+                           "Self vs. Friend   X Congruent vs. Incongruent",
+                           "£9 vs. £1   X Congruent vs. Incongruent",
+                           "Self vs. £9   X Congruent vs. Incongruent"),
+           string.est = "β", string.ci = "C.I (95%)", string.stat = "t", 
+           string.p = "p", digits.p = 2, emph.p = FALSE) 
+```
+
+  
+#### Posthoc analysis of significant interactions using emmeans  
+
+```{r SR_ACC_RQ2: emmeans_test, echo=FALSE}
+#set option so that decimal place is not capped
+emm_options(opt.digits=FALSE)
+
+#Calculate estimated marginal means
+SR_single_ACCs_emm <- emmeans(SR_ACC_single_age_int2, specs = ~ Association*Condition)
+summary(SR_single_ACCs_emm)
+
+#Post hoc on interaction effect
+#Create vectors for each group mean for specific pairwise comparisons
+sel.con <- c(1,0,0,0,0,0,0,0)
+fri.con <- c(0,1,0,0,0,0,0,0)
+nin.con <- c(0,0,1,0,0,0,0,0)
+one.con <- c(0,0,0,1,0,0,0,0)
+sel.inc <- c(0,0,0,0,1,0,0,0)
+fri.inc <- c(0,0,0,0,0,1,0,0)
+nin.inc <- c(0,0,0,0,0,0,1,0)
+one.inc <- c(0,0,0,0,0,0,0,1)
+
+#HRB across conditions
+SR_sing_rew_cond_cont <- contrast(SR_single_ACCs_emm, method = 
+                                list("Congruent 9 - Congruent 1" = nin.con - one.con,
+                                     "Incongruent 9 - Incongruent 1" = nin.inc - one.inc,
+                                     "Congruent 9 - Incongruent 9" = nin.con - nin.inc,
+                                     "Congruent 1 - Incongruent 1" = one.con - one.inc))
+SR_sing_rew_cond_cont
+
+#Confidence intervals
+SR_sing_rew_cond_cont%>%
+  confint()
+
+```
+
+```{r SR_ACC_RQ2:figure, echo=FALSE}
+
+##Plot model
+set_theme(base = theme_classic(),
+          axis.title.color = "black",
+          axis.textcolor.x = "black",
+          axis.textcolor.y = "black",           
+          legend.item.backcol = "white")
+
+plot_model(SR_ACC_single_age_int2, type="int", axis.title = c( "Condition", "Response time [ms]"),
+           se=TRUE, colors =c("darkgray","black","gold", "brown"), 
+           grid = FALSE, title = "" )
+
+```
+
+

@@ -29,7 +29,7 @@ pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psy
 
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_00x”，查看对应的文件夹内的文件
 
-list.files("../../../Data/raw/day0/phase_010/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day0/phase_015/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据，##[批次号，输入文件列表的文件起始编号，终止编号]
 combine_csv_files <- function(phase, firstnum, lastnum) {
@@ -55,7 +55,7 @@ combine_csv_files <- function(phase, firstnum, lastnum) {
 
 
 # 使用示例，每次运行仅需修改此3个参数,[“批次号”，输入文件列表的文件起始编号，终止编号]
-combine_csv_files("phase_010",1,25)
+combine_csv_files("phase_015",1,49)
 ```
 
 
@@ -89,7 +89,7 @@ day0_all <- day0 %>%
 }
 
 ## 运行范例，每次运行仅需要修改批次号"phase_002"
-day0_process("phase_010")
+day0_process("phase_015")
 
 ```
 
@@ -146,7 +146,7 @@ write.csv(day0_all,paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",p
 
 }
 
-subj_phase_day0("phase_010","yes","1","1.4 ")
+subj_phase_day0("phase_015","yes","1","1.26 ")
 ```
 
 
@@ -272,7 +272,7 @@ plot_bar(day0_all)
 plot_histogram(day0_all)
 
 }
-plot_descript_day0("phase_010")
+plot_descript_day0("phase_015")
 
 ```
 

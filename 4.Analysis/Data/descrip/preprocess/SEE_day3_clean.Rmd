@@ -56,13 +56,13 @@ write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_
 }
 # 调用函数并传入相应的 phase 参数,“批次号”，“是否符合要求”，“报酬金额”，“发放报酬的日期”
 
-subj_phase_day3 ("phase_007","yes","109","12.28")
+subj_phase_day3 ("phase_013","yes","109","1.28")
 ```
 
 ### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
 ```{r check environment}
 #check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
-list.files("../../../Data/raw/day3/phase_007/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+list.files("../../../Data/raw/day3/phase_013/jsPsych",pattern = "\\.csv$", full.names = TRUE)
 
 #汇总本轮day0所有被试的数据
 combine_csv_files <- function(phase,firstnum, lastnum) 
@@ -93,7 +93,7 @@ merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修
 
 
 # 使用示例，每次运行仅需修改此3个参数
-combine_csv_files("phase_007",1,15)#修改phase_002
+combine_csv_files("phase_013",1,25)#修改phase_002
 
 
 ```
@@ -145,14 +145,13 @@ assign("trap3", trap3, envir = .GlobalEnv)
 
 }
 
-day3_process("phase_007")#修改phase_002
+day3_process("phase_013")#修改phase_002
 
 ```
 
 
 ```{r}
-day3_q <-read.csv("../../../Data/clean/clean_day3/phase_006/day3_q_phase_006.csv")#修改phase_002
-day3_q_1  <- day3_q  %>%
+day3_q_1  <- day2_q_ALL  %>%
     rename(ability_rating = domain_rating_1, 
            physical_attraction = domain_rating_2,
            material_wealth = domain_rating_3,
@@ -193,11 +192,7 @@ day3_q_1  <- day3_q  %>%
 
 ```
 
-# 选出完整参与了day0 ~ day3 实验的被试
-```{r select subjects join all experiments}
-subj_phase_006 <- unique(day3_q$ID)
-print(subj_phase_006)
-```
+
 
 ```{r}
 plot_bar(day3_q )

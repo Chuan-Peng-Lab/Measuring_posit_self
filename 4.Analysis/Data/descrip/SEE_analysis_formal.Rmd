@@ -13,7 +13,7 @@ if (!requireNamespace("pacman", quietly = TRUE)) {
   install.packages("pacman") }   # 如果未安装，则安装包
 #install.packages("cowplot")
 # 加载所需要的R包
-pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles"," xaringan","igraph","brms","here")
+pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","DataExplorer","patchwork","cowplot","ggpubr","BayesFactor","careless","rticles","igraph","brms","here")
 source("R_rainclouds.R")
 ```
 

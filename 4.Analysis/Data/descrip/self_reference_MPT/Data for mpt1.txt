@@ -1,0 +1,41 @@
+Data for SRET
+
+Each row represents one participant.
+
+Header desciptions:
+
+Source memory test:
+the first is item，second is responses
+SG_SG:   Response "self" to a self item
+SG_NSG:  Response "friend" to a self item
+SG_Nw:   Response "new" to a self item
+NSG_SG:  Response "self" to a friend item
+NSG_NSG: Response "friend" to a friend item
+NSG_Nw:  Response "new" to a friend item
+Nw_SG:   Response "self" to a new item
+Nw_NSG:  Response "friend" to a new item
+Nw_Nw:   Response "new" to a new item
+
+
+All external variables were standardised for analysis. 
+Four chains with different starting values were run in parallel,using 500,000 adaptation samples for each chain. 
+Each chain ran 1,000,000 iterations, with a burn-in period of 500,000 iterations and a thinning rate of 100 (Schaper et al., 2019). 
+The Gelman-Rubin statistic R̂ was used to evaluate the convergence of parameter estimation (Gelman & Rubin, 1992). 
+
+A value of R̂ smaller than 1.05 indicates good convergence. 
+
+Test statistics T1 and T2 and their posterior predictive p values (PPP) reported the model’s goodness of fit (Klauer, 2010). 
+
+T1 indicates the difference between the observed and posterior-predicted mean frequencies using Pearson’s χ2, and T2 indicates a similar difference in covariances. 
+
+Larger PPP values indicate a satisfactory model fit (e.g. PPP > .05). 
+
+The 95% Bayesian Credibility Interval (BCI), which indicates the interval in which the true parameter can be found with 95% probability, was reported for the estimation of the MPT parameters and their correlations with external variables. 
+
+A correlation is deemed reliable if the 95% BCI of the corresponding standardised regression slope excludes zero.
+
+base model with the constraints a = g and DNSG = DNw
+
+difference in item memory was sampled (ΔD = DSG – DNSG)
+
+difference in the source memory (Δd = dSG – dNSG)

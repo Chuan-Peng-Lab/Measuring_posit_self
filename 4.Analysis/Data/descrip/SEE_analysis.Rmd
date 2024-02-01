@@ -26,6 +26,30 @@ pacman::p_load("tidyverse","bruceR","ggplot2","ggridges","psych","psychTools","D
 source("R_rainclouds.R")
 ```
 
+```{r}
+# Set the main folder path
+main_folder <- "../../Data/raw/day0"
+
+# Get all subfolder paths
+subfolders <- list.files(path = main_folder, full.names = TRUE)
+
+# Read and combine files from each subfolder
+combined_data <- map_df(subfolders, ~{
+  files <- list.files(path = .x, pattern = "^subj_day1.*\\.xlsx$", full.names = TRUE)
+  if (length(files) > 0) {
+    data <- map_df(files, ~read.xlsx(loadWorkbook(.x)))
+    return(data)
+  } else {
+    warning(paste("No files found in subfolder:", .x))
+    return(NULL)
+  }
+})
+
+# Write the combined data frame to an Excel file
+write.xlsx(combined_data, file = "../../Data/raw/day0/combined_day0.xlsx", row.names = FALSE)
+
+
+```
 
 
 ```{r 将本批次的clean data导入环境，储存为变量}

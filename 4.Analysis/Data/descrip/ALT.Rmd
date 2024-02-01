@@ -5,6 +5,7 @@ output: html_notebook
 
 # ALT1 
 
+
 ALT1 数据清洗
 ```{r ALT1数据清洗}
 ALT1_all <- ALT1_all%>%mutate(ID = as.character(ID)) %>%
@@ -230,6 +231,7 @@ ALT1 <-ALT1_all%>% #选择正式实验的数据
 
 # ALT2
 ```{r ALT2数据选择}
+
 ALT2_all <- ALT2_all%>%mutate(ID = as.character(ID)) %>%
    mutate(ParticipantID = as.character(ParticipantID)) %>%
   mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
@@ -303,10 +305,10 @@ d'prime,rt,acc
 
 
 
-```{r}
+```{r 只选择match试次做分析}
 ALT2_analysis<-function(data){
   
-  #**总体匹配/不匹配雨云图*
+  #**总体匹配配雨云图*
    ALT2 <-data%>% #选择正式实验的数据
      filter(identity=="match")%>%
   group_by(ID,domain,valence,person) %>%  #按被试与条件分组
