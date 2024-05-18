@@ -1,6 +1,7 @@
 /**
  * Author:
  * original demo is from (https://psychbruce.github.io)
+ * final version is provided by Shuting Sun (sunshuting19@163.com)
  */
 
 
