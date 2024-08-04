@@ -1,0 +1,288 @@
+---
+title: "SEE_day0_clean"
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+getwd() #查看工作目录，work directory is 'Measuring_Pos_Self/4.Analysis/Data/descrip/preprocess'
+```
+
+
+### 加载R包
+
+```{r create environment}
+#清空环境
+rm(list = ls())
+
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+
+# 加载所需要的R包
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer","jmv")
+```
+
+
+### 检查工作环境，查看文件列表
+```{r check environment}
+
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录；通过更改批次号“phase_00x”，查看对应的文件夹内的文件
+
+list.files("../../../Data/raw/day0/phase_018/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+
+
+
+#汇总本轮day0所有被试的数据，##[批次号，输入文件列表的文件起始编号，终止编号]
+combine_csv_files <- function(phase, firstnum, lastnum) {
+  folder_path<-paste0("../../../Data/raw/day0/",phase,"/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  
+  selected_files <- files[firstnum:lastnum] #输入文件列表的文件范围“起始编号：终止编号”
+  
+  combined_data <- NULL
+  
+  for (file in files) {
+    tmp <- read.csv(file, header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")  # 逐个读取csv文件，fileEncoding可能为UTF-8 或 GBK
+    
+    if (is.null(combined_data)) {
+      combined_data <- tmp
+    } else {
+      combined_data <- rbind(combined_data, tmp)
+    }
+  }
+  output_file<-paste0("../../../Data/raw/day0/",phase,"/day0_",phase,".csv")
+  write.csv(combined_data,output_file, row.names = FALSE)
+}
+
+
+# 使用示例，每次运行仅需修改此3个参数,[“批次号”，输入文件列表的文件起始编号，终止编号]
+combine_csv_files("phase_020",1,6)
+```
+
+
+### Prepare clean data for variables.
+
+##先在../../../Data/clean/clean_day0/建立子文件phase_00x
+
+```{r day0 处理合并后的raw data}
+
+# 处理 day0 的function
+
+##记录单个被试人口学信息
+day0_process<-function(phase){
+  
+  day0<-read.csv(paste0("../../../Data/raw/day0/",phase,"/day0_",phase,".csv"),fileEncoding = 'UTF-8')
+  
+    #创建子文件夹"../../../Data/clean/clean_day0/phase"用于储存清洗后的文件
+
+dir.create(paste0("../../../Data/clean/clean_day0/",phase), recursive = TRUE)
+
+## 记录被试 day0 完成所有问卷的数据，宽数据版
+day0_all <- day0 %>%
+  filter(trial_index == 0) %>%  #选择第一行
+  select(subj_idx, ParticipantID,everything(), -c("rt", "stimulus", "response", "trial_type", "trial_index", "time_elapsed", "internal_node_id", "success","user_agent","accuracy","question_order","responses","item_order","radio_event_ids","radio_event_times","key_event_times","mouse_event_times","straightlining","zigzagging","honeypot","value"))%>%  #选择列
+  arrange(ParticipantID)%>%  #按ParticipantID从低到高排序
+  mutate(ID = paste0(phase,"_subj_", row_number()))%>% #生成新列ID
+   arrange(subj_idx)
+
+  output_path <- paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase, ".csv") #文件的输出路径
+  write.csv(day0_all,output_path) 
+}
+
+## 运行范例，每次运行仅需要修改批次号"phase_002"
+day0_process("phase_020")
+
+```
+
+
+
+```{r}
+
+subj_phase_day0 <- function(phase,Eligible,Moneny,Paid_date) {
+
+# 导入文件，修改文件地址“/phase_00x/day0_all_phase_00x.csv”中的批次号“phase_00x”
+day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8") %>%mutate(No=X)#重命名列
+print(day0_all)
+
+# 导入文件，修改文件地址"../../../Data/raw/day0/phase_00x/"中的批次号“phase_00x”
+subj_day0<-read.csv(list.files(paste0("../../../Data/raw/day0/",phase,"/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")
+print(subj_day0)
+subj_day0<-subj_day0%>%
+    slice(-1)%>%
+  select(-c("Subject.IDs","NodeId"))%>%#去除这些列
+  rename(
+    USERID=UserId,#脑岛ID
+    Time_day0=Time,#实验时间
+    religion=Info_Q1,#宗教
+    e_mail = Info_Q2,#邮箱
+    wechat = Info_Q3,#微信
+    region = Info_Q4,#地区
+    major = Info_Q5,#专业
+    left_hand = Info_Q6,#是否左撇子
+    refresh_rate = Info_Q7,#刷新率
+    resolution_ratio = Info_Q8#电脑分辨率
+  ) %>%
+  mutate(Eligible=Eligible,#是否符合要求
+         Moneny=Moneny,#报酬金额
+         Paid_date=Paid_date)%>%#付偿日期
+  arrange( USERID)%>%#将脑岛ID从低到高排序
+  mutate(No= row_number())%>%#按行依次编号
+merge(.,day0_all[, c("No", "ID","ParticipantID","subj_idx")], by = "No", all.x = TRUE)#将ID合并进文件
+print(subj_day0)
+# 导出文件，输出的文件地址"../../../Data/raw/day0/phase_00x/subj_day0_phase_00x.xlsx",修改批次号“phase_00x”
+write.xlsx(subj_day0, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))
+
+#subj_day0_phase_003<-read.xlsx("../../../Data/raw/day0/phase_003/subj_day0_phase_003.xlsx")
+subj_email<-subj_day0%>%
+  select(c("ID","e_mail","wechat","Subject.Name","region"))%>%
+  rename(姓名=ID,
+   邮件地址=e_mail,
+         移动电话=wechat,
+         联系地址=region
+         )
+  
+write.csv(subj_email, paste0("../../../Data/raw/day0/",phase,"/subj_email_",phase,".csv"))
+
+#去掉该数据中的被试脑岛编号和被试姓名
+day0_all<-day0_all%>%
+select(-c("subj_name","subj_idx"))
+write.csv(day0_all,paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"))
+
+}
+
+subj_phase_day0("phase_020","yes","1","3.12 ")
+```
+
+
+
+# day0 记录人口统计学信息，自我概念清晰度，焦虑，抑郁
+## 0:男，1：女
+## 18-35岁
+## income_scale = ["A.无收入", "B.2000 元以下", "C.2000—5000 元", "D.5000—10000 元", "E.10000—30000 元", "F.30000—50000 元", "G.50000—100000 元","H.100000—150000 元", "I.150000—200000元", "J.200000 元以上"];
+## phq 0、1、2、3分值。PHQ-9总分值范围从0～27分。分值5、10、15、20分别相对应代表轻、中、中重、重度抑郁分界值。
+## gad 0、1、2、3分。ＧＡＤ－7总分范围为0～21分。分值 5、10、15分别对应代表“轻度”、“中度”、“重度”焦虑程度分界值。国外大规模样本研究显示当分 界值取10分时，ＧＡＤ－7的敏感度和特异度最佳，分别为89％和82%
+## selfclarity 该量表使用 5 点计分法，1 表示“完全不符”，5 表示“完全符合”，共 12 题，其中 6、11 采用正向计分题，其余题目均需反向计分[js代码中已经反向计分]。最终总分越高说明自我概念清晰性越高。
+
+
+```{r day0 数据总分计算，分类}
+plot_descript_day0<-function(phase){
+  
+  day0_subj<-read.xlsx(paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))  # 参加day0实验的所有被试
+  
+day0_all<-read.csv(paste0("../../../Data/clean/clean_day0/",phase,"/day0_all_",phase,".csv"), fileEncoding = "UTF-8")  # day0问卷数据
+
+invalid_day0<-day0_all%>%
+  filter(age>59|age<18)%>%
+print()  ## day0中年龄小于18或大于59岁
+
+write.xlsx(invalid_day0, file = paste0("../../../Data/raw/day0/", phase, "/invalid_day0_", phase, ".xlsx"))  ##输出无效被试
+
+day0_subj<-day0_subj%>%
+  filter(!ID %in% invalid_day0$ID)
+
+write.xlsx(day0_subj, file=paste0("../../../Data/raw/day0/",phase,"/subj_day0_",phase,".xlsx"))  ## 输出参加day0符合条件的被试
+
+day0_all <- day0_all %>%
+   filter(age<=59&age>=18)%>%
+  select(-birthday,-ID,No,ParticipantID)%>%
+  mutate(
+    age=case_when(
+          between(age, 18, 28) ~ "18~28",
+          between(age, 28, 38) ~ "28~38",
+           between(age, 38, 48) ~ "38~48",
+          between(age, 48, 59) ~ "48~59",
+          age>59~ ">59",
+          TRUE ~ as.character(age) 
+        ),
+         obj_ses1=as.character(obj_ses1),
+         fri_ses2=as.character(fri_ses2),
+        sex=case_when(
+          sex==0~"male",
+          sex==1~"female",
+          TRUE ~ as.character(sex) 
+        ) ) %>%
+ mutate(fatherEdu = case_when(
+    fatherEdu == 0 ~ "zero",
+    fatherEdu == 1 ~ "elementary",
+    fatherEdu == 2 ~ "junior",
+    fatherEdu == 3 ~ "senior",
+    fatherEdu == 4 ~ "college",
+    fatherEdu == 5 ~ "graduate",
+    TRUE ~ as.character(fatherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(motherEdu = case_when(
+    motherEdu == 0 ~ "zero",#没上学
+    motherEdu == 1 ~ "elementary",#小学
+    motherEdu == 2 ~ "junior",#初中
+    motherEdu == 3 ~ "senior",#高中，中专
+    motherEdu == 4 ~ "college",#大学（专科或本科）
+    motherEdu == 5 ~ "graduate",#研究生
+    TRUE ~ as.character(motherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(FatherOccupation = case_when(
+    FatherOccupation == 0 ~ "临时工",
+    FatherOccupation == 1 ~ "个体经营",
+    FatherOccupation == 2 ~ "一般管理",
+    FatherOccupation == 3 ~ "中层管理",
+    FatherOccupation == 4 ~ "高级管理",
+    TRUE ~ as.character(FatherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(MotherOccupation = case_when(
+    MotherOccupation == 0 ~ "临时工",
+    MotherOccupation == 1 ~ "个体经营",
+    MotherOccupation == 2 ~ "一般管理",
+    MotherOccupation == 3 ~ "中层管理",
+    MotherOccupation == 4 ~ "高级管理",
+    TRUE ~ as.character(MotherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(income = case_when(
+    income == 0 ~ "zero",
+    income < 2000 ~ "<2000",
+    between(income, 2000, 5000) ~ "2000~5000",
+    between(income, 5000, 10000) ~ "5000~10000",
+    between(income, 10000, 30000) ~ "10000~30000",
+    between(income, 30000, 50000) ~ "30000~50000",
+    between(income, 50000, 100000) ~ "50000~100000",
+    between(income, 100000, 150000) ~ "100000~150000",
+    between(income, 150000, 200000) ~ "150000~200000",
+    income >= 200000 ~ "≥200000",
+    TRUE ~ as.character(income)  # 如果没有匹配的条件，保持不变
+  ))%>%
+  mutate(phq_al = rowSums(select(., starts_with("phq_")))) %>%
+  mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "none",
+    phq_al >= 5 & phq_al <= 9 ~ "mild",
+    phq_al >= 10 & phq_al <= 14 ~ "moderate",
+    phq_al >= 15 & phq_al <= 19 ~ "mod to severe",
+     phq_al >= 20  ~ "severe",
+    TRUE ~ NA_character_
+  ))%>%
+mutate(selfclarity_al = rowSums(select(., starts_with("selfclarity_")))) %>%
+mutate(gad_al = rowSums(select(., starts_with("gad_")))) %>%
+  mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "none",
+    gad_al >= 5 & gad_al <= 9 ~ "mild",
+    gad_al >= 10 & gad_al <= 14 ~ "moderate",
+    gad_al >= 15 ~ "severe",
+    TRUE ~ NA_character_
+  ))
+day0_1<-day0_all%>%
+  select(age,obj_ses1,fri_ses2,sex,fatherEdu, motherEdu,FatherOccupation,MotherOccupation,income,phq,gad)
+  
+#绘制离散变量的棒图
+plot_bar(day0_all)
+
+#绘制连续变量的直方图
+plot_histogram(day0_all)
+
+}
+plot_descript_day0("phase_017")
+
+```
+
+
+
+
+
+
