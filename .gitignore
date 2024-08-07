@@ -1,6 +1,6 @@
 #不上传RDta 和Rhistory
 *.RData
-.Rhistory
+*.Rhistory
 #参考文献涉及版权问题，不上传
 /2.Materials/Reference/
 #vscode代码不上传，程序代码也不上传
