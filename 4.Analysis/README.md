@@ -1,12 +1,12 @@
-# Analysis Data_rowdata
+# Analysis data_Dingyi
   - clean data of IAT and SAT from previous research by Yi Ding
-# IAT_raw
+  # IAT_raw
   - raw IAT data from previous research by Yi Ding
-# SRET1-29
+  # SRET1-29
   - raw SRET data from previous research by Yi Ding
-# Data
+# Analysis data_Sunst
 - store raw data and analysis scripts for 2023 SEE project
-  -  raw
+  -  raw(已经作为单独的文件夹6.Rawdata)
      [store all raw data from naodao]
     -  day0
     -  day1
@@ -20,4 +20,5 @@
     -  clean_day3
   -  descrip
  [script for preprocess by R]
-第四个问卷需要补充
+  -Graduation (淑婷的毕业材料)
+  -select （按阶段合并的数据）
