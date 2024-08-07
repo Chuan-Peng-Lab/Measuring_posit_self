@@ -11,7 +11,5 @@
 #数据部分不上传，由于内存太大，上传群晖云盘
 /6.Raw_data
 #git 和Rpro的内容不上传
-temp/
-Data/*
-!Data/.gitkeep
 .Rproj.user
+.git
