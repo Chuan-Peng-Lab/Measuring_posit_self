@@ -1,7 +1,0 @@
-~$*
-*.md
-Reference/
-temp/
-Data/*
-!Data/.gitkeep
-.Rproj.user
