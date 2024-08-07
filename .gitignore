@@ -1,4 +1,5 @@
 #不上传RDta 和Rhistory
+~$*
 *.RData
 
 .Rhistory
