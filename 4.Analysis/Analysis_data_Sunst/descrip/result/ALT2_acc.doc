@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>ANOVA Table:</b></p>
+<p><pre>Dependent variable(s):&#9;acc</pre></p>
+<p><pre>Between-subjects factor(s):&#9;–</pre></p>
+<p><pre>Within-subjects factor(s):&#9;domain, valence, person</pre></p>
+<p><pre>Covariate(s):&#9;&#9;–</pre></p>
+<table>
+<thead>
+<tr> <th align='left'></th> <th align='right'><i>MS</i></th> <th align='right'><i>MSE</i></th> <th align='right'><i>df</i><sub>1</sub></th> <th align='right'><i>df</i><sub>2</sub></th> <th align='right'><i>F</i></th> <th align='right'><i>p</i></th> <th align='right'> </th> <th align='right'>η<sup>2</sup><sub>p</sub> [90% CI]</th> <th align='right'>η<sup>2</sup><sub>G</sub></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>domain</td> <td align='right'>0.041</td> <td align='right'>0.005</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>8.134</td> <td align='right'>.005</td> <td align='left'>**</td> <td align='right'>.016 [.003, .039]</td> <td align='right'>.001</td> </tr>
+<tr> <td align='left'>valence</td> <td align='right'>0.790</td> <td align='right'>0.004</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>180.161</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.264 [.212, .315]</td> <td align='right'>.024</td> </tr>
+<tr> <td align='left'>person</td> <td align='right'>0.561</td> <td align='right'>0.005</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>122.787</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.197 [.148, .247]</td> <td align='right'>.017</td> </tr>
+<tr> <td align='left'>domain * valence</td> <td align='right'>0.015</td> <td align='right'>0.004</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>3.501</td> <td align='right'>.062</td> <td align='left'>.</td> <td align='right'>.007 [.000, .024]</td> <td align='right'>.000</td> </tr>
+<tr> <td align='left'>domain * person</td> <td align='right'>0.001</td> <td align='right'>0.003</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>0.348</td> <td align='right'>.555</td> <td align='left'></td> <td align='right'>.001 [.000, .010]</td> <td align='right'>.000</td> </tr>
+<tr> <td align='left'>valence * person</td> <td align='right'>0.261</td> <td align='right'>0.005</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>54.411</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.098 [.060, .141]</td> <td align='right'>.008</td> </tr>
+<tr> <td align='left'>domain * valence * person</td> <td align='right'>0.064</td> <td align='right'>0.004</td> <td align='right'>1.000</td> <td align='right'>502.000</td> <td align='right'>17.408</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.034 [.012, .063]</td> <td align='right'>.002</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. MSE = Mean Square Error. Sphericity correction method: GG (Greenhouse-Geisser).</p><p><br/><br/></p><p><b>Descriptive Statistics:</b></p>
+<table>
+<thead>
+<tr> <th align='left'>"domain"</th> <th align='left'>"valence"</th> <th align='left'>"person"</th> <th align='right'><i>M</i></th> <th align='3'><i>SD</i></th> <th align='left'><i>n</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>道德</td> <td align='left'>积极</td> <td align='left'>朋友</td> <td align='right'>0.820</td> <td align='3'>0.092</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>积极</td> <td align='left'>自我</td> <td align='right'>0.867</td> <td align='3'>0.084</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>消极</td> <td align='left'>朋友</td> <td align='right'>0.820</td> <td align='3'>0.094</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>消极</td> <td align='left'>自我</td> <td align='right'>0.819</td> <td align='3'>0.097</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>积极</td> <td align='left'>朋友</td> <td align='right'>0.838</td> <td align='3'>0.082</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>积极</td> <td align='left'>自我</td> <td align='right'>0.870</td> <td align='3'>0.083</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>消极</td> <td align='left'>朋友</td> <td align='right'>0.814</td> <td align='3'>0.094</td> <td align='NA'>503</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>消极</td> <td align='left'>自我</td> <td align='right'>0.830</td> <td align='3'>0.094</td> <td align='NA'>503</td> </tr>
+</tbody>
+</table>
+<p>Total sample size: <i>N</i> = 503</p>
+</body>
+
+</html>

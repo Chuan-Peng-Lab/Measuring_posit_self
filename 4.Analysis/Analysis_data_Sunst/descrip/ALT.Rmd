@@ -1,0 +1,901 @@
+---
+title: "ALT"
+output: html_notebook
+---
+
+# ALT1 
+
+
+ALT1 数据清洗
+```{r ALT1数据清洗}
+
+ALT1_all <- ALT1_all%>%mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct = ifelse(correct == "true", 1, ifelse(correct == "false", 0, NA)))%>% ##重编码correct，1对0错
+  filter(screen_id%in%c("formal_ALT1_1","formal_ALT1_2"))%>%
+  filter(rt>=200 & rt <=1200)#筛出反应时在200~1200
+```
+
+
+
+
+ALT1的基础RT和ACC分布图，图形x匹配/不匹配的方差分析。
+假设1：
+conditionType (match/ nonmatch)
+RT--匹配的反应时比不匹配的快 ，ACC--匹配的正确率比不匹配的高
+结果：
+RT:匹配的反应时比不匹配的快 p < 0.001, η²p =0.70
+ACC:匹配的正确率比不匹配的高 p = .003, η²p =0.26
+
+假设2：
+condition(circle,diamond,...)，RT/ACC不存在差异
+结果：
+反应时存在差异 p < 0.001,  η²p =0.57
+正确率存在差异 p < 0.001, η²p =0.25
+
+假设3：
+condition(circle,...)不影响conditionType(match/nonmatch)的快同效应，即在RT/ACC不存在交互作用
+结果：
+RT: p <0.001,  η²p =0.31
+ACC:p = 0.15,  η²p = 0.06
+```{r ALT1数据分析}
+ALT1_analysis<-function(data){
+  
+  #**总体匹配/不匹配雨云图*
+   ALT1 <-data%>% #选择正式实验的数据
+  group_by(ID,conditionType) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的平均反应时
+    max_rt = max(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的最大反应时
+    min_rt = min(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的最小反应时
+    sd_rt=sd(rt, na.rm = TRUE), #每个被试在类似"circle_match"条件下所有trial的反应时的方差
+    all_count=n(),#每个被试在每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count )%>%#计算每个被试在每个条件的正确率= 正确/总数
+     mutate(conditionType = case_when(
+    conditionType == "match" ~ "匹配",
+    conditionType == "nonmatch"~ "不匹配",
+   
+  ))
+print(ALT1)
+
+
+
+
+colors <- c("lightblue", "grey", "green", "purple", "orange")
+
+  # ACC plot
+  acc_plot <- ggplot(ALT1, aes(x = conditionType, y = acc, fill =conditionType , colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = conditionType, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('正确率') + xlab('条件') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_manual(values = colors) +#palette = "Dark2"
+    scale_fill_manual(values = colors) +#palette = "Dark2"
+    ggtitle("Figure a: ACC of ALT1")
+
+  # RT plot
+  rt_plot <- ggplot(ALT1, aes(x = conditionType, y = avg_rt, fill = conditionType, colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = conditionType, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('反应时（ms）')  + coord_flip() +#+ xlab('conditionType')
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_manual(values = colors) +#palette = "Dark2"
+    scale_fill_manual(values = colors) +#palette = "Dark2"
+    ggtitle("Figure b: RT of ALT1")
+
+  # Combine plots vertically
+  final_plot <- acc_plot | rt_plot
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot)
+  ggsave("fig1_ALT1.png", final_plot, width = 10, height = 8, dpi = 300)
+  #**各图形x匹配/不匹配的反应时与正确率的雨云图*
+  ALT1_data <-data%>% #选择正式实验的数据
+  group_by(ID,conditionType,condition) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE), sd_rt=sd(rt, na.rm = TRUE), 
+    max_rt = max(rt, na.rm = TRUE), min_rt = min(rt, na.rm = TRUE),
+   all_count=n(),correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+   row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  
+    acc = correct_count /all_count ,#计算每个被试在每个条件的正确率= 正确/总数
+)%>%
+     mutate(condition= case_when(
+    condition == "diamond" ~ "菱形",
+    condition == "square"~ "方形",
+    condition == "triangle" ~ "三角",
+  condition == "ellipse" ~ "椭圆",
+    condition== "hexagon"~ "六边",
+      condition == "diamond" ~ "菱形",
+    condition == "pentagon"~ "五边",
+    condition == "trapezoid" ~ "梯形",
+  condition == "circle" ~ "圆形",
+  )) %>%mutate(conditionType = case_when(
+    conditionType == "match" ~ "匹配",
+    conditionType == "nonmatch"~ "不匹配",
+   
+  ))
+print(ALT1_data)
+
+  # ACC plot
+  acc_plot <- ggplot(ALT1_data, aes(x = condition, y = acc, fill = conditionType, colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = condition, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('正确率') + xlab('图形') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_manual(values = colors) +#palette = "Dark2"
+    scale_fill_manual(values = colors) +#palette = "Dark2"
+    ggtitle("Figure 1a: ACC of ALT1")
+# + guides(fill = guide_legend(title = "条件"), colour = guide_legend(title = "条件"))
+
+  # RT plot
+  rt_plot <- ggplot(ALT1_data, aes(x = condition, y = avg_rt, fill = conditionType, colour = conditionType)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = condition, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('反应时（ms）') + xlab(' ') + coord_flip() +#
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_manual(values = colors) +
+    scale_fill_manual(values = colors) +
+    ggtitle("Figure 1b: RT of ALT1")+
+  guides(fill = guide_legend(title = "条件"), colour = guide_legend(title = "条件"))
+
+  # Combine plots vertically
+  final_plot <- acc_plot | rt_plot
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot)
+  ggsave("fig2_ALT1.png", final_plot, width = 10, height = 8, dpi = 300)
+  
+  #**图形x匹配/不匹配的反应时和正确率的方差分析**
+    ALT1_ACC <-ALT1_data%>% 
+  MANOVA(., dv = "acc", subID="ID",
+       within=c("conditionType", "condition"),
+       sph.correction="GG",
+        file = "ALT1_ACC.doc") %>%
+    EMMEANS("conditionType", by = "condition")
+    
+    ALT1_RT <-ALT1_data%>% 
+  MANOVA(., dv = "avg_rt", subID="ID",
+       within=c("conditionType", "condition"),
+       sph.correction="GG",
+        file = "ALT1_RT.doc") %>%
+    EMMEANS("conditionType", by = "condition")
+    
+    
+   
+    
+  #*
+  #*
+  ALT1_data2 <- data%>%
+  group_by(ID,conditionType,condition) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE), sd_rt=sd(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),min_rt = min(rt, na.rm = TRUE),
+    all_count=n(),row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),
+   
+     correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),acc = correct_count /all_count ,
+  )%>%
+    group_by(conditionType,condition)%>%
+      reframe( mean_rt= mean(avg_rt),  se_rt=sd(avg_rt) / sqrt(length(avg_rt)), 
+     mean_acc=mean(acc), se_acc=sd(acc)/sqrt(length(acc))
+   )
+  print(ALT1_data2)
+  
+  ALT1_plot_rt <- ALT1_data2%>%
+  ggplot(., aes(x = condition, y = mean_rt, fill = conditionType)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), position = position_dodge(width = 0.8), width = 0.25)+
+  geom_text(
+    aes(label = round(mean_rt)),  # Add labels rounded to the nearest integer
+    position = position_dodge(width = 0.8),
+    vjust = -0.8,  # Adjust vertical position of labels
+    size = 3  # Adjust label size if needed
+  )+
+  scale_fill_grey(start = 0.3) +
+  scale_y_continuous(limits = c(0, 900), breaks = seq(0, 900, 50), expand = c(0, 0)) +
+ guides(fill = guide_legend(title = "Identity"))+
+  theme_minimal()  +
+  labs(
+    x = "condition",
+    y = "RT",
+    title = "RT of ALT1 in Different condition",
+    caption = "Error bars indicate a standard error"
+  )  +
+  theme(
+    plot.title = element_text(size = 20,
+                              face = "bold",
+                              margin = margin(b = 35)),
+    
+    axis.line = element_line(color = "#3D4852"),
+    axis.ticks = element_line(color = "#3D4852"),
+    panel.grid.major.y = element_line(color = "#DAE1E7"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.y = element_blank()
+  )  
+print(ALT1_plot_rt)
+ ALT1_plot_ACC <- ALT1_data2%>%
+  ggplot(., aes(x = condition, y = mean_acc, fill = conditionType)) +
+  geom_bar(stat = "identity", position = position_dodge(), na.rm = TRUE) +
+  geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), position = position_dodge(width = 0.8), width = 0.25)+
+  geom_text(
+    aes(label = round(mean_acc, digits = 2)),  # Add labels rounded to the nearest integer
+    position = position_dodge(width = 0.6),
+    vjust = -0.8,  # Adjust vertical position of labels
+    size = 3  # Adjust label size if needed
+  )+
+  scale_fill_grey(start = 0.3) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1),expand = c(0, 0.1)) +
+ guides(fill = guide_legend(title = "Identity"))+
+  theme_minimal()  +
+  labs(
+    x = "condition",
+    y = "ACC",
+    title = "ACC of ALT1 in Different condition",
+    caption = "Error bars indicate a standard error"
+  )  +
+  theme(
+    plot.title = element_text(size = 20,
+                              face = "bold",
+                              margin = margin(b = 35)),
+    
+    axis.line = element_line(color = "#3D4852"),
+    axis.ticks = element_line(color = "#3D4852"),
+    panel.grid.major.y = element_line(color = "#DAE1E7"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.y = element_blank()
+  )  
+print(ALT1_plot_ACC)
+}
+ALT1_analysis(ALT1_all)
+```
+
+```{r 筛选ALT1中match}
+ALT1 <-ALT1_all%>% #选择正式实验的数据
+  group_by(ID,conditionType,condition) %>% 
+  filter(conditionType=="match")%>%#按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的平均反应时
+    max_rt = max(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的最大反应时
+    min_rt = min(rt, na.rm = TRUE),#每个被试在类似"circle_match"条件下所有trial的最小反应时
+    sd_rt=sd(rt, na.rm = TRUE), #每个被试在类似"circle_match"条件下所有trial的反应时的方差
+    all_count=n(),#每个被试在每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count )%>%
+  rename(Image=condition)%>%
+  ungroup()
+```
+
+# ALT2
+```{r ALT2数据选择}
+
+ALT2_all <- ALT2_all%>%mutate(ID = as.character(ID)) %>%
+   mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  filter(screen_id%in%c("ability","moral"))%>%
+  mutate(correct = ifelse(is.na(correct), 0, correct))%>%
+  filter(rt>=200 & rt <=1200)#筛出反应时在200~1200
+```
+
+
+快同效应的检查
+```{r}
+ALT2_fastSame<-function(data){
+  
+  #**总体匹配/不匹配雨云图*
+   ALT2 <-data%>% #选择正式实验的数据
+  group_by(ID,identity,domain) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),sd_rt=sd(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE), min_rt = min(rt, na.rm = TRUE),
+    all_count=n(), row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE), 
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count )
+print(ALT2)
+  # ACC plot
+  acc_plot <- ggplot(ALT2, aes(x = domain, y = acc, fill =identity , colour = identity)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = domain, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('Acc') + xlab('domain') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure a: ACC of ALT2")+
+  guides(fill = guide_legend(title = "identity"), colour = guide_legend(title = "identity"))
+
+  # RT plot
+  rt_plot <- ggplot(ALT2, aes(x = domain, y = avg_rt, fill = identity, colour = identity)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = domain, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') + xlab('domain') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure b: RT of ALT2")+
+  guides(fill = guide_legend(title = "identity"), colour = guide_legend(title = "identity"))
+
+  # Combine plots vertically
+  final_plot <- acc_plot | rt_plot
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot)
+  
+ 
+   #**领域x匹配/不匹配的反应时和正确率的方差分析**
+    ALT2_ACC <-ALT2%>% 
+  MANOVA(., dv = "acc", subID="ID",
+       within=c("identity","domain"),
+       sph.correction="GG") %>%
+    EMMEANS("identity", by = "domain")
+    
+    ALT1_RT <-ALT2%>% 
+  MANOVA(., dv = "avg_rt", subID="ID",
+       within=c("identity","domain"),
+       sph.correction="GG") %>%
+    EMMEANS("identity", by = "domain")
+}
+ALT2_fastSame(ALT2_all)
+```
+
+SPE的存在
+Self-relevance × Valence
+d'prime,rt,acc
+
+
+
+
+```{r 正确率和dprime}
+ALT2_analysis<-function(data){
+  
+  #**总体匹配配雨云图*
+   ALT2.0 <-data%>% #选择正式实验的数据
+      group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+      dplyr::mutate(
+                sdt = dplyr::case_when(
+                        (correct== 1 & identity == 'match') ~ "hit",
+                        (correct == 1 & identity == 'nonmatch') ~ "CR",
+                        (correct == 0 & identity == 'match') ~ "miss",
+                        (correct == 0 & identity == 'nonmatch') ~ "FA"))%>%
+   summarize( 
+      hit = sum(sdt == "hit"),
+     miss = sum(sdt == "miss"),
+      FA = sum(sdt == "FA"),
+      CR = sum(sdt == "CR"),
+  
+    ) %>%
+    dplyr::mutate(hitR = hit/(hit + miss),                                     # hit rate
+                      FAR  = FA/(FA+CR)) %>%                                       # fa rate
+        dplyr::mutate(hitR = ifelse(hitR == 1, 1 - 1/(2*(hit + miss)), hitR),      # if hit rate is 1, standardize it
+                      FAR  = ifelse(FAR == 0, 1/(2*(hit + miss)), FAR)) %>%        # if FA rate is 0, standardize it
+        dplyr::mutate(dprime = qnorm(hitR) - qnorm(FAR))
+   
+   assign("ALT2_dprime", ALT2.0, envir = .GlobalEnv)
+   d_plot1 <- ALT2.0%>%
+    filter(domain=="moral")%>%
+    ggplot(., aes(x = valence, y = dprime, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = dprime), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('dprime') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2a: ACC of ALT2_moral")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+# ACC_ability
+  d_plot2 <- ALT2.0%>%
+    filter(domain=="ability")%>%
+    ggplot(., aes(x = valence, y = dprime, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = dprime), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('dprime') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2b: ACC of ALT2_ability")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+ 
+
+  # Combine plots vertically
+  final_plot1 <- d_plot1 | d_plot2
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot1)
+  ggsave("fig1_ALT2.png", final_plot1, width = 10, height = 8, dpi = 300) 
+  
+ ALT2.0<-ALT2.0 %>%
+    mutate(person= case_when(
+    person == "self" ~ "自我",
+    person == "friend"~ "朋友",
+  ))%>%
+     mutate(valence= case_when(
+    valence == "positive" ~ "积极",
+    valence == "negative" ~ "消极",
+  ))%>%
+     mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+  ))
+  
+  #**正确率的方差分析**
+    ALT2_d <-ALT2.0%>% 
+  MANOVA(., dv = "dprime", subID="ID",
+       within=c("domain", "valence","person"),
+       sph.correction="GG",
+        file = "ALT2_d.doc") %>%
+    EMMEANS(c("valence","person"), by = "domain") %>%
+    EMMEANS(c("valence","person","domain")) 
+    
+   
+   
+   #####################################
+   
+  ALT2 <-data%>% #选择正式实验的数据
+      group_by(ID,domain,valence,person) %>%  #按被试与条件分组  
+  summarise(
+    all_count=n(), row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE), 
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /all_count )
+print(ALT2)
+ assign("ALT2_ACC", ALT2, envir = .GlobalEnv)
+  # ACC_moral
+  acc_plot1 <- ALT2%>%
+    filter(domain=="moral")%>%
+    ggplot(., aes(x = valence, y = acc, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('正确率') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2a: ACC of ALT2_moral")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+# ACC_ability
+  acc_plot2 <- ALT2%>%
+    filter(domain=="ability")%>%
+    ggplot(., aes(x = valence, y = acc, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = acc), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('正确率') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2b: ACC of ALT2_ability")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+ 
+
+  # Combine plots vertically
+  final_plot1 <- acc_plot1 | acc_plot2
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot1)
+  
+  ggsave("fig2_ALT2.png", final_plot1, width = 10, height = 8, dpi = 300) 
+  
+  
+  ALT2<-ALT2%>%
+    mutate(person= case_when(
+    person == "self" ~ "自我",
+    person == "friend"~ "朋友",
+  ))%>%
+     mutate(valence= case_when(
+    valence == "positive" ~ "积极",
+    valence == "negative" ~ "消极",
+  ))%>%
+     mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+  ))
+  #**正确率的方差分析**
+    ALT2_ACC <-ALT2%>% 
+  MANOVA(., dv = "acc", subID="ID",
+       within=c("domain", "valence","person"),
+       sph.correction="GG",
+        file = "ALT2_acc.doc") %>%
+    EMMEANS(c("valence","person"), by = "domain")
+    
+ 
+ 
+  
+}
+ALT2_all<-ALT2_all%>%
+  filter(ID!="phase_017_subj_13")
+ALT2_analysis(ALT2_all)
+```
+```{r}
+ALT2_analysis<-function(data){
+  
+  #**总体匹配配雨云图*
+   ALT2_0 <-data%>% #选择正式实验的数据
+      group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+      dplyr::mutate(
+                sdt = dplyr::case_when(
+                        (correct== 1 & identity == 'match') ~ "hit",
+                        (correct == 1 & identity == 'nonmatch') ~ "CR",
+                        (correct == 0 & identity == 'match') ~ "miss",
+                        (correct == 0 & identity == 'nonmatch') ~ "FA"))%>%
+   summarize( 
+      hit = sum(sdt == "hit"),
+     miss = sum(sdt == "miss"),
+      FA = sum(sdt == "FA"),
+      CR = sum(sdt == "CR"),
+  
+    ) %>%
+    dplyr::mutate(hitR = hit/(hit + miss),                                     # hit rate
+                      FAR  = FA/(FA+CR)) %>%                                       # fa rate
+        dplyr::mutate(hitR = ifelse(hitR == 1, 1 - 1/(2*(hit + miss)), hitR),      # if hit rate is 1, standardize it
+                      FAR  = ifelse(FAR == 0, 1/(2*(hit + miss)), FAR)) %>%        # if FA rate is 0, standardize it
+        dplyr::mutate(dprime = qnorm(hitR) - qnorm(FAR))
+   
+   #assign("ALT2_dprime", ALT2.0, envir = .GlobalEnv)
+   d_plot1 <- ALT2_0%>%
+    filter(domain=="moral")%>%
+    ggplot(., aes(x = valence, y = dprime, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = dprime), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('dprime') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2a: ACC of ALT2_moral")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+# ACC_ability
+  d_plot2 <- ALT2_0%>%
+    filter(domain=="ability")%>%
+    ggplot(., aes(x = valence, y = dprime, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = dprime), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('dprime') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2b: ACC of ALT2_ability")+
+  guides(fill = guide_legend(title = "参照条件"), colour = guide_legend(title = "参照条件"))
+ 
+
+  # Combine plots vertically
+  final_plot1 <- d_plot1 | d_plot2
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot1)
+  ggsave("fig1_ALT2.png", final_plot1, width = 10, height = 8, dpi = 300) 
+  
+ ALT2_0<-ALT2_0 %>%
+    mutate(person= case_when(
+    person == "self" ~ "自我",
+    person == "friend"~ "朋友",
+  ))%>%
+     mutate(valence= case_when(
+    valence == "positive" ~ "积极",
+    valence == "negative" ~ "消极",
+  ))%>%
+     mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+  ))
+  
+  #**正确率的方差分析**
+    ALT2_d <-ALT2_0%>% 
+  MANOVA(., dv = "dprime", subID="ID",
+       within=c("domain", "valence","person"),
+       sph.correction="GG",
+        file = "ALT2_d.doc") 
+   ALT2_d %>%
+    EMMEANS(c("valence","person"), by = "domain") 
+   
+   
+    # 执行MANOV
+ALT2_d %>%
+    EMMEANS(c("domain"), by = c("valence","person") )
+
+  # 计算固定valence为positive的EMMs
+  
+  ALT2_0%>% 
+    filter(valence=="积极")%>%
+  MANOVA(., dv = "dprime", subID="ID",
+       within=c("domain", "person"),
+       sph.correction="GG")%>%
+    EMMEANS(c("domain"), by = "person") 
+model<-aov(dprime~person*domain*valence,data=ALT2_0)
+print(summary(model))
+interaction.plot(ALT2_0$domain,ALT2_0$person,ALT2_0$dprime,type="b",col="lightblue",legend=F)
+ 
+  
+}
+ALT2_analysis(ALT2_all)
+```
+```{r}
+ALT2_analysis<-function(data){
+  
+  #**总体匹配配雨云图*
+   ALT2_0 <-data%>% #选择正式实验的数据
+      group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+      dplyr::mutate(
+                sdt = dplyr::case_when(
+                        (correct== 1 & identity == 'match') ~ "hit",
+                        (correct == 1 & identity == 'nonmatch') ~ "CR",
+                        (correct == 0 & identity == 'match') ~ "miss",
+                        (correct == 0 & identity == 'nonmatch') ~ "FA"))%>%
+   summarize( 
+      hit = sum(sdt == "hit"),
+     miss = sum(sdt == "miss"),
+      FA = sum(sdt == "FA"),
+      CR = sum(sdt == "CR"),
+  
+    ) %>%
+    dplyr::mutate(hitR = hit/(hit + miss),                                     # hit rate
+                      FAR  = FA/(FA+CR)) %>%                                       # fa rate
+        dplyr::mutate(hitR = ifelse(hitR == 1, 1 - 1/(2*(hit + miss)), hitR),      # if hit rate is 1, standardize it
+                      FAR  = ifelse(FAR == 0, 1/(2*(hit + miss)), FAR)) %>%        # if FA rate is 0, standardize it
+        dplyr::mutate(dprime = qnorm(hitR) - qnorm(FAR))
+   
+
+  
+ ALT2_0<-ALT2_0 %>%
+    mutate(person= case_when(
+    person == "self" ~ "自我",
+    person == "friend"~ "朋友",
+  ))%>%
+     mutate(valence= case_when(
+    valence == "positive" ~ "积极",
+    valence == "negative" ~ "消极",
+  ))%>%
+     mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+  ))
+  
+ 
+model<-aov(dprime~person*domain*valence,data=ALT2_0)
+summary(model)
+TukeyHSD(model)
+ 
+  
+}
+ALT2_analysis(ALT2_all)
+```
+
+
+```{r}
+ALT2 <-ALT2_all%>% #选择正式实验的数据
+     filter(identity=="match")%>%
+  left_join(ALT1%>%select(avg_rt,ID,Image), by = c("ID","Image"))%>%
+  mutate(rt2=rt-avg_rt)
+
+```
+
+```{r}
+ ALT2_match <-ALT2_all%>% #选择正式实验的数据
+     filter(identity=="match")%>%
+  select(ID,domain,valence,person,Image,rt,correct) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),sd_rt=sd(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE), min_rt = min(rt, na.rm = TRUE),)
+
+  #assign("ALT2_RT", ALT2, envir = .GlobalEnv)
+ALT2_rt_lm<-lmer(rt ~ domain * valence * person + (1|ID) + (1|Image/ID), data=ALT2_match)
+summary(ALT2_rt_lm)
+```
+```{r}
+anova(ALT2_rt_lm)
+```
+```{r}
+ ALT2.0 <-ALT2_match%>% #选择正式实验的数据
+  group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE))%>%
+pivot_wider(names_from = valence,values_from = avg_rt)%>%
+  filter(person=="self")%>%
+  mutate(ALT_SE_val=negative-positive)%>%
+ungroup()
+ALT2.1 <-ALT2_match%>% #选择正式实验的数据
+  group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE))%>%
+  filter(valence=="positive")%>%
+pivot_wider(names_from = person,values_from = avg_rt)%>%
+  mutate(ALT_SE_ref=friend-self)%>%
+ungroup()
+
+ALT2.1<-ALT2.1%>%
+  select(ID,domain,ALT_SE_ref)%>%
+  left_join(ALT2.0%>%select(domain,ID,ALT_SE_val),by=c("ID","domain"))
+```
+
+```{r 反应时只选择match试次做分析}
+ALT2_analysis<-function(data){
+  
+  #**总体匹配配雨云图*
+   ALT2 <-data%>% #选择正式实验的数据
+     filter(identity=="match")%>%
+  group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),sd_rt=sd(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE), min_rt = min(rt, na.rm = TRUE),)
+print(ALT2)
+  #assign("ALT2_RT", ALT2, envir = .GlobalEnv)
+
+
+  # rt_moral
+  rt_plot1 <- ALT2%>%
+    filter(domain=="moral")%>%
+    ggplot(., aes(x = valence, y = avg_rt, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2a: RT of ALT2_moral")+
+  guides(fill = guide_legend(title = "reference"), colour = guide_legend(title = "reference"))
+# rt_ability
+  rt_plot2 <- ALT2%>%
+    filter(domain=="ability")%>%
+    ggplot(., aes(x = valence, y = avg_rt, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') +  coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 2b: RT of ALT2_ability")+
+  guides(fill = guide_legend(title = "reference"), colour = guide_legend(title = "reference"))
+
+
+    final_plot2 <- rt_plot1 | rt_plot2
+   #ggsave(output_file, final_plot, width = 10, height = 15) #输出保存到文件夹
+  print(final_plot2)
+    ALT2<-ALT2%>%
+    mutate(person= case_when(
+    person == "self" ~ "自我",
+    person == "friend"~ "朋友",
+  ))%>%
+     mutate(valence= case_when(
+    valence == "positive" ~ "积极",
+    valence == "negative" ~ "消极",
+  ))%>%
+     mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+  ))
+    ALT2_RT <-ALT2%>% 
+  MANOVA(., dv = "avg_rt", subID="ID",
+       within=c("domain", "valence","person"),
+       sph.correction="GG",
+       file = "ALT2_RT.doc") %>%
+    EMMEANS(c("valence","person"), by = "domain")%>%
+    EMMEANS(c("valence","person","domain")) 
+  #*
+ 
+  
+}
+ALT2_analysis(ALT2_all)
+```
+参加探索性因素分析的指标提取
+```{r }
+
+
+ ALT2.0 <-ALT2_all%>% 
+     filter(identity=="match")%>%#选择正式实验的数据
+  group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE))%>%
+pivot_wider(names_from = valence,values_from = avg_rt)%>%
+  filter(person=="self")%>%
+  mutate(ALT_SE_val=negative-positive)%>%
+ungroup()
+ALT2.1 <-ALT2_all%>% 
+     filter(identity=="match")%>% #选择正式实验的数据
+  group_by(ID,domain,valence,person) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE))%>%
+  filter(valence=="positive")%>%
+pivot_wider(names_from = person,values_from = avg_rt)%>%
+  mutate(ALT_SE_ref=friend-self)%>%
+ungroup()
+
+ALT2.1<-ALT2.1%>%
+  select(ID,domain,ALT_SE_ref)%>%
+  left_join(ALT2.0%>%select(domain,ID,ALT_SE_val),by=c("ID","domain"))
+
+ALT2.1.1<-ALT2.1%>%
+  select(ID,domain,ALT_SE_val)%>%
+  pivot_wider(names_from = domain,values_from = ALT_SE_val)%>%
+  rename(moral_ALT_rt_val=moral,
+         ability_ALT_rt_val=ability)
+
+ALT2.1.2<-ALT2.1%>%
+  select(ID,domain,ALT_SE_ref)%>%
+  pivot_wider(names_from = domain,values_from = ALT_SE_ref)%>%
+  rename(moral_ALT_rt_ref=moral,
+         ability_ALT_rt_ref=ability)
+```
+
+```{r}
+ALT2_dprime.0<-ALT2_dprime%>%
+  select(ID,domain,valence,person,dprime)%>%
+  pivot_wider(names_from = person,values_from = dprime)%>%
+  mutate(ALT_SE2_ref=self-friend)%>%
+  ungroup()
+ALT2_dprime.1<-ALT2_dprime%>%
+  select(ID,domain,valence,person,dprime)%>%
+  pivot_wider(names_from = valence,values_from = dprime)%>%
+  filter(person=="self")%>%
+  mutate(ALT_SE2_val=positive-negative)%>%
+  ungroup()
+
+ALT2_dprime.0.1<-ALT2_dprime.0%>%
+  filter(valence=="positive")%>%
+  select(ID,domain,ALT_SE2_ref)%>%
+  pivot_wider(names_from = domain,values_from = ALT_SE2_ref)%>%
+  rename(moral_ALT_d_ref=moral,
+         ability_ALT_d_ref=ability)
+
+ALT2_dprime.0.2<-ALT2_dprime.1%>%
+  select(ID,domain,ALT_SE2_val)%>%
+  pivot_wider(names_from = domain,values_from = ALT_SE2_val)%>%
+  rename(moral_ALT_d_val=moral,
+         ability_ALT_d_val=ability)
+```
+
+# ALT2的SDT计算
+```{r}
+# function for SDT with Match by identity by valence design
+fun_sdt_ALT2 <- function(data) {
+# 固定效应：0 + Valence 表示对 Valence 进行虚拟编码（dummy coding），Reference:Valence 表示 Reference 和 Valence 之间的交互效应，ismatch:Reference:Valence 表示 ismatch、Reference 和 Valence 之间的三重交互效应。(0 + Valence + Reference:Valence + ismatch:Reference:Valence | ID): 这部分定义了模型的随机效应。0 + Valence + Reference:Valence + ismatch:Reference:Valence 表示在 ID 水平上存在的每个效应都有一个对应的随机效应。这一部分表达了模型中的个体差异。
+        m <- data %>%##
+          filter(!is.na(correct))%>%
+                dplyr::mutate(ismatch = ifelse(identity=="match", 1, 0),
+                              saymatch = ifelse((identity=="match" & correct == 1) | 
+                                                        (identity == 'nonmatch' & correct == 0), 1, 0),
+                              Valence = factor(valence, levels = c('negative','positive')),
+                              Reference = factor(person, levels = c('self', 'friend'))) %>%
+                brms::brm(saymatch ~ 0 +Reference:Valence + ismatch:Reference:Valence + 
+                                  (0 +Reference:Valence + ismatch:Reference:Valence | ID),
+                          family = bernoulli(link="probit"),
+                          data = .,
+                          control = list(adapt_delta = .99),
+                          iter = 4000,
+                          thin = 2,
+                          cores = parallel::detectCores(),
+                          file = here::here("ALT2_SDT"))
+        return(m)
+}
+```
+代值进去以后的结果，看每个值代表哪个条件
+
+```{r 计算ALT2_moral的SDT}
+ALT2_ability_SDT<-ALT2_all%>%
+  filter(domain=="ability")%>%
+  fun_sdt_ALT2(.)
+```
+
+```{r 查看矩阵}
+?stats::model.matrix
+
+ALT2_ability_SDT<-ALT2_all%>%
+ filter(domain=="ability") %>%##
+          filter(!is.na(correct))%>%
+                dplyr::mutate(ismatch = ifelse(identity=="match", 1, 0),
+                              saymatch = ifelse((identity=="match" & correct == 1) | 
+                                                        (identity == 'nonmatch' & correct == 0), 1, 0),
+                              Valence = factor(valence, levels = c('negative','positive')),
+                              Reference = factor(person, levels = c('self', 'friend')))
+a<-  model.matrix(saymatch ~ 0 +Reference:Valence + ismatch:Reference:Valence  ,data = ALT2_ability_SDT)
+
+```
+
+```{r}
+print(ALT2_moral_SDT)
+
+```
+

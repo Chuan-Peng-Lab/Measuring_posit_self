@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>Table 1. Descriptive Statistics and Correlation Matrix.</b></p>
+<table>
+<thead>
+<tr> <th align='left'>Variable</th> <th align='center'><i>M</i></th> <th align='center'><i>SD</i></th> <th align='center' style='width:49px'>1</th> <th align='center' style='width:49px'>2</th> <th align='center' style='width:49px'>3</th> <th align='center' style='width:49px'>4</th> <th align='center' style='width:49px'>5</th> <th align='center' style='width:49px'>6</th> <th align='center' style='width:49px'>7</th> <th align='center' style='width:49px'>8</th> <th align='center' style='width:49px'>9</th> <th align='center' style='width:49px'>10</th> <th align='center' style='width:49px'>11</th> <th align='center' style='width:49px'>12</th> <th align='center' style='width:49px'>13</th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>1. 自我概念清晰度</td> <td align='right'>41.39</td> <td align='right'>10.64</td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>2. 自尊</td> <td align='right'>32.25</td> <td align='right'>5.63</td> <td align='left'>&ensp;.64<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>3. 核心自我评价</td> <td align='right'>36.70</td> <td align='right'>8.27</td> <td align='left'>&ensp;.62<sup>***</sup></td> <td align='left'>&ensp;.82<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>4. 敏感性自恋</td> <td align='right'>29.86</td> <td align='right'>5.92</td> <td align='left'>–.51<sup>***</sup></td> <td align='left'>–.50<sup>***</sup></td> <td align='left'>–.67<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>5. 显性自恋</td> <td align='right'>3.60</td> <td align='right'>3.38</td> <td align='left'>&ensp;.06<sup>&ensp;&ensp;&ensp;</sup></td> <td align='left'>&ensp;.21<sup>***</sup></td> <td align='left'>&ensp;.34<sup>***</sup></td> <td align='left'>–.25<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>6. 乐观</td> <td align='right'>24.26</td> <td align='right'>3.59</td> <td align='left'>&ensp;.62<sup>***</sup></td> <td align='left'>&ensp;.74<sup>***</sup></td> <td align='left'>&ensp;.68<sup>***</sup></td> <td align='left'>–.43<sup>***</sup></td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>7. 自欺性拔高</td> <td align='right'>88.44</td> <td align='right'>19.64</td> <td align='left'>&ensp;.68<sup>***</sup></td> <td align='left'>&ensp;.70<sup>***</sup></td> <td align='left'>&ensp;.83<sup>***</sup></td> <td align='left'>–.66<sup>***</sup></td> <td align='left'>&ensp;.32<sup>***</sup></td> <td align='left'>&ensp;.62<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>8. 操纵印象</td> <td align='right'>93.72</td> <td align='right'>21.58</td> <td align='left'>&ensp;.58<sup>***</sup></td> <td align='left'>&ensp;.53<sup>***</sup></td> <td align='left'>&ensp;.55<sup>***</sup></td> <td align='left'>–.50<sup>***</sup></td> <td align='left'>&ensp;.02<sup>&ensp;&ensp;&ensp;</sup></td> <td align='left'>&ensp;.49<sup>***</sup></td> <td align='left'>&ensp;.69<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>9. 道德同一性</td> <td align='right'>41.33</td> <td align='right'>4.87</td> <td align='left'>&ensp;.51<sup>***</sup></td> <td align='left'>&ensp;.57<sup>***</sup></td> <td align='left'>&ensp;.51<sup>***</sup></td> <td align='left'>–.34<sup>***</sup></td> <td align='left'>&ensp;.05<sup>&ensp;&ensp;&ensp;</sup></td> <td align='left'>&ensp;.59<sup>***</sup></td> <td align='left'>&ensp;.49<sup>***</sup></td> <td align='left'>&ensp;.56<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>10. 道德自我形象</td> <td align='right'>52.04</td> <td align='right'>12.66</td> <td align='left'>&ensp;.31<sup>***</sup></td> <td align='left'>&ensp;.41<sup>***</sup></td> <td align='left'>&ensp;.51<sup>***</sup></td> <td align='left'>–.43<sup>***</sup></td> <td align='left'>&ensp;.20<sup>***</sup></td> <td align='left'>&ensp;.34<sup>***</sup></td> <td align='left'>&ensp;.54<sup>***</sup></td> <td align='left'>&ensp;.48<sup>***</sup></td> <td align='left'>&ensp;.44<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>11. 内控性</td> <td align='right'>33.16</td> <td align='right'>7.38</td> <td align='left'>&ensp;.42<sup>***</sup></td> <td align='left'>&ensp;.60<sup>***</sup></td> <td align='left'>&ensp;.70<sup>***</sup></td> <td align='left'>–.46<sup>***</sup></td> <td align='left'>&ensp;.34<sup>***</sup></td> <td align='left'>&ensp;.54<sup>***</sup></td> <td align='left'>&ensp;.67<sup>***</sup></td> <td align='left'>&ensp;.51<sup>***</sup></td> <td align='left'>&ensp;.50<sup>***</sup></td> <td align='left'>&ensp;.49<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> <td align='left'></td> </tr>
+<tr> <td align='left'>12. 领域自尊</td> <td align='right'>36.40</td> <td align='right'>8.71</td> <td align='left'>&ensp;.37<sup>***</sup></td> <td align='left'>&ensp;.59<sup>***</sup></td> <td align='left'>&ensp;.71<sup>***</sup></td> <td align='left'>–.54<sup>***</sup></td> <td align='left'>&ensp;.51<sup>***</sup></td> <td align='left'>&ensp;.47<sup>***</sup></td> <td align='left'>&ensp;.67<sup>***</sup></td> <td align='left'>&ensp;.40<sup>***</sup></td> <td align='left'>&ensp;.37<sup>***</sup></td> <td align='left'>&ensp;.52<sup>***</sup></td> <td align='left'>&ensp;.64<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> <td align='left'></td> </tr>
+<tr> <td align='left'>13. 学校中的主观经济地位</td> <td align='right'>4.62</td> <td align='right'>1.59</td> <td align='left'>&ensp;.18<sup>***</sup></td> <td align='left'>&ensp;.22<sup>***</sup></td> <td align='left'>&ensp;.35<sup>***</sup></td> <td align='left'>–.26<sup>***</sup></td> <td align='left'>&ensp;.18<sup>***</sup></td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;.29<sup>***</sup></td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;.16<sup>***</sup></td> <td align='left'>&ensp;.32<sup>***</sup></td> <td align='left'>&ensp;.32<sup>***</sup></td> <td align='left'>&ensp;.43<sup>***</sup></td> <td align='left'>&ensp;&nbsp;—</td> </tr>
+<tr> <td align='left'>14. 社会中的主观经济地位</td> <td align='right'>4.69</td> <td align='right'>1.47</td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;.24<sup>***</sup></td> <td align='left'>&ensp;.32<sup>***</sup></td> <td align='left'>–.25<sup>***</sup></td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;.17<sup>***</sup></td> <td align='left'>&ensp;.29<sup>***</sup></td> <td align='left'>&ensp;.12<sup>**&ensp;</sup></td> <td align='left'>&ensp;.15<sup>***</sup></td> <td align='left'>&ensp;.29<sup>***</sup></td> <td align='left'>&ensp;.31<sup>***</sup></td> <td align='left'>&ensp;.39<sup>***</sup></td> <td align='left'>&ensp;.77<sup>***</sup></td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. * <i>p</i> < .05. ** <i>p</i> < .01. *** <i>p</i> < .001.</p><p><br/><br/></p><p><b>Table 2. Correlations and 95% Confidence Intervals.</b></p>
+<table>
+<thead>
+<tr> <th align='left'>Pairs</th> <th align='center'><i>r</i> [95% CI]</th> <th align='center'><i>p</i></th> <th align='center'><i>N</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>自我概念清晰度-自尊</td> <td align='left'>&ensp;.64 [.59, .69]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-核心自我评价</td> <td align='left'>&ensp;.62 [.57, .68]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-敏感性自恋</td> <td align='left'>–.51 [–.58, –.45]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-显性自恋</td> <td align='left'>&ensp;.06 [–.03, .14]</td> <td align='right'>.214</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-乐观</td> <td align='left'>&ensp;.62 [.57, .67]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-自欺性拔高</td> <td align='left'>&ensp;.68 [.63, .73]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-操纵印象</td> <td align='left'>&ensp;.58 [.52, .64]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-道德同一性</td> <td align='left'>&ensp;.51 [.45, .58]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-道德自我形象</td> <td align='left'>&ensp;.31 [.23, .39]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-内控性</td> <td align='left'>&ensp;.42 [.34, .49]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-领域自尊</td> <td align='left'>&ensp;.37 [.30, .45]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-学校中的主观经济地位</td> <td align='left'>&ensp;.18 [.09, .26]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自我概念清晰度-社会中的主观经济地位</td> <td align='left'>&ensp;.17 [.08, .25]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-核心自我评价</td> <td align='left'>&ensp;.82 [.79, .85]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-敏感性自恋</td> <td align='left'>–.50 [–.57, –.43]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-显性自恋</td> <td align='left'>&ensp;.21 [.13, .30]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-乐观</td> <td align='left'>&ensp;.74 [.69, .77]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-自欺性拔高</td> <td align='left'>&ensp;.70 [.65, .74]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-操纵印象</td> <td align='left'>&ensp;.53 [.47, .59]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-道德同一性</td> <td align='left'>&ensp;.57 [.51, .63]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-道德自我形象</td> <td align='left'>&ensp;.41 [.34, .48]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-内控性</td> <td align='left'>&ensp;.60 [.54, .65]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-领域自尊</td> <td align='left'>&ensp;.59 [.53, .64]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-学校中的主观经济地位</td> <td align='left'>&ensp;.22 [.14, .31]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自尊-社会中的主观经济地位</td> <td align='left'>&ensp;.24 [.15, .32]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-敏感性自恋</td> <td align='left'>–.67 [–.72, –.62]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-显性自恋</td> <td align='left'>&ensp;.34 [.26, .42]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-乐观</td> <td align='left'>&ensp;.68 [.63, .72]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-自欺性拔高</td> <td align='left'>&ensp;.83 [.80, .85]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-操纵印象</td> <td align='left'>&ensp;.55 [.49, .61]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-道德同一性</td> <td align='left'>&ensp;.51 [.44, .57]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-道德自我形象</td> <td align='left'>&ensp;.51 [.44, .57]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-内控性</td> <td align='left'>&ensp;.70 [.65, .74]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-领域自尊</td> <td align='left'>&ensp;.71 [.66, .75]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-学校中的主观经济地位</td> <td align='left'>&ensp;.35 [.27, .42]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>核心自我评价-社会中的主观经济地位</td> <td align='left'>&ensp;.32 [.24, .40]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-显性自恋</td> <td align='left'>–.25 [–.33, –.17]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-乐观</td> <td align='left'>–.43 [–.50, –.36]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-自欺性拔高</td> <td align='left'>–.66 [–.70, –.60]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-操纵印象</td> <td align='left'>–.50 [–.57, –.44]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-道德同一性</td> <td align='left'>–.34 [–.42, –.26]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-道德自我形象</td> <td align='left'>–.43 [–.50, –.35]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-内控性</td> <td align='left'>–.46 [–.53, –.39]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-领域自尊</td> <td align='left'>–.54 [–.60, –.47]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-学校中的主观经济地位</td> <td align='left'>–.26 [–.34, –.18]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>敏感性自恋-社会中的主观经济地位</td> <td align='left'>–.25 [–.34, –.17]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-乐观</td> <td align='left'>&ensp;.17 [.08, .25]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-自欺性拔高</td> <td align='left'>&ensp;.32 [.24, .40]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-操纵印象</td> <td align='left'>&ensp;.02 [–.06, .11]</td> <td align='right'>.580</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-道德同一性</td> <td align='left'>&ensp;.05 [–.04, .14]</td> <td align='right'>.264</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-道德自我形象</td> <td align='left'>&ensp;.20 [.12, .28]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-内控性</td> <td align='left'>&ensp;.34 [.26, .41]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-领域自尊</td> <td align='left'>&ensp;.51 [.45, .58]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-学校中的主观经济地位</td> <td align='left'>&ensp;.18 [.10, .27]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>显性自恋-社会中的主观经济地位</td> <td align='left'>&ensp;.17 [.09, .26]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-自欺性拔高</td> <td align='left'>&ensp;.62 [.56, .67]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-操纵印象</td> <td align='left'>&ensp;.49 [.42, .55]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-道德同一性</td> <td align='left'>&ensp;.59 [.53, .65]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-道德自我形象</td> <td align='left'>&ensp;.34 [.27, .42]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-内控性</td> <td align='left'>&ensp;.54 [.47, .60]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-领域自尊</td> <td align='left'>&ensp;.47 [.39, .53]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-学校中的主观经济地位</td> <td align='left'>&ensp;.17 [.08, .25]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>乐观-社会中的主观经济地位</td> <td align='left'>&ensp;.17 [.08, .25]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-操纵印象</td> <td align='left'>&ensp;.69 [.64, .73]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-道德同一性</td> <td align='left'>&ensp;.49 [.42, .55]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-道德自我形象</td> <td align='left'>&ensp;.54 [.47, .59]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-内控性</td> <td align='left'>&ensp;.67 [.62, .72]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-领域自尊</td> <td align='left'>&ensp;.67 [.62, .71]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-学校中的主观经济地位</td> <td align='left'>&ensp;.29 [.21, .37]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>自欺性拔高-社会中的主观经济地位</td> <td align='left'>&ensp;.29 [.21, .37]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-道德同一性</td> <td align='left'>&ensp;.56 [.50, .62]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-道德自我形象</td> <td align='left'>&ensp;.48 [.41, .55]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-内控性</td> <td align='left'>&ensp;.51 [.44, .57]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-领域自尊</td> <td align='left'>&ensp;.40 [.33, .47]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-学校中的主观经济地位</td> <td align='left'>&ensp;.17 [.08, .25]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>操纵印象-社会中的主观经济地位</td> <td align='left'>&ensp;.12 [.04, .21]</td> <td align='right'>.006</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德同一性-道德自我形象</td> <td align='left'>&ensp;.44 [.37, .51]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德同一性-内控性</td> <td align='left'>&ensp;.50 [.44, .57]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德同一性-领域自尊</td> <td align='left'>&ensp;.37 [.30, .45]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德同一性-学校中的主观经济地位</td> <td align='left'>&ensp;.16 [.07, .24]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德同一性-社会中的主观经济地位</td> <td align='left'>&ensp;.15 [.06, .24]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德自我形象-内控性</td> <td align='left'>&ensp;.49 [.42, .56]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德自我形象-领域自尊</td> <td align='left'>&ensp;.52 [.46, .58]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德自我形象-学校中的主观经济地位</td> <td align='left'>&ensp;.32 [.24, .40]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>道德自我形象-社会中的主观经济地位</td> <td align='left'>&ensp;.29 [.21, .37]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>内控性-领域自尊</td> <td align='left'>&ensp;.64 [.58, .69]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>内控性-学校中的主观经济地位</td> <td align='left'>&ensp;.32 [.24, .40]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>内控性-社会中的主观经济地位</td> <td align='left'>&ensp;.31 [.22, .38]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>领域自尊-学校中的主观经济地位</td> <td align='left'>&ensp;.43 [.35, .50]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>领域自尊-社会中的主观经济地位</td> <td align='left'>&ensp;.39 [.31, .46]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+<tr> <td align='left'>学校中的主观经济地位-社会中的主观经济地位</td> <td align='left'>&ensp;.77 [.73, .80]</td> <td align='right'>< .001</td> <td align='right'>498</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>.</p>
+</body>
+
+</html>

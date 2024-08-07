@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>ANOVA Table:</b></p>
+<p><pre>Dependent variable(s):&#9;avg_rt</pre></p>
+<p><pre>Between-subjects factor(s):&#9;–</pre></p>
+<p><pre>Within-subjects factor(s):&#9;conditionType, condition</pre></p>
+<p><pre>Covariate(s):&#9;&#9;–</pre></p>
+<table>
+<thead>
+<tr> <th align='left'></th> <th align='right'><i>MS</i></th> <th align='right'><i>MSE</i></th> <th align='right'><i>df</i><sub>1</sub></th> <th align='right'><i>df</i><sub>2</sub></th> <th align='right'><i>F</i></th> <th align='right'><i>p</i></th> <th align='right'> </th> <th align='right'>η<sup>2</sup><sub>p</sub> [90% CI]</th> <th align='right'>η<sup>2</sup><sub>G</sub></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>conditionType</td> <td align='right'>2787982.394</td> <td align='right'>2214.903</td> <td align='right'>1.000</td> <td align='right'>497.000</td> <td align='right'>1258.738</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.717 [.687, .743]</td> <td align='right'>.065</td> </tr>
+<tr> <td align='left'>condition</td> <td align='right'>566631.335</td> <td align='right'>1250.088</td> <td align='right'>6.050</td> <td align='right'>3006.995</td> <td align='right'>453.273</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.477 [.457, .495]</td> <td align='right'>.079</td> </tr>
+<tr> <td align='left'>conditionType * condition</td> <td align='right'>55168.909</td> <td align='right'>491.015</td> <td align='right'>6.733</td> <td align='right'>3346.500</td> <td align='right'>112.357</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.184 [.164, .202]</td> <td align='right'>.009</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. MSE = Mean Square Error. Sphericity correction method: GG (Greenhouse-Geisser).</p><p><br/><br/></p><p><b>Descriptive Statistics:</b></p>
+<table>
+<thead>
+<tr> <th align='left'>"conditionType"</th> <th align='left'>"condition"</th> <th align='right'><i>M</i></th> <th align='3'><i>SD</i></th> <th align='left'><i>n</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>不匹配</td> <td align='left'>方形</td> <td align='right'>696.244</td> <td align='3'>70.953</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>菱形</td> <td align='right'>724.346</td> <td align='3'>74.571</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>六边</td> <td align='right'>717.013</td> <td align='3'>76.908</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>三角</td> <td align='right'>685.324</td> <td align='3'>72.142</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>梯形</td> <td align='right'>714.028</td> <td align='3'>76.950</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>椭圆</td> <td align='right'>686.806</td> <td align='3'>71.547</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>五边</td> <td align='right'>718.895</td> <td align='3'>76.189</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>不匹配</td> <td align='left'>圆形</td> <td align='right'>686.801</td> <td align='3'>69.860</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>方形</td> <td align='right'>658.048</td> <td align='3'>70.507</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>菱形</td> <td align='right'>706.861</td> <td align='3'>69.386</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>六边</td> <td align='right'>675.605</td> <td align='3'>67.155</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>三角</td> <td align='right'>628.262</td> <td align='3'>66.791</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>梯形</td> <td align='right'>699.378</td> <td align='3'>69.989</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>椭圆</td> <td align='right'>646.952</td> <td align='3'>63.819</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>五边</td> <td align='right'>678.217</td> <td align='3'>68.434</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>匹配</td> <td align='left'>圆形</td> <td align='right'>636.847</td> <td align='3'>65.406</td> <td align='NA'>498</td> </tr>
+</tbody>
+</table>
+<p>Total sample size: <i>N</i> = 498</p>
+</body>
+
+</html>

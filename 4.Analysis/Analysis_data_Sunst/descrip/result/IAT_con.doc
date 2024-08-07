@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>ANOVA Table:</b></p>
+<p><pre>Dependent variable(s):&#9;mean_rt</pre></p>
+<p><pre>Between-subjects factor(s):&#9;–</pre></p>
+<p><pre>Within-subjects factor(s):&#9;task_id, con</pre></p>
+<p><pre>Covariate(s):&#9;&#9;–</pre></p>
+<table>
+<thead>
+<tr> <th align='left'></th> <th align='right'><i>MS</i></th> <th align='right'><i>MSE</i></th> <th align='right'><i>df</i><sub>1</sub></th> <th align='right'><i>df</i><sub>2</sub></th> <th align='right'><i>F</i></th> <th align='right'><i>p</i></th> <th align='right'> </th> <th align='right'>η<sup>2</sup><sub>p</sub> [90% CI]</th> <th align='right'>η<sup>2</sup><sub>G</sub></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>task_id</td> <td align='right'>102399.430</td> <td align='right'>19600.710</td> <td align='right'>1</td> <td align='right'>497</td> <td align='right'>5.224</td> <td align='right'>.023</td> <td align='left'>*</td> <td align='right'>.010 [.001, .030]</td> <td align='right'>.001</td> </tr>
+<tr> <td align='left'>con</td> <td align='right'>5293163.524</td> <td align='right'>11133.203</td> <td align='right'>3</td> <td align='right'>1491</td> <td align='right'>475.439</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.489 [.461, .514]</td> <td align='right'>.080</td> </tr>
+<tr> <td align='left'>task_id * con</td> <td align='right'>64622.814</td> <td align='right'>6414.178</td> <td align='right'>3</td> <td align='right'>1491</td> <td align='right'>10.075</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.020 [.009, .032]</td> <td align='right'>.001</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. MSE = Mean Square Error.</p><p><br/><br/></p><p><b>Descriptive Statistics:</b></p>
+<table>
+<thead>
+<tr> <th align='left'>"task_id"</th> <th align='left'>"con"</th> <th align='right'><i>M</i></th> <th align='3'><i>SD</i></th> <th align='left'><i>n</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>道德</td> <td align='left'>积极_朋友</td> <td align='right'>851.288</td> <td align='3'>232.973</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>积极_自我</td> <td align='right'>694.493</td> <td align='3'>209.630</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>消极_朋友</td> <td align='right'>722.806</td> <td align='3'>221.429</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>道德</td> <td align='left'>消极_自我</td> <td align='right'>843.005</td> <td align='3'>228.076</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>积极_朋友</td> <td align='right'>826.800</td> <td align='3'>206.885</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>积极_自我</td> <td align='right'>698.333</td> <td align='3'>195.439</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>消极_朋友</td> <td align='right'>726.585</td> <td align='3'>204.389</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>能力</td> <td align='left'>消极_自我</td> <td align='right'>819.317</td> <td align='3'>208.011</td> <td align='NA'>498</td> </tr>
+</tbody>
+</table>
+<p>Total sample size: <i>N</i> = 498</p>
+</body>
+
+</html>

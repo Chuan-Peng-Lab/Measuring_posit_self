@@ -1,0 +1,443 @@
+---
+title: "IAT"
+output: html_notebook
+---
+
+##IAT
+##Built-in error penalty procedure (preferred) Each trial’s latency is recorded to occurrence of the trial’s correct response; trials on which errors preceded the correct responses are included
+##IAT only 3,4,6,7 block，区分联合任务为A相容,B;不相容;e.g. 3=A1,4=A2
+  -   ① Designate combined tasks as A (for which faster performance will produce a positive score) and B (for which faster performance will produce a negative score). With counterbalancing, half of subjects will encounter A in Blocks 3 & 4, half in Blocks 6 & 7
+  -   ②Discard all trials in Blocks 1, 2, and 5
+  -   ③Identify blocks for combined task A as A1 and A2; those for combined task B as B1 and B2. If task A is Blocks 3 & 4, Block 3 is A1, Block 4 is A2
+# ④Eliminate from remaining data (Blocks 3, 4, 6, and 7) only trials with latencies > 10,000 ms
+# ⑤Eliminate all subjects for whom more than 10% of remaining trials have latencies faster than 300 ms
+# ⑥Compute latency means (MnA1, MnA2, MnB1, MnB2) and SDs (SDA1, SDA2, SDB1, SDB2) for each of the four blocks for all remaining trials
+# ⑦Compute two mean latency differences: B1–A1 = (MnB1 – MnA1) and B2–A2 = (MnB2 – MnA2)
+# ⑧Compute an inclusive (not pooled) SD1 using all latencies in Blocks A1 & B1; another (SD2) using all latencies for A2 & B2 (SD2). These can be computed from means and SDs from Step 6 as shown in the lines below this table
+
+# ⑨(B1-A1)/SD1,(B2-A2)/SD2
+# ⑩D =  [(B1-A1)/SD1+(B2-A2)/SD2]/2
+
+绝对值：0.2 = 小效应，0.5 = 中等效应，0.8 = 大效应
+
+
+```{r IAT数据处理}
+
+##数据预处理，区分相容与不相容的block，
+IAT_data <- IAT_all%>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(ParticipantID = as.character(ParticipantID)) %>%
+  mutate(rt=as.numeric(rt))%>%
+  group_by(ID) %>%
+  mutate(
+    version_attrib = case_when(
+      task_id == "ability"~ (version_attrib[response == "0"& !is.na(version_attrib)]),
+      TRUE ~ version_attrib),
+    version_target = case_when(
+      task_id == "ability"~ (version_target[response == "0"& !is.na(version_target)]),
+      TRUE ~ version_target),
+    version_attrib2 = case_when(
+      task_id == "moral"~ (version_attrib2[response == "0"& !is.na(version_attrib2)]),
+      TRUE ~ version_attrib2),
+    version_target2 = case_when(
+      task_id == "moral"~ (version_target2[response == "0"& !is.na(version_target2)]),
+      TRUE ~ version_target2))%>%
+  mutate(version = NA)%>%
+  mutate(
+    version = case_when(
+    version_attrib == version_target & task_id == "ability" & screen_id == 3 ~ "A1",#相容为A，不相容为B，练习阶段为1，正式为2
+    version_attrib == version_target & task_id == "ability" & screen_id == 4 ~ "A2",
+    version_attrib == version_target & task_id == "ability" & screen_id == 6 ~ "B1",
+    version_attrib == version_target & task_id == "ability" & screen_id == 7 ~ "B2",
+    
+    version_attrib != version_target & task_id == "ability" & screen_id == 3 ~ "B1",
+    version_attrib != version_target & task_id == "ability" & screen_id == 4 ~ "B2",
+    version_attrib != version_target & task_id == "ability" & screen_id == 6 ~ "A1",
+    version_attrib != version_target & task_id == "ability" & screen_id == 7 ~ "A2",
+    
+    version_attrib2 == version_target2 & task_id == "moral" & screen_id == 3 ~ "A1",
+    version_attrib2 == version_target2 & task_id == "moral" & screen_id == 4 ~ "A2",
+    version_attrib2 == version_target2 & task_id == "moral" & screen_id == 6 ~ "B1",
+    version_attrib2 == version_target2 & task_id == "moral" & screen_id == 7 ~ "B2",
+    
+    version_attrib2 != version_target2 & task_id == "moral" & screen_id == 3 ~ "B1",
+    version_attrib2 != version_target2 & task_id == "moral" & screen_id == 4 ~ "B2",
+    version_attrib2 != version_target2 & task_id == "moral" & screen_id == 6 ~ "A1",
+    version_attrib2 != version_target2 & task_id == "moral" & screen_id == 7 ~ "A2",
+      TRUE ~ version  # 如果没有满足条件的情况，保持原值
+    )) %>%
+    filter(screen_id %in% c(3, 4, 6, 7)) %>%
+  filter(rt<=10000)%>%
+   mutate(
+    block_type = case_when(
+      version %in% c("A1", "A2") ~ "compatible",
+      version %in% c("B1", "B2") ~ "incompatible",))%>%
+  mutate(con = case_when(
+    block_type == "compatible" & condition %in% c("other", "negative") ~ "消极_朋友",
+    block_type == "compatible" & condition %in% c("self", "positive") ~ "积极_自我",
+    block_type == "incompatible" & condition %in% c("other", "positive") ~ "积极_朋友",
+    block_type == "incompatible" & condition %in% c("self", "negative") ~ "消极_自我"
+  ))
+
+####计算出原始数据的均值，标准差
+  IAT_data1<-IAT_data%>%
+    group_by(ID,task_id,block_type,version) %>%  ##condition是4类标签的，task_id是moral和ability，version是A1,A2,B1,B2
+  summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt),
+    row_n = n(),
+    se_rt = sd(rt) / sqrt(row_n))
+print(IAT_data1)
+
+##将错误的试次的反应时替换为平均反应时+600 ms
+IAT_data<-IAT_data%>%
+  left_join(IAT_data1%>%select(ID,task_id,block_type,version,mean_rt),by=c("ID","task_id","block_type","version"))%>%
+  mutate(rt=ifelse(correct=="false",mean_rt+600,rt))
+
+###计算取代完错误试次后的数据的均值，标准差
+ IAT_data1<-IAT_data%>%
+    group_by(ID,task_id,block_type,version) %>%  ##condition是4类标签的，task_id是moral和ability，version是A1,A2,B1,B2
+  summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt),
+    row_n = n(),
+    se_rt = sd(rt) / sqrt(row_n))
+
+```
+
+```{r 描述性统计}
+
+pacman::p_load("ggsignif")
+#library(gghalves)
+IAT_plot<-function(data){
+  IAT_data<-data%>%
+    ungroup()%>%
+  mutate(task_id= case_when(
+    task_id == "ability" ~ "能力",
+    task_id == "moral"~ "道德",
+  ))%>%
+    group_by(ID,con,task_id)%>%
+    summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt))%>%
+    
+  MANOVA(.,
+       subID="ID",
+       dv="mean_rt",
+       within=c("task_id","con"),
+       file = "IAT_con.doc")%>%#condition是4类标签的，task_id是moral和ability，block_type是匹配，不匹配
+  EMMEANS("task_id", by="con")%>%
+    
+ EMMEANS("con", by="task_id")
+  
+  print(IAT_data)
+  
+ p_moral <- data %>%
+  filter(task_id == "moral") %>%
+  group_by(ID, con ) %>%
+  summarize(
+    RT = mean(rt),
+    sd_rt = sd(rt),
+    n = n() ,
+     .groups = 'drop'
+  )%>%
+   mutate(
+  RT = as.numeric(RT),
+  con = factor(con, levels = c("积极_自我", "积极_朋友", "消极_自我", "消极_朋友"))
+    )
+
+print(p_moral)
+
+
+p_ability <- data %>%
+  filter(task_id == "ability") %>%
+  group_by(ID, con ) %>%
+  summarize(
+    RT = mean(rt),
+    sd_rt = sd(rt),
+    n = n()  ,
+    .groups = 'drop' 
+  )%>%
+   mutate(
+  RT = as.numeric(RT),
+ con = factor(con, levels = c("积极_自我", "积极_朋友", "消极_自我", "消极_朋友"))
+   )
+
+print(p_ability)
+# 道德领域的数据绘图
+p_moral_plot <- ggplot(p_moral, aes(x = con, y = RT, fill = con)) +
+  geom_half_violin(side = "right", position = position_nudge(x = 0.2), trim = FALSE, alpha = 0.75) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, position = position_nudge(x = 0.2), color = "black", alpha = 0.75) +
+  geom_jitter(aes(color = con), position = position_jitter(width = 0.1), size = 0.2, alpha = 0.75) +
+  scale_y_continuous(limits = c(400, 1000), breaks = seq(500, 1000, by = 100)) +
+  labs(title = "道德领域的反应时", x = "条件", y = "反应时") +
+  theme_minimal()
+
+# 能力领域的数据绘图
+p_ability_plot <- ggplot(p_ability, aes(x = con, y = RT, fill = con)) +
+  geom_half_violin(side = "right", position = position_nudge(x = 0.2), trim = FALSE, alpha = 0.75) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, position = position_nudge(x = 0.2), color = "black", alpha = 0.75) +
+  geom_jitter(aes(color = con), position = position_jitter(width = 0.1), size = 0.2, alpha = 0.75) +
+  scale_y_continuous(limits = c(400, 1000), breaks = seq(500, 1000, by = 100)) +
+  labs(title = "能力领域的反应时", x = "条件", y = "反应时") +
+  theme_minimal()
+
+# 将图表排列成两行
+plot <- ggarrange(p_moral_plot, p_ability_plot, ncol = 1, nrow = 2)
+print(plot)
+}
+IAT_plot(IAT_data)
+
+```
+
+# IAT block_type(compatible,incompatible)*task_id(moral,	ability)
+```{r IAT block_type(compatible,incompatible)*task_id(moral,	ability)}
+IAT_RT_plot <- function(data,data_al,dat) {
+
+#方差分析结果
+  
+IAT_ANOVA <-data%>% 
+  mutate(task_id= case_when(
+    task_id == "ability" ~ "能力",
+    task_id == "moral"~ "道德",
+  ))%>%
+     mutate(block_type= case_when(
+    block_type == "compatible" ~ "匹配",
+    block_type == "incompatible" ~ "不匹配",
+  ))%>%
+    
+  MANOVA(.,
+       subID="ID",
+       dv="mean_rt",
+       within=c("task_id","block_type"),
+       file = "IAT_com.doc")%>%#condition是4类标签的，task_id是moral和ability，block_type是匹配，不匹配
+ EMMEANS("task_id", by="block_type") %>%
+  EMMEANS("block_type", by="task_id")
+
+
+ IAT_dat<-IAT_data%>%
+    group_by(task_id,block_type) %>%  ##condition是4类标签的，task_id是moral和ability，version是A1,A2,B1,B2
+  summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt),
+    row_n = n(),
+    se_rt = sd(rt) / sqrt(row_n))
+ print(IAT_dat)
+ 
+  IAT_data_al<-IAT_data%>%
+    group_by(ID,block_type,version) %>%  ##condition是4类标签的，task_id是moral和ability，version是A1,A2,B1,B2
+  summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt),
+    row_n = n(),
+    se_rt = sd(rt) / sqrt(row_n))%>%
+  mutate(task_id="all")%>%
+  bind_rows(IAT_data1,.)%>%#将两个子领域的D与总的D合并
+  arrange(ID)
+  print(IAT_data_al)
+  # 创建rt的雨云图
+  rt_plot1 <- ggplot(IAT_data_al ,aes(x=block_type,y=mean_rt, fill =block_type, colour =block_type))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  geom_boxplot(aes(x =block_type, y =mean_rt),outlier.shape = NA, alpha = 0.3, width = .1, colour = "BLACK") +
+ylab('rt')+xlab('condition')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+    facet_wrap(~task_id)+
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle(" RT of IAT in different domains")
+  
+  print(IAT_ANOVA)
+  print(rt_plot1)
+  
+ IAT_plot_rt <- IAT_dat%>%
+ ungroup()%>%
+   group_by(task_id,block_type)%>%
+  ggplot(., aes(x = task_id, y = mean_rt, fill = block_type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), position = position_dodge(width = 0.8), width = 0.25)+
+  geom_text(
+    aes(label = round(mean_rt,digits=3)),  # Add labels rounded to the nearest integer
+    position = position_dodge(width = 0.8),
+    vjust = -0.8,  # Adjust vertical position of labels
+    size = 3  # Adjust label size if needed
+  )+
+  scale_fill_grey(start = 0.3) +
+  scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50), expand = c(0, 0)) +
+ guides(fill = guide_legend(title = "Condition"))+
+  theme_minimal()  +
+  labs(
+    x = "domain",
+    y = "RT",
+    title = "RT of IAT in Different domains",
+    caption = "Error bars indicate a standard error"
+  )  +
+  theme(
+    plot.title = element_text(size = 20,
+                              face = "bold",
+                              margin = margin(b = 35)),
+    
+    axis.line = element_line(color = "#3D4852"),
+    axis.ticks = element_line(color = "#3D4852"),
+    panel.grid.major.y = element_line(color = "#DAE1E7"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.y = element_blank()
+  )  
+print(IAT_plot_rt)
+}
+IAT_RT_plot(IAT_data1,IAT_data)
+```
+
+#IAT的D值计算
+
+```{r IAT的D值计算}
+IAT_data_D2<-IAT_data1%>%
+  ungroup()%>%
+  select(-c("block_type","se_rt"))%>%
+  pivot_wider(names_from = version, values_from = c(mean_rt, sd_rt,row_n)) %>%
+  group_by(ID,task_id) %>% #task_id是领域(moral,ability)   #ID,version
+  reframe(
+    diff_B1A1 = round((mean_rt_B1 - mean_rt_A1), digits = 3),
+    diff_B2A2 =round(( mean_rt_B2 - mean_rt_A2), digits = 3),
+    SD_B1A1 = round((sqrt((((row_n_A1-1)*(sd_rt_A1^2)+(row_n_B1-1)*(sd_rt_B1^2))+((row_n_A1+row_n_B1)*((mean_rt_A1-mean_rt_B1)^2)/4))/(row_n_A1+row_n_B1-1))), digits = 3),
+    SD_B2A2 = round((sqrt((((row_n_A2-1)*(sd_rt_A2^2)+(row_n_B2-1)*(sd_rt_B2^2))+((row_n_A2+row_n_B2)*((mean_rt_A2-mean_rt_B2)^2)/4))/(row_n_A2+row_n_B2-1))), digits = 3),
+     D= round(((diff_B1A1/SD_B1A1) + (diff_B2A2/SD_B2A2))/2, digits = 3)
+    )%>%
+mutate(
+    effect = case_when(
+      abs(D) <= 0.2 ~ "small",
+      abs(D) <= 0.5 ~ "mid",
+      TRUE ~ "big")) #分为moral，ability两个领域的IAT_D
+print(IAT_data_D)
+IAT_data_D<-IAT_data_D%>%
+  rename(domain=task_id,IAT_SE=D)
+```
+```{r}
+IAT_data_D2%>%
+  filter(task_id=="moral")%>%
+TTEST(
+  .,
+  "D"
+)
+
+```
+```{r}
+IAT_data_D2%>%
+  filter(task_id=="ability")%>%
+TTEST(
+  .,"D")
+
+```
+```{r}
+
+IAT_D_plot <- function(data) {
+  
+  
+  
+  IAT_result <-data%>%
+  mutate(task_id= case_when(
+    task_id == "ability" ~ "能力",
+    task_id == "moral"~ "道德",
+ 
+  ))%>%
+     ggplot(., aes(x = task_id, y = D, color = task_id))  +
+    geom_boxplot(aes(color = task_id)) +
+    geom_jitter(width = 0.2, alpha = 0.5, show.legend = FALSE) +
+    labs(x = "领域", y = "D 值") +#, title = "IAT"
+    theme_minimal()+
+    theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    axis.line = element_line(),
+    # panel.background = element_rect(fill = "white")
+  )
+  print(IAT_result)
+   ggsave("IAT_D.png", IAT_result, width = 10, height = 8, dpi = 300)
+  IAT_summary <- data %>%
+    group_by(task_id) %>%
+    summarise(
+      avg_D = mean(D, na.rm = TRUE),
+      max_D = max(D, na.rm = TRUE),
+      min_D = min(D, na.rm = TRUE),
+      sd_D = sd(D, na.rm = TRUE),
+      lower_95 = quantile(D, 0.025, na.rm = TRUE),
+      upper_95 = quantile(D, 0.975, na.rm = TRUE)
+    )
+  print(IAT_summary)
+  
+  IAT_selected_data <- data %>%
+    filter(task_id %in% c("moral", "ability"))%>%
+    select(ID,task_id,D)%>%
+  pivot_wider(names_from = task_id, values_from = D)
+ print(IAT_selected_data)
+
+
+ paired_t_test_result <- TTEST(IAT_selected_data, y=c("moral", "ability"), paired=TRUE,file="IAT_D.doc")
+  
+ print(paired_t_test_result)
+  
+}
+
+IAT_D_plot(IAT_data_D2 )
+
+```
+
+```{r}
+IAT_D_plot <- function(data) {
+  
+  
+  
+  IAT_result <-data%>%
+  mutate(domain= case_when(
+    domain == "ability" ~ "能力",
+    domain == "moral"~ "道德",
+ 
+  ))%>%
+     ggplot(., aes(x = domain, y = IAT_SE, color = domain))  +
+    geom_boxplot(aes(color = domain)) +
+    geom_jitter(width = 0.2, alpha = 0.5, show.legend = FALSE) +
+    labs(x = "领域", y = "D 值") +#, title = "IAT"
+    theme_minimal()+
+    theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    axis.line = element_line(),
+    # panel.background = element_rect(fill = "white")
+  )
+  print(IAT_result)
+   ggsave("IAT_D.png", IAT_result, width = 10, height = 8, dpi = 300)
+  IAT_summary <- data %>%
+    group_by(domain) %>%
+    summarise(
+      avg_D = mean(IAT_SE, na.rm = TRUE),
+      max_D = max(IAT_SE, na.rm = TRUE),
+      min_D = min(IAT_SE, na.rm = TRUE),
+      sd_D = sd(IAT_SE, na.rm = TRUE),
+      lower_95 = quantile(IAT_SE, 0.025, na.rm = TRUE),
+      upper_95 = quantile(IAT_SE, 0.975, na.rm = TRUE)
+    )
+  print(IAT_summary)
+  
+  IAT_selected_data <- data %>%
+    filter(domain %in% c("moral", "ability"))%>%
+    select(ID,domain,IAT_SE)%>%
+  pivot_wider(names_from = domain, values_from = IAT_SE)
+ print(IAT_selected_data)
+
+ paired_t_test_result <- TTEST(IAT_selected_data, y=c("moral", "ability"), paired=TRUE,file="IAT_D.doc")
+  
+ print(paired_t_test_result)
+ 
+ IAT_selected_data2 <- data %>%
+    filter(domain %in% c("moral"))%>%
+    select(ID,IAT_SE)
+TTEST(IAT_selected_data2, "IAT_SE",file = "IAT_M.doc")
+IAT_selected_data2 <- data %>%
+    filter(domain %in% c("ability"))%>%
+    select(ID,IAT_SE)
+ TTEST(IAT_selected_data2, "IAT_SE",file = "IAT_A.doc")
+  
+}
+
+IAT_D_plot(IAT_data_D)
+```
+

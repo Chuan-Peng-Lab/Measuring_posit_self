@@ -1,0 +1,641 @@
+---
+title: "SRET"
+output: html_notebook
+---
+```{r 修正数据}
+# 选择ID为phase_016_subj_84和phase_016_subj_85的数据
+selected_SRET <- SRET %>%
+  filter(ID %in% c("phase_016_subj_84", "phase_016_subj_85")) %>%
+  filter(screen_id == "EW_formal")%>%
+filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗"))  %>%
+  mutate(person = ifelse(person == "自己", "self",
+                          ifelse(person == "朋友", "friend", person)))%>%
+  select(ID,person,word)
+# 选择screen_id为"RJ_formal1"的行
+SRET_update <- SRET %>%
+  filter(screen_id == "RJ_formal1") %>%
+   filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙"))%>% 
+  mutate(person = ifelse(ID %in% c("phase_016_subj_84", "phase_016_subj_85"),
+                          selected_SRET$person, person))
+selected2_SRET <- SRET %>%
+  filter(screen_id == "RJ_formal_2") %>%
+  select(c("ID", "word",  "identity")) %>%
+  rename(person2 = identity)%>%
+  filter(!is.na(person))
+
+ SRET_update <- SRET_update %>%
+  filter(screen_id %in% c("RJ_formal1")) %>%
+  left_join(., selected2_SRET, by = c("ID", "word")) %>%
+  mutate(person = ifelse(is.na(person), selected2_SRET$person2, person))
+# SRET_update <- SRET_update %>%filter(!grepl("phase_017", ID))
+#SRET<-SRET%>%filter(!grepl("phase_017", ID))
+```
+
+## SRET
+## SRET的评估阶段按键“yes”，RT
+探索性因素分析指标提取
+```{r}
+SRET_EW.0<-SRET %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗"))%>% #筛除首尾的干扰词
+ 
+ #每个被试在 person(self,friend) * valence(positive,negative) * domain(ability,moral)的词汇评估的按'yes'比例 
+
+  mutate(con = paste(valence, person, sep = "_"))%>%
+  group_by(ID,con,domain)%>%
+  summarize(N_Yes = sum(responses == "yes"),
+            N_No = sum(responses == "no"))%>%
+  ungroup()%>%
+ select(ID,domain,N_Yes,con)%>%
+  pivot_wider(
+    names_from = con,  # con列的值将成为新列的名称
+    values_from = N_Yes,  # N_Yes列的值将填充到新列中
+    values_fill = list(N_Yes = 0)  # 如果没有值，则填充为0
+  )%>%
+ group_by(ID,domain)%>%
+  mutate(SRET_SE=Positive_self-Negative_self)
+
+SRET_EW.0.1<-SRET_EW.0%>%
+  select(ID,domain,SRET_SE)%>%
+  pivot_wider(names_from = domain,values_from = SRET_SE)%>%
+  rename(moral_SRET_EW=morality,
+         ability_SRET_EW=ability)
+```
+
+```{r SRET EW}
+SRET_EW<-function(data){
+  
+  # EW阶段的数据
+SRET_EW<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) #筛除首尾的干扰词
+ 
+
+SRET_EW<-SRET_EW%>%
+  group_by(ID,person,valence,domain)%>%
+  summarize(N_Yes = sum(responses == "yes"),
+            N_No = sum(responses == "no"),
+            N=n(),
+           pro_yes=N_Yes,
+            avg_rt = mean(rt, na.rm = TRUE),
+            sd_rt=sd(rt, na.rm = TRUE),
+           )
+print(SRET_EW)
+a<-describe(SRET_EW)
+print(a)
+
+
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，yes比例
+SRET_EW_ANOVA<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="pro_yes",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),
+       file = "SRET_EW.doc")%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+ #  EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+   EMMEANS(c("valence","person","domain")) 
+  
+print(SRET_EW_ANOVA)
+
+ # 领域（道德，能力）*参照（我，朋友）*效价（积极，消极），方差分析，rt
+SRET_EW_ANOVA2<-SRET_EW%>%
+MANOVA(.,
+       subID="ID",
+       dv="avg_rt",    # 认为词汇描述了参照对象的比例
+       within=c("domain","person","valence"),
+       file="SRET_EW_rt.doc")%>% 
+# EMMEANS("valence", by="domain") %>%
+ # EMMEANS("person", by="domain") %>%
+  # EMMEANS("person", by="valence") %>%
+  EMMEANS(c("valence", "person"), by="domain") %>%
+  EMMEANS(c("valence","person","domain"))  
+print(SRET_EW_ANOVA2)
+
+ # 评估词按yes的比例
+   pro_yes_EW <- SRET_EW %>%
+    ggplot(., aes(x = valence, y = pro_yes, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = pro_yes), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('pro_yes') + xlab('valence') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+     facet_wrap(~domain)+
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: pro_yes of SRET_EW")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
+
+ print(pro_yes_EW)
+  
+  ###############################
+  # 评估阶段rt plot
+  rt_EW_rt <- SRET_EW %>%
+    ggplot(., aes(x = valence, y = avg_rt, fill = person, colour = person)) +
+    geom_flat_violin(position = position_nudge(x = .25, y = 0), adjust = 2, trim = FALSE, alpha = 0.5) +
+    geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5) +
+    geom_boxplot(aes(x = valence, y = avg_rt), outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+    ylab('RT') + xlab('valence') + coord_flip() +
+    theme_cowplot() + guides(fill = FALSE, colour = FALSE) +
+     facet_wrap(~domain)+
+    scale_colour_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
+    ggtitle("Figure 1a: RT of SRET_EW")+
+  guides(fill = guide_legend(title = "condition"), colour = guide_legend(title = "condition"))
+
+ 
+  print(rt_EW_rt)
+  
+  
+  
+ 
+}
+SRET<-SRET%>%
+  filter(ID!="phase_017_subj_13")
+SRET_EW(SRET)
+```
+
+```{r 计算题}
+SRET_math<-function(data){
+  
+  # EW阶段的yes比例和rt汇总
+SRET_math<-data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("SRET_math_calculate") )%>% #选择正式实验的数据
+  group_by(ID)%>%
+  summarize(total_rt = sum(rt, na.rm = TRUE),
+    n_correct = sum(correct == "1"),
+            N=n(),
+            mean_rt=mean(rt, na.rm = TRUE),
+acc=n_correct/N  )
+print(SRET_math)
+print(describe(SRET_math))
+
+
+rt_SRET_math <- ggplot(SRET_math, aes(x = mean_rt)) +
+  geom_density(fill = "skyblue", alpha = 0.7) +
+  labs(title = "Density Plot of mean_rt",
+       x = "mean_rt") +
+  theme_minimal()
+
+# 绘制acc的概率密度分布图
+acc_SRET_math <-ggplot(SRET_math, aes(x = acc)) +
+  geom_density(fill = "lightcoral", alpha = 0.7) +
+  labs(title = "Density Plot of acc",
+       x = "acc") +
+  theme_minimal()
+
+  print(rt_SRET_math/acc_SRET_math)
+
+
+}
+SRET_math(SRET)
+```
+
+### SRET第一步新旧词判断
+```{r SRET RJ_formal1}
+SRET_RJ <- function(data) {
+  #############新旧词再认数据
+
+
+# 选择screen_id为RJ_formal_2的行
+# 并选择ID, word, domain, valence, identity列
+
+
+# 现在selected_SRET包含了筛选后的数据，且identity列已重命名为person
+
+  SRET_RJ <- data %>%
+     filter(screen_id %in% c("RJ_formal1")) %>%
+      filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙"))%>% 
+     mutate(correct = ifelse(correct != 1, 0, correct))%>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct))  %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   group_by(ID,domain, valence,person) %>%
+    filter(!is.na(person))%>%
+    summarize( 
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),#根据RJ_formal2判断，本身是new，但是被判断为self/friend
+      CR = 10-FA,
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+     #self_H = sum(sdt == "hit"& person=="self")/40,
+     #friend_H = sum(sdt == "hit"& person=="friend")/40,
+      #recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      #avg_rt = mean(rt, na.rm = TRUE),
+      #sd_rt = sd(rt, na.rm = TRUE),
+      #max_rt = max(rt, na.rm = TRUE),
+    #min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+      P_H = (H+0.5)/(H+M+1), # if hit rate is 1, standardize it    P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),
+    P_FA = (FA+0.5)/(FA+CR+1),# if FA rate is 0, standardize it    P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), 
+      d_prime = qnorm(P_H) -qnorm(P_FA))
+   
+ print(SRET_RJ) 
+
+     SRET_RJ_ANOV0<-SRET_RJ%>%
+   select(ID,domain,valence,person,d_prime)%>%
+      MANOVA(.,subID="ID",dv="d_prime",
+       within=c("domain","valence","person"),#
+       file="SRET_RJ_1r.doc")%>%
+ EMMEANS("valence", by="domain") %>%
+  EMMEANS("domain", by="valence")%>%
+      EMMEANS("valence", by="person")%>%
+       EMMEANS(c("valence", "person"), by="domain") %>%
+         EMMEANS(c("valence","person","domain")) 
+     
+
+assign("SRET_RJ1_d", SRET_RJ, envir = .GlobalEnv)
+
+
+     
+}
+SRET_update<-SRET_update%>%
+  filter(ID!="phase_017_subj_13")
+# 调用函数并存储结果
+SRET_RJ(SRET_update)
+```
+# item memory[Kim,2022; Durbin,2017; Porter,2021]
+recognition= Hit(old recognised as old) - FA(new recognised as old)
+```{r SRET RJ_formal1}
+SRET_item_memory <- function(data) {
+  #############新旧词再认数据
+
+
+# 选择screen_id为RJ_formal_2的行
+# 并选择ID, word, domain, valence, identity列
+
+
+# 现在selected_SRET包含了筛选后的数据，且identity列已重命名为person
+
+  SRET_RJ <- data %>%
+     filter(screen_id %in% c("RJ_formal1")) %>%
+      filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙"))%>% 
+     mutate(correct = ifelse(correct != 1, 0, correct))%>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct))  %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   group_by(ID,domain, valence,person) %>%
+    filter(!is.na(person))%>%
+    summarize( 
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),#根据RJ_formal2判断，本身是new，但是被判断为self/friend
+      CR = 10-FA,
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+     #self_H = sum(sdt == "hit"& person=="self")/40,
+     #friend_H = sum(sdt == "hit"& person=="friend")/40,
+      #recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      #avg_rt = mean(rt, na.rm = TRUE),
+      #sd_rt = sd(rt, na.rm = TRUE),
+      #max_rt = max(rt, na.rm = TRUE),
+    #min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+    mutate(
+     # P_H = (H+0.5)/(H+M+1), # if hit rate is 1, standardize it    P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),
+   # P_FA = (FA+0.5)/(FA+CR+1),# if FA rate is 0, standardize it    P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), 
+    #  d_prime = qnorm(P_H) -qnorm(P_FA),
+    recognition=(H/(H+M))-(FA/(FA+CR)))
+   
+ print(SRET_RJ) 
+
+   
+
+#assign("SRET_RJ1_d", SRET_RJ, envir = .GlobalEnv)
+ SRET_RJ_ANOV0.1<-SRET_RJ%>%
+   select(ID,domain,valence,person,recognition)%>%
+      MANOVA(.,subID="ID",dv="recognition",
+       within=c("domain","valence","person"),#
+       file="SRET_RJ_10r.doc")%>%
+  EMMEANS("domain", by=c("valence","person"))%>%
+      EMMEANS("valence", by=c("person","domain"))%>%
+        EMMEANS("person", by=c("domain","valence"))
+
+     
+}
+
+# 调用函数并存储结果
+SRET_item_memory(SRET_update)
+```
+### SRET第二步词汇来源判断
+```{r SRET RJ_formal2_source_memory}
+SRET_Source_M<-function(data){
+SRET_RJ_2 <- data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+  filter(!is.na(identity))%>%
+  filter(!is.na(response))%>%
+  select(ID,valence,domain,correct,identity,response,responses)%>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "cr",
+                          #朋友条件下的击中，噪音是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "fa",
+                          #朋友条件下的漏报，噪音是“friend”，反应是“self”
+                       
+                       ))%>%
+  group_by(ID,valence,domain) %>%
+  summarize( 
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),#根据RJ_formal2判断，本身是new，但是被判断为self/friend
+      CR = sum(sdt == "cr"),#每个被试在效价*领域 的条件
+  )%>%
+   mutate(
+      P_H = (H+0.5)/(H+M+1), # if hit rate is 1, standardize it    P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),
+    P_FA = (FA+0.5)/(FA+CR+1),# if FA rate is 0, standardize it    P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), 
+      d_prime = qnorm(P_H) -qnorm(P_FA))
+print(SRET_RJ_2)
+
+                 
+print(SRET_RJ_2)
+ assign("SRET_RJ2_d", SRET_RJ_2, envir = .GlobalEnv)
+ SRET_RJ2_ANOV<-SRET_RJ_2%>%
+      MANOVA(.,subID="ID",dv="d_prime",
+       within=c("domain","valence"),
+       file="SRET_RJ2_d.doc")%>%
+ EMMEANS("valence", by="domain") 
+     print(SRET_RJ2_ANOV)
+
+ SRET_RJ2_plot <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=domain,y=d_prime, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =domain, y =d_prime),outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+ylab('d 值')+xlab('领域')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: acc of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot)
+   
+  SRET_RJ2_ANOV.1<-SRET_RJ_2%>%
+      MANOVA(.,subID="ID",dv="d_prime",
+       within=c("domain","valence"),
+       file="SRET_RJ2_d.doc")%>%
+ EMMEANS("domain", by="valence") 
+     print(SRET_RJ2_ANOV.1)
+}
+SRET_Source_M(SRET)
+```
+###source memory=(attributed to correct source)/correct recognition
+```{r SRET RJ_formal2_source_memory}
+SRET_Source_M<-function(data){
+SRET_RJ_2 <- data %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+  filter(!is.na(identity))%>%
+  filter(!is.na(response))%>%
+  select(ID,valence,domain,correct,identity,response,responses)%>%
+   mutate(sdt = case_when((identity %in% c( "self","friend") & (correct=="1") )~ "hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity %in% c( "self","friend") & (correct=="0") )~ "miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+
+                       
+                       ))%>%
+  group_by(ID,valence,domain,identity) %>%
+  summarize( 
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+    
+  )%>%
+   mutate(
+    recognition=H/(H+M) )
+print(SRET_RJ_2)
+
+
+# assign("SRET_RJ2_d", SRET_RJ_2, envir = .GlobalEnv)
+ SRET_RJ2_ANOV<-SRET_RJ_2%>%
+      MANOVA(.,subID="ID",dv="recognition",
+       within=c("domain","valence","identity"),
+       file="SRET_RJ2_RE.doc")%>%
+ EMMEANS(c("valence","identity"), by="domain") 
+     print(SRET_RJ2_ANOV)
+
+ SRET_RJ2_plot <- SRET_RJ_2 %>% 
+    ggplot(.,aes(x=domain,y=recognition, fill =valence, colour =valence))+
+  geom_flat_violin(position = position_nudge(x = .25, y = 0),adjust =2, trim = FALSE, alpha = 0.5)+
+  geom_point(position = position_jitter(width = .15), size = .25, alpha = 0.5)+
+  geom_boxplot(aes(x =domain, y =recognition),outlier.shape = NA, alpha = 0.5, width = .1, colour = "BLACK") +
+ylab('recognition')+xlab('领域')+coord_flip()+theme_cowplot()+guides(fill = FALSE, colour = FALSE) +
+  scale_colour_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("Figure 10: acc of SRET_RJ ")+
+  guides(fill = guide_legend(title = "Valence"), colour = guide_legend(title = "Valence"))
+   
+   print(SRET_RJ2_plot)
+   
+  
+}
+SRET_Source_M(SRET)
+```
+
+# MPT
+
+```{r}
+#-----Study 1 - MPT modeling analysis
+
+#load required packages
+
+install.packages("TreeBUGS")
+
+library(TreeBUGS)
+
+
+#input data
+
+
+SRET_RJ_2_ability <- SRET%>%
+  mutate(ID = as.character(ID)) %>% #改为字符型
+  mutate(rt = as.numeric(rt)) %>% #改为数值型
+   filter(screen_id %in% c("RJ_formal1","RJ_formal_2")) %>%  #筛选出再认阶段
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙"))%>% #筛除练习阶段的词语
+   mutate(
+    identity = ifelse(screen_id == "RJ_formal1" &responses == "new" & identity == "old" & grepl("friend", con), "friend", identity),#item is friend,response is new
+    identity = ifelse(screen_id == "RJ_formal1" &responses == "new" & identity == "old" & grepl("self", con), "self", identity)# item is self ,response is new
+  )%>%
+  mutate(identity = ifelse(screen_id == "RJ_formal_2" & is.na(identity), "new", identity)) %>%#再认第二阶段刺激分类不是self也不是friend的，重编码为new
+  filter(valence == "Positive" & domain == "ability") %>% #选择能力领域的积极词汇；选择道德领域valence == "Positive" & domain == "moral";查看消极词valence == "Negative" & domain == "ability"；valence == "Negative" & domain == "moral"
+  select(ID,valence,domain,screen_id,identity,response,responses,con)%>%#选择identity（item type），responses（response type),con（condition， e.g.friend_Negative_morality)
+  group_by(ID) %>%
+  summarize(n=n(),
+    SG_SG = sum(identity == "self" & (responses=="self")),# SG_SG response "self" to a self item
+    SG_NSG = sum(identity == "self" & (responses=="friend")),# SG_NSG response "friend" to a self item
+    SG_Nw = sum(identity == "self" & (responses=="new")),# SG_Nw response "new" to a self item
+    NSG_SG = sum(identity == "friend" & (responses=="self")),# NSG_SG response "self" to a friend item
+    NSG_NSG = sum(identity == "friend" & (responses=="friend")),# NSG_NSG response "friend" to a friend item
+    NSG_Nw = sum(identity == "friend" & (responses=="new")),# NSG_Nw response "new" to a friend item
+    Nw_SG = sum(identity == "new" & (responses=="self")),# Nw_SG response "self" to a new item
+    Nw_NSG = sum(identity == "new" & (responses=="friend")),# Nw_NSG response "friend" to a new item
+    Nw_Nw = sum(identity == "new" & (responses=="new")),# Nw_Nw response "new" to a new item
+   
+  )
+print(SRET_RJ_2_ability)
+
+
+###################################
+
+#-----Test model assumption
+
+#  item memory (D), source memory (d ), old–new guessing (guessing an item as studied, b), and source guessing (guessing an item as self with and without item memory, a and g, respectively).
+
+#Define data frame
+data_smt_ability <- SRET_RJ_2_ability[,3:ncol(SRET_RJ_2_ability)]#选择SG_SG:Nw_Nw列，每行是一个被试
+
+#Base model --- Constraint: a=g, DNSG=DNw
+base.model <- traitMPT(eqnfile="self_reference_MPT/model.eqn",#输入的模型
+                     data = data_smt_ability,  #输入的模型使用的数据
+                     restrictions = list("a = g", "DNSG = DNw"),#设置的限制条件
+                     modelfilename = "2htsm_predictor.jags",#输出运行模型内使用的计算
+                     transformedParameters = list("delta_D=DSG-DNSG", "delta_d=dSG-dNSG"),#输出结果的参数的转换
+                     parEstFile = "results_base_model.txt",#输出的对每个被试的模型参数的结果文件
+                     n.chain = 4, n.iter = 1000000, n.adapt = 500000,#模型拟合的参数设定
+                     n.burnin = 500000, n.thin = 100,
+                     ppp=1000)
+
+
+#Final model --- Constraints: a=g, DNSG=DNw, dSG=dNSG
+final.model <- traitMPT(eqnfile="self_reference_MPT/model.eqn",
+                     data = data_smt_ability,
+                     restrictions = list("a = g", "DNSG = DNw", "dSG=dNSG"),
+                     modelfilename = "2htsm_predictor.jags",
+                     parEstFile = "results_final_model.txt",
+                     n.chain = 4, n.iter = 1000000, n.adapt = 500000,
+                     n.burnin = 500000, n.thin = 100,
+                     ppp=1000)
+
+
+```
+
+
+
+
+```{r 查看模型结果}
+summary(base.model)
+```
+```{r 绘制模型结果的图}
+plot(base.model)
+```
+```{r}
+#输出每个被试的参数估计的结果到csv文件
+getParam(base.model,
+  parameter = "theta",
+  stat = "summary", file = "MPT_parameter.csv"
+)
+```
+
+```{r}
+###################################
+#**代完成，之后与各问卷总分做回归，问卷总分需要z-standardized**
+#-----Latent-trait regression
+
+#Define data frame
+data_smt <- data[,1:9]
+cov.std <- data[,10:11]
+colnames(cov.std) <- c("recognition.std", "sharing.std")
+
+
+#Final model --- Constraints: a=g, DNSG=DNw, dSG=dNSG
+#Regression: Emotion recognition
+final.model.recognition <- traitMPT(eqnfile="model/model.eqn",
+                          data = data_smt,
+                          restrictions = list("a = g", "DNSG = DNw", "dSG=dNSG"),
+                          modelfilename = "2htsm_predictor.jags",
+                          covData = cov.std,
+                          predStructure = list("DSG DNSG dSG b g; recognition.std"),
+                          parEstFile = "results_final_model_recognition.txt",
+                          n.chain = 4, n.iter = 1000000, n.adapt = 500000,
+                          n.burnin = 500000, n.thin = 100,
+                          ppp=1000)
+
+
+#Final model --- Constraints: a=g, DNSG=DNw, dSG=dNSG
+#Regression: Emotion sharing
+final.model.sharing    <- traitMPT(eqnfile="model/model.eqn",
+                                   data = data_smt,
+                                   restrictions = list("a = g", "DNSG = DNw", "dSG=dNSG"),
+                                   modelfilename = "2htsm_predictor.jags",
+                                   covData = cov.std,
+                                   predStructure = list("DSG DNSG dSG b g; sharing.std"),
+                                   parEstFile = "results_final_model_sharing.txt",
+                                   n.chain = 4, n.iter = 1000000, n.adapt = 500000,
+                                   n.burnin = 500000, n.thin = 100,
+                                   ppp=1000)
+
+
+###################################
+
+#-----Latent-trait regression (with control variables)
+
+#Handle missing data in sex
+data[data[,c(1:12)] == 999] <- NA
+data <- na.omit(data)
+
+#Define data frame
+data_smt <- data[,1:9]
+cov.std <- data[,10:12]
+colnames(cov.std) <- c("recognition.std", "sharing.std", "sex.std")
+
+
+#Final model --- Constraints: a=g, DNSG=DNw, dSG=dNSG
+#Regression: Emotion recognition with control variables
+final.model.recognition.control <- traitMPT(eqnfile="model/model.eqn",
+                                           data = data_smt,
+                                           restrictions = list("a = g", "DNSG = DNw", "dSG=dNSG"),
+                                           modelfilename = "2htsm_predictor.jags",
+                                           covData = cov.std,
+                                           predStructure = list("DSG DNSG dSG b g; recognition.std sex.std"),
+                                           parEstFile = "results_final_model_recognition_control.txt",
+                                           n.chain = 4, n.iter = 1000000, n.adapt = 500000,
+                                           n.burnin = 500000, n.thin = 100,
+                                           ppp=1000)
+
+
+#Final model --- Constraints: a=g, DNSG=DNw, dSG=dNSG
+#Regression: Emotion sharing with control variables
+final.model.sharing.control <- traitMPT(eqnfile="model/model.eqn",
+                                        data = data_smt,
+                                        restrictions = list("a = g", "DNSG = DNw", "dSG=dNSG"),
+                                        modelfilename = "2htsm_predictor.jags",
+                                        covData = cov.std,
+                                        predStructure = list("DSG DNSG dSG b g; sharing.std sex.std"),
+                                        parEstFile = "results_final_model_sharing_control.txt",
+                                        n.chain = 4, n.iter = 1000000, n.adapt = 500000,
+                                        n.burnin = 500000, n.thin = 100,
+                                        ppp=1000)
+```
+

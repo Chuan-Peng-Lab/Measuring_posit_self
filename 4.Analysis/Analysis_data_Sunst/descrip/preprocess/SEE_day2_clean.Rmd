@@ -1,0 +1,687 @@
+---
+title: "SEE_day2_clean"
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+getwd() #查看工作目录，
+
+```
+
+### 加载R包
+
+```{r create environment}
+#清空环境
+rm(list = ls())
+
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+
+# 加载所需要的R包
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer","careless")
+source("../R_rainclouds.R")
+```
+
+
+
+
+```{r 初步生成day2被试信息的文件}
+#**读取day0清洗完成的包含被试ID的信息数据subj_day0，读取day1记录总体作答情况的被试数据“SEE”，通过USEID,联结两个数据，生成包含"USERID", "ID", "ParticipantID"的数据。*
+
+subj_phase_day2 <- function(phase,Moneny, Paid_date) {
+  # 读取 subj_day0_phase_003 数据
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/", phase, "/subj_day0_", phase, ".xlsx"))
+
+  # 读取 subj_day2_phase_003 数据
+  subj_day2 <- read.csv(list.files(paste0("../../../Data/raw/day2/", phase, "/"), pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8",colClasses=c("UserId"="character")) %>%
+    slice(-1) %>%
+    select(-c("Subject.IDs", "NodeId", "NodeId.1", "Node.1", "Env_Q1.1", "Env_Q2", "Env_Q3.1", "Env_Q4.1", "Env_Q5.1", "X")) 
+   print(subj_day2)
+  subj_day2<- subj_day2%>%
+    rename(
+      USERID = UserId,#脑岛编号
+      Time_day2 = Time,#做实验的时间
+      ever_join_similar = Env_Q1,#是否曾经参加类似的实验
+      ever_SRET = Env_Q2_item1,#是否曾经参加SRET
+      ever_AlT = Env_Q2_item2,#是否曾经参加ALT
+      ever_ques = Env_Q2_item3,#是否曾经参加问卷
+      join_interval = Env_Q3,#上次参加的时间间隔
+      going_normal = Env_Q4,#实验是否正常
+      full_screen = Env_Q5,#是否全程全屏
+      exit_fullScreen = Env_Q6,#什么时候退出全屏
+      what_problem = Env_Q7,#有没有什么问题
+      distrub = Env_Q8,#是否受到干扰
+      when_disturb = Env_Q9,#什么时候受到干扰
+      feedbackm = Env_Q10,#对实验的意见
+      aim = Env_Q11#认为实验目的是什么
+    ) %>%
+    mutate(Eligible = "",
+           Moneny = Moneny,
+           Paid_date = Paid_date) %>%
+    merge(., subj_day0[, c("USERID", "ID", "ParticipantID")], by = "USERID", all.x = TRUE)
+ 
+  
+#####由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
+ # subj_day0_row <- subj_day0[subj_day0$ID == "phase_014_subj_10", c("USERID", "Subject.Name", "ParticipantID", "ID")]
+ #subj_day2 <- bind_rows(subj_day2, subj_day0_row)
+
+  # 将结果写入 Excel 文件
+  write.xlsx(subj_day2, paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+}
+
+# 调用函数并传入相应的 phase 参数
+subj_phase_day2("phase_019","10","3.11")
+ 
+```
+
+
+### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
+```{r check environment}
+
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
+list.files("../../../Data/raw/day2/phase_015/jsPsych",pattern = "\\.csv$", full.names = TRUE)#修改批次号
+
+##**直接合并脑岛的jsPsych子文件夹内所有被试实验数据**
+#汇总本轮day0所有被试的数据
+combine_csv_files <- function(phase, firstnum, lastnum) {  
+  folder_path <- paste0("../../../Data/raw/day2/", phase, "/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  
+  selected_files <- files[firstnum:lastnum]  # 使用选定的文件
+  
+  combined_data <- NULL
+  
+  for (file in selected_files) {  # 使用选定的文件
+    tmp <- read.csv(file, header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")  
+    
+    if (is.null(combined_data)) {
+      combined_data <- tmp
+    } else {
+      combined_data <- rbind(combined_data, tmp)
+    }
+  }
+  
+  output_file <- paste0("../../../Data/raw/day2/", phase, "/day2_", phase, ".csv")
+  write.csv(combined_data, output_file, row.names = FALSE)
+}
+
+combine_csv_files("phase_019", 1, 45)
+
+
+```
+
+#将合并所有被试后的day2的数据中包含的变量进行拆分为不同的文件
+```{r day2 }
+
+ #**读取day0清洗完成的包含被试ID的信息数据subj_day0，通过sub_idx将它的ID合并到实验数据day20**
+
+
+day2_process<-function(phase){
+  
+   #创建子文件夹"../../../Data/clean/clean_day2/phase"用于储存清洗后的文件
+  
+  dir.create(paste0("../../../Data/clean/clean_day2/",phase), recursive = TRUE)
+  
+  filePath<-paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv")
+  day20 <- read.csv(filePath, fileEncoding = "UTF-8")
+  
+
+ day20$subj_idx<-as.numeric(day20$subj_idx,digits = 3)
+    subj_day0 <- read.xlsx(paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+ subj_day0$USERID<-as.numeric(subj_day0$USERID,digits = 3)
+ subj_day0<-subj_day0%>% rename(
+  subj_idx=USERID,)
+  
+#记录被试的SRET
+SRET <- day20 %>%
+  select(., c("subj_idx","ParticipantID", "Sex", "task_id", "screen_id", "person", "valence", "domain", "word", "math", "correct_response", "identity", "response", "responses", "rt", "correct")) %>%
+  filter(grepl("^SRET", task_id)) %>%
+  mutate(identity = case_when(
+    identity %in% c("朋友", "自己") ~ case_when(
+      identity == "朋友" ~ "friend",
+      identity == "自己" ~ "self"
+    ),
+    TRUE ~ identity
+  )) %>%
+  mutate(person = case_when(
+    person %in% c("朋友", "自己") ~ case_when(
+      person == "朋友" ~ "friend",
+      person == "自己" ~ "self"
+    ),
+    TRUE ~ person
+  )) %>%
+  mutate(correct = ifelse(
+    screen_id == "RJ_formal_2",
+    ifelse(identity == responses, 1, ifelse(identity != responses, 0, correct)),
+    correct
+  )) %>%
+  mutate(con = paste(person, valence, domain, sep = "_")) %>%
+ merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%
+  select(-c("subj_idx"))
+
+#记录被试ALT正式的数据
+ALT2 <- day20 %>%
+  select(c("subj_idx","ParticipantID", "Sex", "Word", "Word2", "task_id", "screen_id", "Image", "condition", "word", "identity", "response", "responses", "correct_response", "rt", "correct")) %>%
+  filter(!grepl("^SRET", task_id)) %>%
+  filter(!is.na(screen_id)) %>%
+  filter(!is.na(correct) & correct != "") %>%
+  mutate(correct = ifelse(response == "null", NA, ifelse(correct, 1, 0))) %>%
+  mutate(Image = case_when(
+    Image == "img/circle.png" ~ "circle",
+    Image == "img/diamond.png" ~ "diamond",
+    Image == "img/square.png" ~ "square",
+    Image == "img/triangle.png" ~ "triangle",
+    Image == "img/ellipse.png" ~ "ellipse",
+    Image == "img/hexagon.png" ~ "hexagon",
+    Image == "img/pentagon.png" ~ "pentagon",
+    Image == "img/trapezoid.png" ~ "trapezoid",
+    TRUE ~ Image
+  )) %>%
+  mutate(domain = case_when(
+    grepl("好|坏", condition) ~ "moral",
+    grepl("强|弱", condition) ~ "ability",
+    TRUE ~ NA_character_
+  ),
+  valence = case_when(
+    grepl("好|强", condition) ~ "positive",
+    grepl("坏|弱", condition) ~ "negative",
+    TRUE ~ NA_character_
+  ),
+  person = case_when(
+    grepl("我", condition) ~ "self",
+    grepl("他|她", condition) ~ "friend",
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(con = paste(domain, person, identity, sep = "_")) %>% 
+merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%
+select(-c("subj_idx"))
+
+# 记录day2的问卷的数据
+day2_q <- day20 %>%
+  filter(trial_index == 0) %>%
+  select("subj_idx","ParticipantID",everything(), -c("rt", "stimulus", "response", "trial_type", "trial_index", "time_elapsed", "internal_node_id", "success","user_agent","question_order","responses","item_order","radio_event_ids","radio_event_times","key_event_times","mouse_event_times","straightlining","zigzagging","value","honeypot"))%>%
+  select( everything(), -c("timeout", "failed_images", "failed_audio", "failed_video", "view_history", "response_type", "key_press", "avg_frame_time","center_x","center_y","correct_response","correct","identity","Image","word","condition","task_id","screen_id","time_stamp","domain","valence","math","status","duration","Word","Word2","person","trap2_item","trap2"))%>%
+  mutate(across(starts_with("IPC"), ~ case_when(. == 0 ~ 1, . == 1 ~ 2, . == 2 ~ 3, TRUE ~ .)))%>%
+ merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+select(-c("subj_idx"))
+ 
+ day20<-day20%>%
+  merge(.,subj_day0[, c("ID","subj_idx")], by = "subj_idx",all.x = TRUE)%>%#修改phase_002
+ select(-c("subj_idx"))
+   
+  output_path <- paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv")
+  write.csv(day20, output_path)
+
+    output_path <- paste0("../../../Data/clean/clean_day2/",phase,"/SRET_",phase,".csv")
+  write.csv(SRET, output_path)
+  
+  output_path <- paste0("../../../Data/clean/clean_day2/",phase,"/ALT2_",phase,".csv")
+  write.csv(ALT2, output_path)
+  output_path <- paste0("../../../Data/clean/clean_day2/",phase,"/day2_q_",phase,".csv")
+  write.csv(day2_q, output_path)
+  
+ trap2<-day20%>%
+ filter(grepl("我", trap2_item) )%>%
+ select(c("ID","ParticipantID","trap2","trap2_item"))%>%
+  mutate(correct = ifelse(trap2 %in% c(1, 2, 3), 1, 0))#选1-3都是正确的
+assign("trap2", trap2, envir = .GlobalEnv)  # 将陷阱题导入环境
+
+  
+}
+
+day2_process("phase_019")
+ 
+```
+
+
+
+# ALT的各个图形的正确率不低于20%，道德、能力领域的总正确率不低于60%；SRET的新旧再认正确率低于0.55，来源判断且超过10%试次反应时低于200ms
+```{r day2 被试筛选}
+select_day2<-function(phase){
+  
+  ALT2<-read.csv(paste0("../../../Data/clean/clean_day2/",phase,"/ALT2_",phase,".csv"))
+ SRET<-read.csv(paste0("../../../Data/clean/clean_day2/",phase,"/SRET_",phase,".csv"))
+
+# ALT部分的筛选
+ ## 筛选标准1：ALT2单个条件的正确率不低于20%
+ALT2_select<-ALT2%>%
+   filter(screen_id%in%c("ability","moral") )%>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  mutate(con=paste(con,valence,sep = "_"))%>%#选择正式实验的数据
+  group_by(ID,con) %>%  #按被试与条件分组
+  summarise(
+    avg_rt = mean(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    sd_rt=sd(rt, na.rm = TRUE), #计算平均反应时
+    all_count=n(),#每个条件的总trial数量
+    row_count = sum(rt>=200 & rt <=1200, na.rm = TRUE),  #每个条件反应时符合条件的总数,舍弃按键太快和按键太慢的
+    correct_count = sum(correct == 1 & rt>=200 & rt <=1200, na.rm = TRUE),
+    acc = correct_count /  all_count #计算正确率= 正确/总数
+  )%>%
+    mutate(note = "") %>%
+  mutate(note = ifelse(acc < 0.2, "invalid", note))%>%#**各个图形的正确率不低于20%（ability_friend_match_negative）**
+  ungroup()
+print(ALT2_select)
+
+
+  
+ ## 筛选标准2：ALT2单个领域的正确率不低于60%  
+  ALT2_select2<-ALT2%>%
+   filter(screen_id%in%c("ability","moral") )%>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>%
+    mutate(note = "")%>%
+  group_by(ID,screen_id) %>%
+  summarise(
+     avg_rt2 = mean(rt, na.rm = TRUE),
+    max_rt2 = max(rt, na.rm = TRUE),
+    min_rt2 = min(rt, na.rm = TRUE),
+    sd_rt2=sd(rt, na.rm = TRUE),
+    all_count2 = n(),
+    correct_count2 = sum(correct == 1 & rt >= 200 & rt <= 1200, na.rm = TRUE),
+    acc2 = correct_count2 / all_count2,
+    note = ifelse(acc2 < 0.6, "invalid", note)#**道德、能力领域的总正确率不低于60%**
+  )
+print(ALT2_select2)
+
+
+  # EW阶段的yes比例和rt汇总
+SRET_EW<-SRET %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt=as.numeric(rt))%>% #转变被试编号和反应时类型为字符型与数值型
+  mutate(correct= as.numeric(correct))%>% ##重编码correct
+  filter(screen_id%in%c("EW_formal") )%>% #选择正式实验的数据
+   filter(!word %in% c("务实", "迷糊", "坚贞", "说谎", "主见", "缓慢", "素养", "低俗")) %>%                                                               group_by(ID,person,valence,domain)%>%
+     summarize(
+             avg_rt_mean= mean(rt, na.rm = TRUE),
+            avg_sd_rt=sd(rt, na.rm = TRUE),
+            max_rt = max(rt, na.rm = TRUE),
+            min_rt = min(rt, na.rm = TRUE),
+            N_Yes = sum(responses == "yes"),
+            N_No = sum(responses == "no"),
+            N=n(),
+            pro_yes=N_Yes/N,)                                                                                                         
+  print(SRET_EW) ###查看评估阶段每个被试的反应时    
+  
+
+
+###########计算每个被试的总新旧再认正确率；
+  #####筛选标准3：SRET的再认正确率低于0.55
+ SRET_RJ <- SRET  %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+   # group_by(ID,domain, valence ) %>%#, valence
+   group_by(ID) %>%
+    summarize( 
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),
+      CR = sum(sdt == "cr"),
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+     self_H = sum(sdt == "hit"& person=="self")/40,
+     friend_H = sum(sdt == "hit"& person=="friend")/40,
+      recognition = (H + CR) / (H + CR + M + FA),### valence * domain,4个条件 *（20 new+ 20 old）, 20 old = 10 self +10 friend
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+      max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+  mutate(note = "") %>%
+    mutate(
+      P_H = (H+0.5)/(H+M+1), # if hit rate is 1, standardize it    P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),
+    P_FA = (FA+0.5)/(FA+CR+1),# if FA rate is 0, standardize it    P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA), 
+    Correct_recognition = P_H - P_FA,
+      d_prime = qnorm(P_H) -qnorm(P_FA),
+      note = ifelse(recognition<0.55, "invalid", note)) #**正确率低于0.53**
+ 
+   print(SRET_RJ)
+   
+
+##**筛选标准4：查看SRET的来源判断超过20%试次反应时低于200ms，**
+ ###########计算每个被试的再认正确率#####
+ SRET_RJ2 <- SRET  %>%
+    mutate(ID = as.character(ID),
+           rt = as.numeric(rt),
+           correct = as.numeric(correct)) %>%
+    filter(screen_id %in% c("RJ_formal1")) %>%
+    filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+    mutate(sdt = case_when((identity == "old" & (responses %in% c("familiar", "old"))) ~ "hit",
+                          (identity == "old" & (responses == "new" )) ~ "miss",
+                          (identity == "new" & (responses %in% c("familiar", "old"))) ~ "fa",
+                          (identity == "new" & (responses == "new")) ~ "cr"),) %>%
+    group_by(ID, valence,domain) %>%#, 道德/能力*积极/消极
+    summarize(
+      H = sum(sdt == "hit"),
+      M = sum(sdt == "miss"),
+      FA = sum(sdt == "fa"),
+      CR = sum(sdt == "cr"),
+      new= sum(responses %in% c("new")),#按键为新词
+      old=sum(responses %in% c("old")),
+      familiar=sum(responses %in% c("familiar")),
+     self_H = sum(sdt == "hit"& person=="self")/10,
+     friend_H = sum(sdt == "hit"& person=="friend")/10,
+     P_H = H/(H+M),
+     P_FA = FA/(FA+CR),
+      recognition = (H + CR) / (H + CR + M + FA),#  40个
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+      max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    ) %>%
+  mutate(note = "") %>%
+    mutate(
+      P_H = (H+0.5)/(H+M+1), # if hit rate is 1, standardize it P_H = ifelse(P_H == 1, 1 - 1 / (2 * (H + M)), P_H),
+       P_FA = (FA+0.5)/(FA+CR+1), # if FA rate is 0, standardize it P_FA = ifelse(P_FA == 0, 1 / (2 * (H + M)), P_FA),
+      Correct_recognition = P_H - P_FA,
+      Z_P_H = qnorm(P_H),
+      Z_P_FA = qnorm(P_FA),
+      d_prime = Z_P_H - Z_P_FA,
+      )
+ 
+   print(SRET_RJ2)
+
+SRET_RJ_2 <- SRET %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) )
+
+
+SRET_RJ_2<-SRET_RJ_2%>%
+  group_by(ID) %>%#,valence,domain
+  summarize(n=n(), #所有按键反应了的试次
+     row_count = sum(rt<200, na.rm = TRUE),
+    less_200=row_count/n,
+   count_self = sum(responses == "self"),#所有反应是“self”的试次
+   count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+      FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      self_recognition = self_H /count_self,
+   # number of correct source attributions for self/ number of hits for self
+   friend_recognition = friend_H/ count_friend,
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+   max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+  )%>%
+ mutate(note= ifelse(less_200>0.3, "invalid"," "))
+print(SRET_RJ_2)
+
+
+########################################
+# 使用group_by和summarize检查每个ID的行数
+id_counts <- SRET %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(rt = as.numeric(rt)) %>%
+ mutate(correct = as.numeric(coalesce(correct,-1))) %>% #对新词按键判断的试次的correct记为-1
+  filter(screen_id %in% c("RJ_formal_2")) %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%
+   mutate(sdt = case_when((identity == "self" & (correct=="1") )~ "self_hit",
+                          #自我条件下的击中，信号是“self”，反应是“self”
+                          (identity == "self" & (correct=="0") )~ "self_miss",
+                          #自我条件下的漏报，信号是“self”，反应是“friend”
+                          (identity == "friend" & (correct=="1" )) ~ "friend_hit",
+                          #朋友条件下的击中，信号是“friend”，反应是“friend”
+                           (identity == "friend" & (correct=="0" )) ~ "friend_miss",
+                          #朋友条件下的漏报，信号是“friend”，反应是“self”
+                          (is.na(identity) & (!is.na(response))) ~ "fa",
+                          #新词（无信号），反应为self或者friend
+                        ) ) %>%
+   group_by(ID,valence,domain) %>%#
+  summarize(
+   count_self = sum(responses == "self"),#所有反应是“self”的试次
+   count_friend = sum(responses == "friend"),#所有反应是“friend”的试次
+   self_H = sum(sdt == "self_hit"),#自我条件下的击中，信号是“self”，反应是“self”
+   friend_H = sum(sdt == "friend_hit"),#朋友条件下的击中，信号是“friend”，反应是“friend”
+      FA = sum(sdt == "fa"),#新词（无信号），反应为self或者friend
+      self_recognition = self_H /count_self,
+   # number of correct source attributions for self/ number of hits for self
+   friend_recognition = friend_H/ count_friend,
+      avg_rt = mean(rt, na.rm = TRUE),
+      sd_rt = sd(rt, na.rm = TRUE),
+   max_rt = max(rt, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+  )%>%
+ungroup()%>%
+  group_by(ID) %>%
+  summarize(row_count = n())
+
+# 检查是否每个ID都有4行数据
+print(id_counts)
+
+#**合并ALT2两种筛选标准下排除的无效数据**
+ex_subj <- bind_rows(
+  ALT2_select %>% filter(note == "invalid"),
+  ALT2_select2 %>% filter(note == "invalid"),
+  SRET_RJ%>% filter(note == "invalid"),
+  SRET_RJ_2%>%filter(note=="invalid")
+  )
+   
+#查看两个组合后的无效数据
+print(ex_subj)
+############################
+
+###############################
+# 读取 subj_day1 数据
+subj_day2 <- read.xlsx(paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+
+# 根据 ex_subj 的 ID 列填充 Eligible 列，如果在无效数据中，则填入no,否则为yes，上传到飞书subj_info的所有参加day1的被试信息
+subj_day2 <- subj_day2 %>%
+  mutate(Eligible = ifelse(ID %in% ex_subj$ID, "no", "yes"))
+
+# 将结果写入 Excel 文件，导出day1所有被试数据
+write.xlsx(subj_day2, file = paste0("../../../Data/raw/day2/", phase, "/subj_day2_", phase, ".xlsx"))
+
+# 从 subj_day2 中筛选 Eligible 列的值为 "yes" 的行，导出符合要求的被试数据
+select_day2 <- subj_day2 %>%
+  filter(Eligible == "yes")
+
+invalid_day2 <- ex_subj
+write.xlsx(invalid_day2, file = paste0("../../../Data/raw/day2/", phase, "/invalid_day2_", phase, ".xlsx"))
+
+# 将筛选后的结果写入 CSV 文件，这个是导入脑岛的被试信息
+write.xlsx(select_day2, file = paste0("../../../Data/raw/day2/", phase, "/select_day2_", phase, ".xlsx"))
+}
+
+
+##仅需修改此代码；分别为“批次号”，“发放金额”，“发放报酬的日期”
+
+select_day2("phase_019")
+```
+
+```{r}
+merge_xlsx_files <- function(folder_path) {
+  # 获取以"select"开头的.xlsx文件路径
+  xlsx_files <- list.files(folder_path, pattern = "^select.*\\.xlsx$", full.names = TRUE, ignore.case = TRUE, recursive = TRUE)
+  
+  # 检查是否存在xlsx文件
+  if (length(xlsx_files) == 0) {
+    stop("No .xlsx files found in subfolders.")
+  }
+  
+  # 读取并合并xlsx文件
+  data <- xlsx_files %>%
+    map_dfr(readxl::read_xlsx)
+  
+  return(data)
+}
+
+# 使用示例
+ subfolder_paths <- list.files("../../../Data/raw/day2/", full.names = TRUE, recursive = TRUE)
+  
+merged_data <- merge_xlsx_files("../../../Data/raw/day2/")
+write.xlsx(merged_data,paste0("../../../Data/select/","select_day2.xlsx"))
+```
+
+
+
+
+```{r}
+ day2_q<-read.csv("../../../Data/clean/clean_day2/phase_006/day2_q_phase_006.csv", fileEncoding = "UTF-8")%>%
+  select(-c("trap2_item","trap2"))
+
+  day2_q_swb<-day2_q%>% 
+    select(starts_with("sde_"),starts_with("IM_"), )%>%
+  evenodd(., rep(20,2))%>%
+    print()
+  
+  day2_q_avg <-day2_q%>% 
+    select(ID,starts_with("sde_"),starts_with("IM_") )%>%
+    longstring(., avg = TRUE)%>%
+    print()
+  
+
+ 
+```
+
+
+
+
+# 实验设计的随机性检查
+ 1.查看是否被试随机被分配到先完成ALT or SRET,trial_index越小，代表先完成
+ 2.ALT内部两个block随机性检查，trial_index越小，代表先完成
+ 3.**被试间的ALT的match按键是否进行f,j平衡**
+# SRET词汇是否正确分配
+ 1.查看词汇回忆阶段词汇是否正确匹配
+
+```{r day2 随机性检查}
+
+#raw_day2<-read.csv("../../../Data/raw/day2/phase_003/day2_phase_003.csv")#修改phase_002
+
+
+get_first_trial_indices <- function(phase) {
+  
+   data<-read.csv(paste0("../../../Data/raw/day2/",phase,"/day2_",phase,".csv"))
+  
+  trial_idx_EW_practice <- data %>%
+    group_by(ID) %>%
+    filter(screen_id == "EW_practice") %>%
+    summarize(first_trial_idx_EW_practice = min(trial_index))
+
+  trial_idx_prac_ALT2_moral <- data %>%
+    group_by(ID) %>%
+    filter(task_id == "prac_ALT2_moral") %>%
+    summarize(first_trial_idx_prac_ALT2_moral = min(trial_index))
+
+  trial_idx_prac_ALT2_ability <- data %>%
+    group_by(ID) %>%
+    filter(task_id == "prac_ALT2_ability") %>%
+    summarize(first_trial_idx_prac_ALT2_ability = min(trial_index))
+  
+  merged_data <- merge(trial_idx_EW_practice, trial_idx_prac_ALT2_moral, by = "ID", all = TRUE)
+  merged_data <- merge(merged_data, trial_idx_prac_ALT2_ability, by = "ID", all = TRUE)
+  merged_data <- merged_data %>%
+    left_join(data %>% filter(identity == "match") %>% select(ID, correct_response), by = "ID")%>%
+     mutate(ALT2_first = ifelse(first_trial_idx_prac_ALT2_moral < first_trial_idx_prac_ALT2_ability, "moral", "ability"))%>%
+    mutate(order_first = ifelse(first_trial_idx_EW_practice < first_trial_idx_prac_ALT2_moral & first_trial_idx_EW_practice < first_trial_idx_prac_ALT2_ability, "SRET", "ALT2"))%>%
+  distinct() 
+  print(merged_data)
+}
+get_first_trial_indices("phase_006")
+```
+
+```{r day2 词汇表检查}
+  
+
+get_first_trial_indices <- function(phase) {
+  stimuli<- read.csv("../../../../2.Materials/stimuli.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "GBK")
+  
+   SRET<-read.csv(paste0("../../../Data/clean/clean_day2/",phase,"/SRET_",phase,".csv"))
+  
+
+## 评估阶段共88个词(4首因+80正式+4尾因记忆)；再认阶段，每个词只出现一次，old/new各80个；每个被试内词只出现一次
+  vocabulary_check <- SRET %>%
+    mutate(ID = as.character(ID),person= as.character(person),valence= as.character(valence),domain= as.character(domain),word= as.character(word),identity= as.character(identity)) %>%
+    select(ID,screen_id,person,valence,domain,word,identity)%>%
+    filter(screen_id %in% c("EW_practice","EW_formal","RJ_formal1","RJ_formal_2")) %>%
+  filter(screen_id == "RJ_formal1") %>%
+  filter(!word %in% c("严谨", "认真", "刻板", "白痴", "忠实", "宽宏", "徇私", "可鄙")) %>%##去掉再认的练习词
+  group_by(ID,identity) %>%##统计新旧词
+  summarise(frequency = n())
+  
+##顺序性检查，每个被试为一个list，将列拼接在一起，拉动查看每行的词
+vocabulary_check2 <- SRET %>%
+  mutate(ID = as.character(ID),
+         person = as.character(person),
+         valence = as.character(valence),
+         domain = as.character(domain),
+         word = as.character(word),
+         identity = as.character(identity)) %>%
+  select(ID, task_id, screen_id, person, valence, domain, word, identity) %>%
+  filter(screen_id %in% c( "EW_formal", "RJ_formal1")) %>%
+  group_split(ID)%>%
+  bind_cols()
+
+## 将评估阶段的每个词的日常使用频率和效价从"stimuli.csv"拼接过来
+   vocabulary_check3 <- SRET %>%
+    mutate(ID = as.character(ID),person= as.character(person),valence= as.character(valence),domain= as.character(domain),word= as.character(word),identity== as.character(identity)) %>%
+    select(ID,task_id,screen_id,person,valence,domain,word,identity)%>%
+   mutate(person = ifelse(person %in% c("朋友", "自己"), recode(person, "朋友" = "friend", "自己" = "self"), person))%>%
+    filter(screen_id %in% c("EW_practice","EW_formal","RJ_formal1","RJ_formal_2")) %>%
+  filter(screen_id == "EW_formal") %>%
+  select(ID,screen_id,person,valence,domain,word,identity)%>%
+  mutate(con2 = paste(domain,person,valence, sep = "_"))%>%
+      mutate(con1 = paste(domain, valence, sep = "_"))%>%
+   merge(., stimuli[, c("word", "Val_mean", "freq_Chinese")], by = "word", all.x = TRUE) 
+   
+# 查看道德和能力领域的词在效价上是否存在显著差异,con1为领域_效价，
+     vocabulary_check3_1<-vocabulary_check3 %>% 
+       group_by(ID,con1) %>%
+  summarize(
+    avg_Val_mean = mean(Val_mean, na.rm = TRUE),
+    avg_freq_Chinese = mean(freq_Chinese, na.rm = TRUE))
+   
+# 对 morality_Positive 和 ability_Positive 进行独立样本 t 检验
+print(t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Positive" | con1 == "ability_Positive")))
+
+# 对 morality_Negative 和 ability_Negative 进行独立样本 t 检验
+print(t.test(avg_Val_mean ~ con1, data = vocabulary_check3_1, subset = (con1 == "morality_Negative" | con1 == "ability_Negative")))
+
+##查看self和friend在道德/能力领域的词汇间是否存在显著差异，con2为领域_人称_效价
+ vocabulary_check3_2<-vocabulary_check3 %>% 
+       group_by(ID,con2) %>%
+  summarize(
+    avg_Val_mean = mean(Val_mean, na.rm = TRUE),
+    avg_freq_Chinese = mean(freq_Chinese, na.rm = TRUE))
+ 
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Negative" | con2 == "ability_friend_Negative")))
+
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "ability_self_Positive" | con2 == "ability_friend_Positive")))
+
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Negative" | con2 == "morality_friend_Negative")))
+
+print(t.test(avg_Val_mean ~ con2, data = vocabulary_check3_2, subset = (con2 == "morality_self_Positive" | con2 == "morality_friend_Positive")))
+
+}
+
+#修改批次号
+get_first_trial_indices ("phase_004")
+```
