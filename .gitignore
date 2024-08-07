@@ -1,25 +1,18 @@
+#不上传RDta 和Rhistory
 ~$*
-*.md
-<<<<<<< HEAD
+*.RData
+*.Rhistory
+#参考文献涉及版权问题，不上传
 /2.Materials/Reference/
-/3.Methods/IAT_demo_bao
-/3.Methods/EXP_jsPsych_SRE_v1-demo
-/3.Method/code_demo/*.zip
-=======
+#vscode代码不上传，程序代码也不上传
+/3.Methods/.vscode
+/3.Methods/code_demo
 
-/2.Materials/Reference/
+#淑婷的毕业论文相关数据太大，不上传。（上传了清洗出来的数据，汇总数据没上传）
+/4.Analysis/Analysis_data_Sunst/Graduation
 
-/3.Methods/IAT_demo_bao
-
-/3.Methods/EXP_jsPsych_SRE_v1-demo
 
 temp/
 Data/*
 !Data/.gitkeep
 .Rproj.user
-
-/4.Analysis/SRET1-29
-
-/4.Analysis/IAT_raw
-
-/4.Analysis/Analysis Data_rowdata
