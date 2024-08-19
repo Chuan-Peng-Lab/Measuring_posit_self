@@ -1,10 +1,10 @@
 # Measuring_Pos_Self
-
+```
 └── 1_Protocol
 └── 2_Materials
-     └──reference（参考文献相关的材料）
+     └──reference
 └── 3_Methods
-│    └── Method(知情同意书和量表)
+│    └── Method
 │    └── Procedure
 │        └── Formal_Code
 │                └── day0
@@ -39,6 +39,7 @@
 └── 5_Reports
 │       └── 毕业论文
 │       └── 汇报
-└──6_Raw_data(由于内容太大，上传群晖)
+└──6_Raw_data
         └──clean_data
         └──raw_data
+```
