@@ -1,0 +1,602 @@
+---
+title: "network_analysis"
+output: html_document
+date: "2024-02-27"
+---
+在心理学中，量表的结构效度（Construct Validity）是指量表能够测量理论上的心理构念（constructs）或特质（traits）的程度。结构效度是心理学测量中最重要的效度类型之一，它通常通过以下几个方面来检验：
+内容效度（Content Validity）：通过专家评审来确定量表题目是否全面覆盖了所要测量的构念。
+确保每个题目都是对构念的重要方面或维度的代表性测量。
+
+构念效度（Construct Validity）：通过探索性因素分析（EFA）和验证性因素分析（CFA）来检验量表的结构。
+EFA用来识别量表中潜在的因素结构，而CFA用来测试一个预先定义的因素模型是否与数据一致。
+使用不同的样本进行EFA和CFA，以确保量表的结构效度具有普遍性。
+
+聚合效度（Convergent Validity）：通过测量同一构念的不同量表之间的相关性来检验。
+如果两个声称测量相同构念的量表得分显著相关，则它们具有聚合效度。
+
+区分效度（Discriminant Validity）：通过检验量表与其他理论上应该不相关的构念的量表之间的相关性来检验。
+如果两个声称测量不同构念的量表得分不相关或低度相关，则它们具有区分效度。
+
+标准效度（Criterion Validity）：通过比较量表的得分与某些外部标准或结果来检验。
+包括同时效度（concurrent validity）和预测效度（predictive validity）。
+
+内部一致性（Internal Consistency）：通过计算Cronbach’s alpha系数来检验量表内部所有题目的一致性。
+高Cronbach’s alpha值（通常大于0.7）表明量表具有良好的内部一致性。
+
+因子负荷（Factor Loadings）：
+在CFA中，检查每个题目在其潜在因素上的负荷量。高负荷量（通常大于0.5或0.6）表明题目很好地代表了潜在因素。
+
+模型拟合指数（Model Fit Indices）：使用如CFI（Comparative Fit Index）、TLI（Tucker-Lewis Index）、RMSEA（Root Mean Square Error of Approximation）等指数来评估CFA模型与数据的拟合程度。
+良好的模型拟合指数表明量表的结构与理论模型相符合。
+
+实证效度（Empirical Validity）：
+通过实证研究来检验量表在实际应用中的有效性。
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+探索性因素分析法指标提取
+```{r}
+task_SE<-IAT_data_D.0%>%
+  left_join(ALT2.1.1,by=c("ID"))%>%
+  left_join(ALT2.1.2,by=c("ID"))%>%
+  left_join(SRET_EW.0.1,by=c("ID"))%>%
+  left_join(ALT2_dprime.0.2,by=c("ID"))%>%
+  left_join(ALT2_dprime.0.1,by=c("ID"))
+  
+  write.csv(task_SE,"task_SE.csv")
+task_SE[,2:ncol(task_SE)]<-scale(task_SE[,2:ncol(task_SE)])
+ write.csv(task_SE,"task_SE_z.csv")
+  
+  
+```
+```{r 合并量表和行为认知的指标的Z分数}
+task_q<-task_SE%>%
+  merge(day3_q_cor,by="ID")
+head(task_q)
+```
+
+
+```{r}
+Alpha(task_SE,vars=cc("ability_IAT, moral_IAT")) 
+
+```
+```{r}
+Alpha(task_SE,vars=cc("ability_ALT_rt_val,moral_ALT_rt_val,ability_ALT_rt_ref,moral_ALT_rt_ref,ability_ALT_d_val,moral_ALT_d_val,ability_ALT_d_ref,moral_ALT_d_ref")) 
+```
+```{r}
+Alpha(task_SE,vars=cc("ability_SRET_EW, moral_SRET_EW")) 
+```
+```{r}
+Alpha(task_SE,vars=cc("ability_ALT_rt_val,moral_ALT_rt_val,ability_ALT_rt_ref,moral_ALT_rt_ref,ability_ALT_d_val,moral_ALT_d_val,ability_ALT_d_ref,moral_ALT_d_ref,ability_SRET_EW, moral_SRET_EW,ability_IAT, moral_IAT")) 
+```
+
+##任务的探索性因素分析
+
+```{r}
+task_SE%>%
+  select(-ID)%>%
+bruceR::Corr(.,
+  method = "spearman",#"pearson" (default), "spearman", or "kendall".
+  p.adjust = "none",#"none", "fdr", "holm", "bonferroni
+  all.as.numeric = TRUE,
+  digits = 2,
+  file = "cor_task.doc",#File name of MS Word (.doc).
+  plot = TRUE,
+  plot.r.size = 1.5,
+  plot.colors=c("#b2182b", "white", "#2166ac"),
+  plot.file = "cor_plot_task.png",
+  plot.dpi = 500)
+```
+```{r}
+task_SE%>%
+  select(-ID)%>%
+KMO(.)
+```
+```{r}
+task_SE%>%
+  select(-ID)%>%
+cortest.bartlett(.)
+```
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+task_SE%>%
+  select(-ID)%>%
+fa.parallel(.,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+Parallel analysis suggests that the number of factors =  4  and the number of components =  4 
+
+```{r}
+
+task_SE_fa<-task_SE%>%
+  select(-ID)
+ task_SE_fa<- fa(task_SE_fa,fm="pa",nfactor=4,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_SE_fa,cut=0.35)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+
+fa.diagram(task_SE_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+# 因子得分
+
+
+
+
+```{r}
+factor.scores(task_SE%>%select(-ID),f=task_SE_fa)
+
+write.csv(factor.scores(task_SE%>%select(-ID),f=task_SE_fa)$score,"task_SE_score.csv")
+task_SE_score<-read.csv("task_SE_score.csv")%>%
+  cbind(task_SE%>%select(ID))
+write.csv(task_SE_score,"task_SE_score.csv")
+```
+
+###
+```{r}
+day0t2_q<-read.csv("day0t2_q.csv")%>%
+  select(ID,obj_ses1,fri_ses2)
+```
+
+结构效度
+```{r}
+day0t3_q<-read.csv("day3_q.csv")%>% 
+  merge(day0t2_q,by="ID")
+write.csv(day0t3_q,"day0t3_q.csv")
+```
+
+```{r}
+CFA(
+  day0t3_q,
+  model = "I =~ MorIden_[c(1,2,4,7,10)]; E =~ MorIden_[c(3,5,6,8,9)]",
+  estimator = "ML",
+  highorder = "",
+  orthogonal = FALSE,
+  missing = "listwise",
+  digits = 3,
+  file = NULL
+)
+```
+χ²(34, N = 297) = 209.229, p = 4e-27 ***: 卡方值和显著性水平表明模型与数据的拟合程度。
+χ²/df = 6.154: 卡方与自由度的比值，用来评估模型拟合度。理想情况下，这个比值应该接近1。
+AIC = 6071.019 和 BIC = 6148.587: 信息准则，用来比较不同模型的拟合度。较小的值表示更好的拟合。
+CFI = 0.813、TLI = 0.753、NFI = 0.787、IFI = 0.816、GFI = 0.857、AGFI = 0.769: 这些拟合指数用来评估模型与数据的拟合度。理想情况下，这些值应该接近1。
+RMSEA = 0.132, 90% CI [0.115, 0.149]: 根均方误差近似，用来评估模型拟合度。较小的值表示更好的拟合。
+SRMR = 0.082: 标准化根均方残差，用来评估模型拟合度。理想情况下，这个值应该小于0.08。
+
+```{r}
+CFA(
+  day0t3_q,
+  model = "moralSeImag =~ moralSeImag_[1:9]",
+  estimator = "ML",
+  highorder = "",
+  orthogonal = FALSE,
+  missing = "listwise",
+  digits = 3,
+  file = NULL
+)
+```
+```{r}
+CFA(
+  day0t3_q,
+  model = "I =~ MorIden_[c(1,2,4,7,10)]; E =~ MorIden_[c(3,5,6,8,9)]",
+  estimator = "ML",
+  highorder = "",
+  orthogonal = FALSE,
+  missing = "listwise",
+  digits = 3,
+  file = NULL
+)
+```
+
+
+
+####合并量表和行为的探索性因子分析
+```{r}
+
+task_q%>%
+  select(-ID)%>%
+KMO(.)
+```
+```{r}
+task_q%>%
+  select(-ID)%>%
+cortest.bartlett(.)
+```
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+task_q%>%
+  select(-ID)%>%
+fa.parallel(.,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+Parallel analysis suggests that the number of factors =  13  and the number of components =  11 
+
+```{r}
+
+task_q_fa<-task_q%>%
+  select(-ID)
+ task_q_fa<- fa(task_q_fa,fm="pa",nfactor=13,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_fa,cut=0.35)
+```
+
+```{r}
+
+fa.diagram(task_q_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+# 因子得分
+
+
+```{r}
+factor.scores(task_q%>%select(-ID),f=task_q_fa)
+write.csv((factor.scores(task_q%>%select(-ID),f=task_q_fa)$score),"task_q_score.csv")
+task_q_score<-read.csv("task_q_score.csv")%>%
+  cbind(task_q%>%select(ID))
+write.csv(task_q_score,"task_q_score.csv")
+```
+##网络分析
+
+```{r 构建网络分析}
+write.csv(task_q,"task_q.csv")
+task_q<-read.csv("task_q.csv")%>%
+  select(-c("X","ID"))
+
+aen_glasso_q <- qgraph::EBICglasso(cor(task_q[,1:149]), n=498, gamma = 0.1)  #,returnAllResults=TRUE
+
+```
+
+```{r}
+lasso <- qgraph::qgraph(aen_glasso_q , layout = "spring",
+                      groups = list(c(1:12), c(13:149))  , #groups = list(c(1:137), c(138:149))
+                     colors=c( "white", "grey"),
+                vsize=2, #节点大小
+                         label.cex = 0.1,  # 调整节点标签字体大小
+                         edge.labels = FALSE,  # 显示边标签,
+                        edge.label.cex = 1,
+                 minimum = 0.03)#
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+```{r}
+
+lasso <- qgraph::qgraph(aen_glasso_q , layout = "spring",
+                      groups = list(c(1,3,5,7,9,11),c(2,4,6,8,10,12), c(13:149))  , #groups = list(c(1:137), c(138:149))
+                     colors=c( "white","lightblue", "grey"),
+                vsize=2, #节点大小
+                         label.cex = 0.1,  # 调整节点标签字体大小
+                         edge.labels = FALSE,  # 显示边标签,
+                        edge.label.cex = 1,
+                 minimum = 0.03)#
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+
+
+```{r}
+lasso <- qgraph::qgraph(aen_glasso_q , layout = "spring",
+                      groups = list(c(1:12), c(13:24),c(25:30),c(31:38),c(39:48),c(49:58),c(59:73),c(74:83),c(84:93),c(94:102),c(103:122),c(123:142),c(143,147),c(148:149))  , #groups = list(c(1:137), c(138:149))
+                   colors= c( "white", "gold","red","orange","pink","blue","yellow","green","grey","purple","cyan","cyan","black","lightblue"),
+                vsize=2, #节点大小
+                         label.cex = 0.1,  # 调整节点标签字体大小
+                         edge.labels = FALSE,  # 显示边标签,
+                        edge.label.cex = 1,
+                 minimum = 0.03)#
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+
+```{r}
+a<-centrality(lasso , alpha = 1, posfun = abs, pkg="qgraph", all.shortest.paths = FALSE,
+weighted = TRUE, signed = TRUE, R2 = TRUE)
+centrality <- centrality_auto(aen_glasso_q, weighted = TRUE, signed = TRUE)
+nc <- centrality$node.centrality #node centrality
+write.csv(nc,"nc.csv")
+```
+
+```{r}
+SPL <- centrality$ShortestPathLengths #shortest path length
+write.csv(SPL,"SPL.csv")
+str(a)
+write.csv(a$R2 ,"a$R2.csv")
+write.csv(a$OutDegree,"a$OutDegree.csv")
+write.csv(a$InDegree,"a$InDegree.csv")
+write.csv(a$InExpectedInfluence,"a$InExpectedInfluence.csv")
+write.csv(a$OutExpectedInfluence,"a$OutExpectedInfluence.csv")
+write.csv(centrality$edge.betweenness.centrality,"edge.betweenness.centrality.csv")
+```
+
+```{r}
+### clustering(Table S3)
+cluster <- clustcoef_auto(lasso)
+cluster$signed_clustZhang #Zhang(signed)
+
+
+```
+
+
+```{r}
+### smallworldness index (include average shortest path length and transtivity)
+smallworldness(lasso)
+```
+Smallworldness=1.949，trans_target=0.286，averagelength_target=2.113， trans_rnd_M=0.138，trans_rnd_lo=0.131，trans_rnd_up=0.146，averagelength_rnd_M=1.99，averagelength_rnd_lo=1.981，averagelength_rnd_up=1.999
+Smallworldness (小世界性)、trans_target (目标网络的传递性)、averagelength_target (目标网络的平均路径长度)、trans_rnd_M (随机网络的平均传递性)、trans_rnd_lo (随机网络传递性的下限)、trans_rnd_up (随机网络传递性的上限)、averagelength_rnd_M (随机网络的平均路径长度的平均值)、averagelength_rnd_lo (随机网络平均路径长度的下限)、以及averagelength_rnd_up (随机网络平均路径长度的上限)。
+本网络分析显示，所研究网络的小世界性指数为1.949，表明该网络具有比随机网络更高的小世界性质。目标网络的传递性为0.286，远高于随机网络的平均传递性（0.138），及其置信区间的下限（0.131）和上限（0.146），说明网络中节点间的聚集程度高于随机情形。此外，目标网络的平均路径长度为2.113，略高于随机网络的平均路径长度（1.99），及其置信区间的下限（1.981）和上限（1.999）。
+```{r}
+Network <- estimateNetwork(task_q, default = "EBICglasso")
+CentralStability <- bootnet(Network, nBoots = 1000, type
+= "case")
+```
+```
+
+#####
+```{r}
+task_q[,138:149]
+task_q[,1:137]
+group.ega<- list(c(1:137), c(138:149))
+```
+
+```{r 构建网络分析}
+task_q<-read.csv("task_q.csv")%>%
+  select(-c("X","ID"))
+aen_glasso <- qgraph::EBICglasso(cor(task_q), n=297, gamma = 0.1)  #,returnAllResults=TRUE
+```
+
+```{r}
+aen_glasso
+```
+
+```{r}
+summary(aen_glasso)
+```
+
+```{r}
+lasso <- qgraph::qgraph(aen_glasso , layout = "spring",
+                        groups = group.ega,
+                        color = c("lightblue", "white"),
+                vsize=2, #节点大小
+                         label.cex = 0.1,  # 调整节点标签字体大小
+                         edge.labels = FALSE,  # 显示边标签
+                        edge.label.cex = 1,
+                 minimum = 0.03)#
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+
+node.centrality
+A dataframe that includes the node centrality statistics. A subset of the following centrality indices is included, depending on the input network: Degree,
+InDegree, OutDegree, Strength, InStrength, OutStrength, Betweenness,
+and Closeness.
+ShortestPathLengths
+A matrix containing the shortest path lengths of each pairs of nodes. These path
+lenghts are based on the inverse of the absolute edge weights.
+edge.betweenness.centrality
+The edge betweenness centrality statistic (Newman & Girvan, 2004). Edges are
+ordered by their decreasing centra
+
+Closeness（接近中心性）：接近中心性衡量一个节点到网络中所有其他节点的接近程度，基于连接它们的最短路径。计算包括取节点到所有其他节点最短路径长度之和的倒数。较高的接近中心性表明节点平均而言更接近所有其他节点，可能允许信息在网络中更快地传播或影响。
+
+Betweenness（介数中心性）：介数中心性衡量一个节点位于其他节点之间最短路径上的程度。它通过计算一个节点作为两个其他节点之间最短路径上的桥梁的次数来计算。具有高介数中心性的节点可能在信息流动中具有重要控制作用，因为它们位于许多最短路径上。
+
+Strength（强度）：在加权网络中，强度指的是连接到节点的边的权重之和。对于非加权网络，它等同于度中心性，即连接到节点的边的数量。强度提供了节点在网络中连接强度的度量，值越高表示连接越强或数量越多。
+
+Expected Influence（预期影响力）：预期影响力是考虑边的权重和方向（如果适用）的中心性度量。它类似于强度，但也考虑了关系的符号，使其特别适用于边可以有正（促进性）或负（抑制性）权重的网络。具有高正预期影响力的节点可能对其邻居有强烈的正面效应，而具有高负预期影响力的节点可能会抑制其邻居。
+```{r }
+### centrality (Table s3)
+centrality <- centrality_auto(aen_glasso, weighted = TRUE, signed = TRUE)
+nc <- centrality$node.centrality #node centrality
+SPL <- centrality$ShortestPathLengths #shortest path length
+nc #view
+ #view
+centralityTable(aen_glasso)
+write.csv(centralityTable(aen_glasso,standardized = FALSE, relative = FALSE, weighted =
+TRUE, signed = TRUE),"centralityTable(aen_glasso)2.csv")
+```
+```{r}
+clusteringTable(aen_glasso)
+write.csv(clusteringTable(aen_glasso,standardized = FALSE, relative = FALSE,
+signed = FALSE),"clusteringTable(aen_glasso)2.csv")
+```
+```{r}
+centralityPlot(aen_glasso)
+```
+
+
+
+```{r}
+clusteringPlot(aen_glasso)
+```
+```{r}
+qgraph::centralityPlot(lasso, include = c("Closeness", "Betweenness", "Strength"), scale = "raw")
+```
+
+```{r}
+SPL
+write.csv(centrality$edge.betweenness.centrality,"edge.betweenness.centrality.csv")
+```
+
+
+```{r}
+### plot Centrality measures (figure S1)
+pdf(file= 'figureS11.pdf', width = 10, height = 7)
+qgraph::centralityPlot(lasso, include = c("Closeness", "Betweenness", "Strength"), scale = "raw") # plot all centrality indices
+dev.off()
+```
+
+
+```{r}
+### clustering(Table S3)
+cluster <- clustcoef_auto(lasso)
+cluster$signed_clustZhang #Zhang(signed)
+
+
+```
+
+
+```{r}
+### smallworldness index (include average shortest path length and transtivity)
+smallworldness(lasso)
+```
+```{r}
+Network <- estimateNetwork(task_q, default = "EBICglasso")
+CentralStability <- bootnet(Network, nBoots = 1000, type
+= "case")
+```
+```{r}
+plot(Network, layout = "spring", labels = colnames(task_q))
+```
+```{r}
+centralityPlot(Network)
+```
+```{r}
+corStability(CentralStability)
+```
+```{r}
+summary(CentralStability)
+```
+
+
+#####
+
+```{r }
+cor_day3<-day3_q_all%>%
+  select(.,ends_with("_al"),ability_rating,physical_attraction,material_wealth, social_ability,moral_rating,ID)%>%
+  rename(IPC=IPC_al,MSI=moralSeImag_al,MI=MorIden_al,
+         IM=IM_al,SGPS=SGPS_al,PHQ=phq_al,GAD=gad_al,SWB=swb_al,
+         LOT=LOT_al ,NPI=NPI_al,HSNS=hsns_al,
+         CSES=coreself_al,SDE=sde_al,
+         RSES=ses_al,SCCS=selfclarity_al,
+         )%>%
+  rename( Ability=ability_rating,
+          Physical=physical_attraction,
+          Material=material_wealth, 
+          Social=social_ability,
+          Moral=moral_rating)%>%
+  
+  left_join(day0t2_q %>% select(ID, fri_ses2, obj_ses1), by = "ID") %>%
+  rename(SES1=obj_ses1,SES2=fri_ses2)%>%
+  select(-c("ID"))
+  
+aen_glasso <- qgraph::EBICglasso(cor(cor_day3), n=297, gamma = 0.1)  #,returnAllResults=TRUE
+
+
+
+
+
+```
+```{r}
+aen_glasso
+```
+
+```{r}
+lasso <- qgraph::qgraph(aen_glasso_task, layout = "spring",
+                        groups = names( task_q_1.1),
+                        color = c("lightblue", "lightsalmon","red","pink"),
+                vsize=4, #节点大小
+                         label.cex = 2,  # 调整节点标签字体大小
+                         edge.labels = TRUE,  # 显示边标签
+                        edge.label.cex = 1)
+                # minimum = 0.03,
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+
+```{r}
+lasso <- qgraph::qgraph(aen_glasso, layout = "spring",
+                        groups = names(task_q_1),
+                        color = c("lightblue", "lightsalmon","red","blue","pink"),
+                vsize=1, #节点大小
+                         label.cex = 1,  # 调整节点标签字体大小
+                         edge.labels = FALSE,  # 显示边标签
+                        edge.label.cex = 0.5)
+                # minimum = 0.03,
+                 #filetype = "pdf", # # 指定文件类型为PDF)
+                    #   filename = "network" ) # # 指定文件名前缀 # 调整边标签字体大小 
+```
+
+
+node.centrality
+A dataframe that includes the node centrality statistics. A subset of the following centrality indices is included, depending on the input network: Degree,
+InDegree, OutDegree, Strength, InStrength, OutStrength, Betweenness,
+and Closeness.
+ShortestPathLengths
+A matrix containing the shortest path lengths of each pairs of nodes. These path
+lenghts are based on the inverse of the absolute edge weights.
+edge.betweenness.centrality
+The edge betweenness centrality statistic (Newman & Girvan, 2004). Edges are
+ordered by their decreasing centra
+```{r }
+### centrality (Table s3)
+centrality <- centrality_auto(aen_glasso, weighted = TRUE, signed = TRUE)
+nc <- centrality$node.centrality #node centrality
+SPL <- centrality$ShortestPathLengths #shortest path length
+nc #view
+ #view
+```
+
+```{r}
+SPL
+write.csv(centrality$edge.betweenness.centrality,"edge.betweenness.centrality.csv")
+```
+
+
+```{r}
+### plot Centrality measures (figure S1)
+pdf(file= 'figureS11.pdf', width = 10, height = 7)
+qgraph::centralityPlot(lasso, include = c("Closeness", "Betweenness", "Strength"), scale = "raw") # plot all centrality indices
+dev.off()
+```
+
+```{r}
+### clustering(Table S3)
+cluster <- clustcoef_auto(lasso)
+cluster$signed_clustZhang #Zhang(signed)
+
+
+```
+
+```{r}
+### smallworldness index (include average shortest path length and transtivity)
+smallworldness(lasso)
+```
+```{r}
+aen_glasso <- qgraph::EBICglasso(cor(task_q_1), n=297, gamma = 0.1) 
+```
+```{r}
+lasso <- qgraph::qgraph(aen_glasso, layout = "spring",
+                        groups = list(   c("IM", "SGPS", "SWB", "SCCS", "LOT", "RSES", "CSES", "SDE", "HSNS", "IPC", "MI"), # 第一个分组
+                                 c("Social", "Moral", "Material", "Ability", "NPI", "Physical"), # 第二个分组
+                                 c("SES1", "SES2"), # 第三个分组
+                                 c("GAD", "PHQ") # 第四个分组
+                ),
+                        color = c("lightblue", "lightsalmon","antiquewhite","lightgreen"),
+                vsize=3, #节点大小
+                         label.cex = 2,  # 调整节点标签字体大小
+                         edge.labels = TRUE,  # 显示边标签
+                         edge.label.cex = 0.5,
+                  minimum = 0.03)
+               #  filetype = "pdf",  # 指定文件类型为PDF
+                 #       filename = "network" ) # 指定文件名前缀 # 调整边标签字体大小 
+```
+```{r}
+ task_q_1.1<-task_q_1%>%
+  select(c(
+  "ability_IAT", "moral_IAT",
+  "ability_ALT_rt_val", "moral_ALT_rt_val",
+  "ability_ALT_rt_ref", "moral_ALT_rt_ref",
+  "ability_SRET_EW", "moral_SRET_EW",
+  "ability_ALT_d_val", "moral_ALT_d_val",
+  "ability_ALT_d_ref", "moral_ALT_d_ref"
+))
+aen_glasso_task <-  qgraph::EBICglasso(cor( task_q_1.1), n=297, gamma = 0.1) 
+```
+

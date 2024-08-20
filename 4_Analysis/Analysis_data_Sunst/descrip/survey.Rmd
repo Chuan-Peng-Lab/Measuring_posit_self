@@ -1,0 +1,1002 @@
+---
+title: "questionnaire"
+output: word_document
+date: "2024-01-20"
+---
+#加载包
+```{r}
+
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer","lavaan","rstatix")
+source("../R_rainclouds.R")
+```
+
+###合并day0到day2的问卷数据；结果包含每个被试在每个原始题目得分，以及各量表总分，包括人口学变量
+```{r setup, include=FALSE}
+
+day0t2_q<- merge(day0_all, day1_q_all, by = "ID", all = TRUE) %>%
+   merge(day2_q_all, by = "ID", all = TRUE)%>%
+  mutate(    #总分计算
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    sde_al= rowSums(select(., starts_with("sde")), na.rm = TRUE),
+    IM_al= rowSums(select(., starts_with("IM")), na.rm = TRUE),
+    MorIden_al= rowSums(select(., starts_with("MorIden")), na.rm = TRUE),
+    moralSeImag_al= rowSums(select(., starts_with("moralSeImag")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24) #以7分制评分，评分从-3（很不同意）到+3（很同意），计算时需要在原始总分基础上加上24分，分类表的分值范围为0 – 48
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_ ##为焦虑分级
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_ ##为抑郁分级
+  ))
+  
+
+```
+### 包括day3原始条目得分，以及量表总分，包括领域自尊
+```{r}
+day3_q_all<-day3_q_all%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    sde_al= rowSums(select(., starts_with("sde")), na.rm = TRUE),
+    IM_al= rowSums(select(., starts_with("IM")), na.rm = TRUE),
+    MorIden_al= rowSums(select(., starts_with("MorIden")), na.rm = TRUE),
+    moralSeImag_al= rowSums(select(., starts_with("moralSeImag")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24)
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   rename(Ability =domain_rating_1,##能力
+         Attraction=domain_rating_2,##身体吸引力
+         Wealth=domain_rating_3, ##物质财富
+         Social=domain_rating_4,##社交技能
+         Moral=domain_rating_5)%>%##道德
+mutate(domain_al=Ability+Attraction+Wealth+Social+Moral)
+
+```
+
+```{r}
+plot_bar(day3_q_all)
+
+```
+#量表及问卷部分的描述统计
+```{r}
+day3_q_all%>%
+  merge(day0t2_q%>%select(ID,age,obj_ses1,fri_ses2,income), by = "ID", all = TRUE)%>%
+  select(age,obj_ses1,fri_ses2,income,phq_al,gad_al,selfclarity_al,ses_al,coreself_al,SGPS_al,hsns_al,NPI_al,swb_al,LOT_al,sde_al,IM_al,MorIden_al,moralSeImag_al,IPC_al,domain_al)%>%
+Describe(.,file="day0t3_q_descrip.doc")#education,national,sex,fatherEdu,FatherOccupation,motherEdu,MotherOccupation,
+
+```
+
+
+```{r}
+day0t2_q_des<-day0t2_q%>%
+  select(sex,education,national,age,fatherEdu,FatherOccupation,motherEdu,MotherOccupation,gad,phq,income)%>%#0男，1女
+  mutate(
+    age=case_when(
+          between(age, 18, 28) ~ "18~28",
+          between(age, 28, 38) ~ "28~38",
+           between(age, 38, 48) ~ "38~48",
+          between(age, 48, 59) ~ "48~59",
+          age>59~ ">59",
+          TRUE ~ as.character(age) 
+        ),
+        sex=case_when(
+          sex==0~"男",
+          sex==1~"女",
+          TRUE ~ as.character(sex) 
+        ) ) %>%
+ mutate(fatherEdu = case_when(
+    fatherEdu == 0 ~ "没上过学",
+    fatherEdu == 1 ~ "小学",
+    fatherEdu == 2 ~ "初中",
+    fatherEdu == 3 ~ "高中或中专",
+    fatherEdu == 4 ~ "专科或本科",
+    fatherEdu == 5 ~ "研究生",
+    TRUE ~ as.character(fatherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(motherEdu = case_when(
+    motherEdu == 0 ~ "没上过学",#
+    motherEdu == 1 ~ "小学",#
+    motherEdu == 2 ~ "初中",#
+    motherEdu == 3 ~ "高中或中专",#
+    motherEdu == 4 ~ "专科或本科",#大学（）
+    motherEdu == 5 ~ "研究生",#
+    TRUE ~ as.character(motherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(FatherOccupation = case_when(
+    FatherOccupation == 0 ~ "临时工",
+    FatherOccupation == 1 ~ "个体经营",
+    FatherOccupation == 2 ~ "一般管理",
+    FatherOccupation == 3 ~ "中层管理",
+    FatherOccupation == 4 ~ "高级管理",
+    TRUE ~ as.character(FatherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(MotherOccupation = case_when(
+    MotherOccupation == 0 ~ "临时工",
+    MotherOccupation == 1 ~ "个体经营",
+    MotherOccupation == 2 ~ "一般管理",
+    MotherOccupation == 3 ~ "中层管理",
+    MotherOccupation == 4 ~ "高级管理",
+    TRUE ~ as.character(MotherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(income = case_when(
+    income == 0 ~ "zero",
+    income < 2000 ~ "<2000",
+    between(income, 2000, 5000) ~ "2000~5000",
+    between(income, 5000, 10000) ~ "5000~10000",
+    between(income, 10000, 30000) ~ "10000~30000",
+    between(income, 30000, 50000) ~ "30000~50000",
+    between(income, 50000, 100000) ~ "50000~100000",
+    between(income, 100000, 150000) ~ "100000~150000",
+    between(income, 150000, 200000) ~ "150000~200000",
+    income >= 200000 ~ "≥200000",
+    TRUE ~ as.character(income)  # 如果没有匹配的条件，保持不变
+  )) %>%
+  mutate(national = ifelse(str_detect(national, "汉族"), "汉族", national),
+         education = ifelse(str_detect(education, "本科"), "本科", education),
+         education = ifelse(str_detect(education, "硕士"), "硕士", education))
+
+```
+
+##描述性统计计数表
+```{r}
+
+freq_variable<- function(data, func, ...) {
+  results <- list()
+  for (var in names(data)) {
+    # 调用func函数，并将结果存储在列表中
+    result <- do.call(func, c(list(x = data[[var]], varname = var), ...))
+    results[[var]] <- result
+  }
+ 
+}
+# 使用apply_to_each_variable函数对day0t2_q_des中的每个变量应用Freq函数
+freq_results <- freq_variable(day0t2_q_des, Freq)
+```
+
+```{r}
+
+Freq(day0t2_q$obj_ses1)#,,,phq,gad
+```
+```{r}
+Freq(day0t2_q$fri_ses2)
+```
+
+```{r}
+day3_q_all%>%
+  select(phq_al,gad_al,selfclarity_al,ses_al,coreself_al,SGPS_al,hsns_al,NPI_al,swb_al,LOT_al,sde_al,IM_al,MorIden_al,moralSeImag_al,IPC_al)%>%
+Describe(.,file="day3_q_des.doc")
+```
+###内部一致性
+
+*题源：陈艳霞，（2021），自我关注与大学生社交焦虑的关系,
+Campbell（1996），原版
+翻译版：牛更枫（2016），青少年社交网站使用对自我概念清晰性的影响:社会比较的中介作用，该问卷共 12 个项目来测量个体自我概念的 清晰性和一致性（如，“我对自己的一些看法经常 相互冲突”）。该量表使用 5 点计分法，1 表示“完全不符”，5 表示“完全符合”，共 12 题，其中 6、11 采用正向计分题，其余题目均需反向计分。最终总分越高说明自我概念清晰性越高。徐海玲（2007）在其研究中使用过该量表，发现该量表信效度良好。该量表在冯泽雨（2010）相关研究中，也具备良好的信效度。本研究中该量表的 Cronbach's a 系数是 0.846。
+*
+```{r 内部一致性}
+Alpha(day3_q_all, "selfclarity_", 1:12) 
+```
+* 采用卞崔冬等(2009)翻译的中文版抑郁障碍量表（PHQ-9），
+回答种类包括“完全不会”、“几日”、“一半以上的日子”、及“几乎每日”分别相对应0、1、2、3分值。
+PHQ-9总分值范围从0～27分。分值5、10、15、20分别相对应代表轻、中、中重、重度抑郁分界值。
+*
+```{r}
+Alpha(day3_q_all, "phq_", 1:9) 
+```
+* 采用何筱衍等人(2010)翻译的中文版的广泛性焦虑量表（GAD-7），它的内部一致性α系数为0.898，初次测评后的7~14天内的重测信度为0.856。
+回答种类“完全不会”、“好几天”、“一半以上的天数”和“几乎每天”分别相对应 0、1、2、3分。
+GAD-7总分范围为0～21分。分值 5、10、15分别对应代表“轻度”、“中度”、“重度”焦虑程度分界值。
+*
+```{r}
+Alpha(day3_q_all, "gad_", 1:7) 
+```
+* 单维生活满意度量表，由 Diener 等人（1985）编制，一共包含五个项目，采用里克特五点量表评定法。从 1 到 7 分别表示非常不同意、不同意、有点不同意、中立、有点同意、
+同意和非常同意。得分之和即为个体总的生活满意度。得分越高，说明个体对自己的生活越满意。内部一致性系数 R 在 0.61~0.81 之间，证明量表拥有良好的信效度（Diener, 1985）。
+本研究中，生活满意度总量表信度为 0.855。(陈振圻, 2020)
+
+*
+```{r}
+Alpha(day3_q_all, "swb_", 1:5) 
+```
+* 采用温娟娟等(2007)修订的中文版“生活取向测验修订版（LOT-R）”，测验包含6个条目，乐观与悲观两个维度，使用李克特五点评分（1 = 非常不同意，2 = 不同意，3 = 不确定，4 = 同意，5 = 非常同意）。乐观倾向维度有 3 个条目，得分越高个体的乐观倾向越高；悲观倾向维度有 3 个条目，得分越高个体的悲观倾向越高。将 悲观维度反向计分后与乐观维度得分相加得到个体乐观人格总分，得分越高越乐观。修订后的量表具有较好的信度和效度，内部一致性 Cronbach α 为 0.78，重测信度为 0.79， 与 LOT 的相关系数为 0.95。
+题源：高校教师工作压力、乐观人格、心理控制源与睡 眠质量的关系
+*
+```{r}
+Alpha(day3_q_all, "LOT_", 1:6) 
+```
+
+* Levenson (1981)设计了“内控 、权威和机遇控制定向量表”简称IPC量表。其中内控性（I）量表测量人们相信自己把握个人生活的程度。
+内控性分量表包含8个条目，以7分制评分，评分从-3（很不同意）到+3（很同意），计算时需要在原始总分基础上加上24分，分类表的分值范围为0 – 48。
+内控性分量表Kuder-Richardson信度为0.64  (汪向东, 1999)，它的四周后的重测信度为0.8 (肖莉 & 陈仲庚, 1989)。
+*
+```{r}
+Alpha(day3_q_all, "IPC_", 1:8) 
+```
+
+*原版：
+Rosenberg, M. (1965). Rosenberg self-esteem scale (RSE). Acceptance and commitment therapy. Measures package, 61(52), 18.
+孙钦铃（2007）自尊量表的修订P26,修改了两个条目，先前研究表明原版条目8有争议，条目9,10疑似重复
+由Rosenberg (1965)编制的罗森伯格自尊量表 (Rosenberg Self-Esteem Scale)。本研究采用孙钦铃(2007)修订的中文版Self-Esteem scale（SES），该量表共10个4点计分条目，包含5个反向计分与5个正向计分条目，用以评定自我价值与自我接纳的总体感受，从而测量受测者的自尊水平，具体计分方式为：1代表很不符合；2代表不符合；3代表符合；4代表非常符合。分数越高表明受测者自尊水平越高，Cronbach α 系数为 0. 835，两周后对29名被试的重测信度为0.655。
+*
+```{r}
+Alpha(day3_q_all, "ses_", 1:10) 
+```
+*CSES,Judge,2003原版12题，r:reversed-score
+杜建政,(2012)核心自我评价的结构验证及其量表修订,模型 3 是单因素模型，但只有删除项 目 A3 和 A9 后的 10 个项目负荷在单一因素上。
+总分的范围为10-50分，分数越高说明被测者核心自我评价水平越高。该量表的内部一致性系数为0.83，分半信度为0.84，时隔3周的重测信度为0.82(N=70)
+ 大学生核心自我评价对创业意向的影响，[D]. 侯静怡.河南大学,2018（题目在此找到）
+```{r}
+Alpha(day3_q_all, "coreself_", 1:10) 
+```
+* 张亚利等(2020)的中文翻译版的简版一般拖延量表（Short General Procrastination Scale，SGPS），由 9 个题目构成，属单维度测验，其中 3 个题目为反向计分。
+题目采用李克特5 点计分（非常不符合~非常符合）。总分越高表明拖延倾向越明显。中文版的内部一致性信度为0.87，8周后的重测信度为0.77。
+*
+```{r}
+Alpha(day3_q_all, "SGPS_", 1:9) 
+```
+*由Ames（2006）编制，原量表有16道题目，本研究采用王晓燕(2008)修订的中文版，修订过程发现条目6在中国被试中区分效度较低，故删除，修订后全量表15题，NPI是一个采用二择一的强迫选择形式的自评问卷,内容涉及自我评价、行为方式,NPI的全量表分数代表自恋的显性维度,得分范围是从0到15,分数越高显性自恋水平越高。
+*
+```{r}
+Alpha(day3_q_all, "NPI", 1:15) 
+```
+采用过度敏感自恋量表。本研究所使用的过度敏感自恋量表（Hypersensitivity Narcissistic Scale）为单因素结构自评问卷，共10个项目，内容涉及到自我评价、自我行为倾向。采用Likert 5 点式评分法 ，从 “不符合”到 “符合”分别为1分和5分 。 它反映了过度敏感性和脆弱性。Hendin和Cheek(1997) 报告，HSNS的α系数为0. 76。HSNS的全量表分数代表自恋的隐性维度，得分范围是从 10 到 50 分，分数越高隐性自恋水平越高 。
+```{r}
+Alpha(day3_q_all, "hsns_", 1:10) 
+```
+该量表来源于Aquino (2002)等人编制的道德同一性量表（moral identity scale），该量表具有良好的信效度，α=0.83。万增奎修订后的中文版α=0.85，内隐维度α=0.83，外显维度α=0.74。中文版的道德同一性量表包括10道题，其中1,2,4,7,10为内隐维度，3，5，6,8,9为外显维度，采用5点计分，-2=“完全不同意”，-1=“有些不同意”，0=“中立”，1=“有些同意”。2=“完全同意”。
+```{r}
+Alpha(day3_q_all, "MorIden_", 1:10) 
+```
+本研究采用刘青兰等 (2020)翻译的道德自我形象量表（moral self-image scale）(Jordan et al., 2015)，中文版的α= 0.88，该量表共9个9点计分条目，要求受测者判断有关道德形象的陈述与自己相符的程度，测量受测者的道德自我形象，总分的范围为9-81分，具体计分方式为：1代表远没有达到受测者想达到的程度；5代表完全与受测者想要达到的程度相同；9代表远高于受测者想要达到的程度。
+```{r}
+Alpha(day3_q_all, "moralSeImag_", 1:9) 
+```
+期待性回答平衡问卷：Paulhus (1988)编制期待性回答平衡问卷（BIDR） , 问卷包括自欺性拔高（SDE）和操纵印象（IM），两个量表合并的总分代表社会期望性回答（SDR），SDE的α系数为0.68-0.80，IM的α系数为0.75-0.86，两个量表的总分的α系数为0.83(汪向东等, 1999)。
+```{r}
+Alpha(day3_q_all, "sde_", 1:20) 
+```
+```{r}
+Alpha(day3_q_all, "IM_", 1:20) 
+```
+领域自尊：采用MacDonald等(2003)编制的领域自评量表测量被试对自我在特殊领域的社会信念。被试需要判断与同龄人相比，自己处于哪个水平，量表共包含5个条目，涉及能力，身体吸引，物质财富，社交能力，道德五个领域，评分从1-12，1代表非常低，12代表非常高，该问卷的信度为0.76
+```{r}
+Alpha(day3_q_all, vars =c("Ability","Attraction","Wealth","Social","Moral") )
+```
+```{r}
+Alpha(day0t2_q, vars =c("obj_ses1","fri_ses2")) 
+```
+
+### test-retest 计算问卷中每个原始条目的
+
+```{r}
+select_and_rbind <- function(df1, df2 ){
+  # 合并两个数据集
+df1<-df1%>%
+  mutate(time=1)
+df2<-df2%>%
+  mutate(time=2)
+  # 使用函数来合并day0t2_q和day3_q_all数据框
+pattern <- "^ID$|^time$|^phq|^gad|^SGPS|^IM|^sde|^ses|^swb|^NPI|^LOT|^IPC|^hsns|^selfclarity|^coreself|^MorIden|^moralSeImag"
+  # 使用grep函数和pattern参数来选择匹配的列
+  selected_columns_df1 <- grep(pattern, names(df1), value = TRUE)
+  selected_columns_df2 <- grep(pattern, names(df2), value = TRUE)
+  
+  # 根据选中的列创建新的数据框
+  selected_df1 <- df1[, c(selected_columns_df1)]
+
+  selected_df2 <- df2[, c(selected_columns_df2)]
+  
+  # 使用rbind函数将两个数据框合并在一起
+  combined_df <- rbind(selected_df1, selected_df2)
+  
+  return(combined_df)
+}
+
+
+day0t3_q <- select_and_rbind(day0t2_q, day3_q_all)####包含原始条目，量表总分，以及time列
+
+```
+
+
+```{r}
+
+testRetest(as.data.frame(day0t3_q), select = c("gad_1", "gad_2","gad_3","gad_4","gad_5","gad_6","gad_7"))
+```
+
+```{r}
+testRetest(as.data.frame(day0t3_q), select = c("coreself_1", "coreself_2","coreself_3","coreself_4","coreself_5","coreself_6","coreself_7","coreself_8","coreself_9","coreself_10"))
+```
+
+
+```{r}
+testRetest(as.data.frame(day0t3_q), select = c("ses_1", "ses_2","ses_3","ses_4","ses_5","ses_6","ses_7","ses_8","ses_9","ses_10"))
+```
+
+##计算前后测总分的相关作为重测信度
+```{r 计算前后测的皮尔逊积差相关，重测信度}
+
+cor_testretest <- function(df1, df2) {
+  questionnaires <- c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al","MorIden_al","moralSeImag_al","sde_al","IM_al")
+  
+  # 存储计算的重测信度
+  reliabilities <- data.frame(questionnaire = character(0), reliability = numeric(0))
+  
+  for (questionnaire in questionnaires) {
+    # 选择两次测量的数据
+    data1 <- df1[, c("ID", questionnaire)]
+    data2 <- df2[, c("ID", questionnaire)]
+    
+    # 合并数据框
+    combined_data <- merge(data1, data2, by = "ID", suffixes = c("_1", "_2"))
+    
+    # 计算重测信度，利用pearson积差相关
+    reliability <- cor(combined_data[, paste(questionnaire, "_1", sep = "")], combined_data[, paste(questionnaire, "_2", sep = "")], method = "pearson", use = "pairwise")
+    
+    # 将相关系数转换为两位小数的数值
+    formatted_reliability <- sprintf("%.2f", reliability)
+    
+    # 存储结果
+    reliabilities <- rbind(reliabilities, data.frame(questionnaire = questionnaire, reliability = as.numeric(formatted_reliability)))
+  }
+  
+  # 输出重测信度
+  print(reliabilities)
+}
+
+test_retest <- cor_testretest(day0t2_q, day3_q_all)
+
+```
+
+#自我增强的量表数据的相关图
+
+```{r bruceR对day3的各分量表总分以及领域自尊5维度的相关热图}
+
+ #计算自我增强的量表的相关变量的相关图
+cor_plot<-day3_q_all%>%
+  select(.,ends_with("_al"),ID)%>%
+  left_join(day0t2_q %>% select(ID, fri_ses2, obj_ses1), by = "ID") %>%
+  rename(SES1=obj_ses1,SES2=fri_ses2,
+    IPC=IPC_al,MSI=moralSeImag_al,MI=MorIden_al,
+         IM=IM_al,SDE=sde_al,
+         LOT=LOT_al ,SWB=swb_al,NPI=NPI_al,HSNS=hsns_al,
+         SGPS=SGPS_al,CSES=coreself_al,
+         RSES=ses_al,SCCS=selfclarity_al,
+         GAD=gad_al , PHQ=phq_al,
+         Domain=domain_al)%>%
+  select(-c("PHQ","SGPS","GAD","SWB"))%>%  #去掉拖延，抑郁，焦虑，主观幸福感；4个心理适应指标
+  rename("内控性"=IPC,"道德自我形象"=MSI,"道德同一性"=MI,
+         "操纵印象"=IM,"自欺性拔高"=SDE,
+         "乐观"=LOT,"显性自恋"=NPI,"敏感性自恋"=HSNS,
+         "核心自我评价"=CSES,
+         "自尊"=RSES,"自我概念清晰度"=SCCS,
+        "社会中的主观经济地位" =SES1,
+        "学校中的主观经济地位"=SES2,
+        "领域自尊"=Domain
+        )%>%
+  select(-ID)%>%
+bruceR::Corr(.,
+  method = "spearman",#"pearson" (default), "spearman", or "kendall".
+  p.adjust = "none",#"none", "fdr", "holm", "bonferroni
+  all.as.numeric = TRUE,
+  digits = 2,
+  file = "correlation_SEE.doc",#File name of MS Word (.doc).
+  plot = TRUE,
+  plot.r.size = 1.5,
+  plot.colors=c("#b2182b", "white", "#2166ac"),
+  plot.file = "cor_SEE.png",
+  plot.dpi = 500)
+
+```
+# 自我增强的量表数据的EFA
+数据清洗，只提取自我增强相关量表的原始条目，将得分标准化(z分数)
+```{r}
+day3_q_cor <- day3_q_all%>%
+  left_join(day0t2_q %>% select(ID, fri_ses2, obj_ses1), by = "ID") %>%
+  rename(SES1=obj_ses1,SES2=fri_ses2)%>% 
+  select(-matches("_al$"), -matches("^gad"), -matches("^phq"), -matches("^swb"), -matches("^SGPS"))%>%
+  select(-c("X","trap3_item","trap3","ParticipantID"))
+head(day3_q_cor)
+
+#将得分转为Z分数
+day3_q_cor [, 2:ncol(day3_q_cor)] <- scale(day3_q_cor[, 2:ncol(day3_q_cor)])
+
+write.csv(day3_q_cor,"SEE_q_Z.csv")
+
+day3_q_cor<-day3_q_cor%>%
+  select(-c("ID"))
+```
+
+判断是否适合EFA
+
+```{r}
+KMO(day3_q_cor)
+cortest.bartlett(day3_q_cor)
+```
+$chisq
+[1] 51907.5
+
+$p.value
+[1] 0
+
+$df
+[1] 9316
+```{r}
+factor.num = fa.parallel(day3_q_cor,fa='both',n.iter = 100,
+  main='我的碎石图')
+
+```
+碎石图提取，表明适合因子分析有11个。
+“Parallel analysis suggests that the number of factors =  11  and the number of components =  9 ”
+
+fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+```{r}
+
+day3_q_fa<-day3_q_cor%>%fa(.,fm="pa",nfactor=11,rotate="promax")
+#查看表，低于0.35的不显示
+print(day3_q_fa,cut=0.35)
+```
+因子载荷（Factor Loadings）：这些数字表示每个变量（指标）与每个因子之间的相关性。载荷值越高，表示变量与因子之间的关系越强。在您的输出中，标准化载荷（Standardized Loadings）已经基于相关矩阵展示。
+SS Loadings：每个因子的平方载荷之和，表示因子对变量变异性的解释程度。
+Proportion Var：这是每个因子解释的方差比例，表示每个因子对总方差的贡献。
+Cumulative Var：这是累积方差比例，表示到目前为止所有因子共同解释的总方差比例。
+Proportion Explained：这是每个因子解释的方差比例，基于特征值。这个比例可能会略微不同于基于载荷的比例（Proportion Var），因为它考虑了因子之间的相关性。
+Cumulative Proportion：这是累积解释的方差比例，表示到目前为止所有因子共同解释的总方差比例。
+因子间相关性（Factor Correlations）：这些数字表示因子之间的相关性。相关性越高，表示因子之间的关系越密切。
+Mean item complexity：这是指标的复杂性平均值，反映了每个指标与所有因子之间的平均关系强度。
+Test of the hypothesis that 11 factors are sufficient：这是对因子数量的检验，以确定是否有必要增加或减少因子数量。在这个部分，虚无模型的自由度为9316，模型自由度为7864。虚无模型的卡方值为51907.5，模型的卡方值为29.16。RMSR和DF corrected RMSR都是0.03，表明模型的拟合度很好。
+Tucker Lewis Index of factoring reliability：这是因子分析的信度指标，范围从0到1，值越高表示模型越可靠。
+RMSEA index：这是近似误差均方根，表示模型拟合的优度。值越低表示拟合越好。
+BIC：这是贝叶斯信息准则，用于模型比较。较低的BIC值表示更好的模型拟合。
+Measures of factor score adequacy：这部分展示了因子得分的有效性指标，包括因子得分与因子之间的相关性、多元决定系数（Multiple R square）和可能因子得分的最低相关性。这些指标反映了因子得分的有效性和可靠性。
+
+查看图
+                                       
+```{r}
+  #performed using maximum likelihood estimation，Factor scores were estimated using the tenBerge
+fa.diagram(day3_q_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+查看因子得分
+
+```{r}
+factor.scores(day3_q_cor,f=day3_q_fa)
+```
+
+```{r}
+iclust(day3_q_cor)
+```
+##将SEE量表降为成11个因子后，每个被试在各因子的得分导出
+```{r}
+write.csv(factor.scores(day3_q_cor,f=day3_q_fa)$score,"SEE_q_score.csv")
+SEE_q_socre<-read.csv("SEE_q_score.csv")%>%
+  cbind(day3_q_all%>%select(ID))
+write.csv(SEE_q_socre,"SEE_q_score.csv")
+```
+
+```{r}
+EFA(
+  day3_q_cor,
+  vars = names(day3_q_cor),
+  1:137,
+ nfactors=11,
+ file = "SEE_q_EFA.doc"
+ 
+)
+```
+
+##自我增强的4个心理适应指标
+```{r}
+
+SEE_adju <- day3_q_all%>%
+  select(-matches("_al$"),-c("phq","gad"))%>%
+select(ID, matches("^gad"), matches("^phq"), matches("^swb"), matches("^SGPS"))
+
+head(SEE_adju)
+
+#将得分转为Z分数
+SEE_adju [, 2:ncol(SEE_adju)] <- scale(SEE_adju[, 2:ncol(SEE_adju)])
+write.csv(SEE_adju,"SEE_adju_Z.csv")
+SEE_adju<-SEE_adju%>%
+  select(-ID)
+```
+判断是否适合EFA
+
+```{r}
+SEE_adju%>%
+  select(-ID)%>%
+KMO(.)
+SEE_adju%>%
+  select(-ID)%>%
+cortest.bartlett(.)
+```
+$chisq
+[1] 11931.4
+
+$p.value
+[1] 0
+
+$df
+[1] 435
+```{r}
+SEE_adju%>%
+  select(-ID)%>%
+ fa.parallel(.,fa='both',n.iter = 100,
+  main='我的碎石图')
+
+```
+Parallel analysis suggests that the number of factors =  4  and the number of components =  3 
+```{r}
+
+SEE_adju_fa<-SEE_adju%>%
+  select(-ID)%>%fa(.,fm="pa",nfactor=3,rotate="promax")
+#查看表，低于0.35的不显示
+print(SEE_adju_fa,cut=0.35)
+```
+查看图
+                                       
+```{r}
+  #performed using maximum likelihood estimation，Factor scores were estimated using the tenBerge
+fa.diagram(SEE_adju_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+```{r}
+SEE_adju%>%
+  select(-ID)%>%
+EFA(
+  .,
+  vars = names(.),
+  1:30,
+ nfactors=3,
+ file = "SEE_adju_EFA.doc"
+ 
+)
+```
+##将SEE量表降为成11个因子后，每个被试在各因子的得分导出
+```{r}
+write.csv(factor.scores(SEE_adju%>%
+  select(-ID),f=SEE_adju_fa)$score,"SEE_adju_score.csv")
+SEE_adju_score<-read.csv("SEE_adju_score.csv")%>%
+  cbind(SEE_adju%>%select(ID))
+write.csv(SEE_adju_score,"SEE_adju_score.csv")
+```
+
+
+##任务的探索性因素分析
+
+```{r}
+task_q%>%
+  select(-ID)%>%
+bruceR::Corr(.,
+  method = "spearman",#"pearson" (default), "spearman", or "kendall".
+  p.adjust = "none",#"none", "fdr", "holm", "bonferroni
+  all.as.numeric = TRUE,
+  digits = 2,
+  file = "correlation_all.doc",#File name of MS Word (.doc).
+  plot = TRUE,
+  plot.r.size = 1.5,
+  plot.colors=c("#b2182b", "white", "#2166ac"),
+  plot.file = "cor_plot_all.png",
+  plot.dpi = 500)
+```
+```{r}
+task_q%>%
+  select(-ID)%>%
+KMO(.)
+```
+```{r}
+task_q%>%
+  select(-ID)%>%
+cortest.bartlett(.)
+```
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+tak_q_1<-task_q%>%
+  select(-ID)
+factor.num = fa.parallel(task_q_1,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+You can also embed plots, for example:
+
+```{r}
+
+task_q_1_fa<-task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")%>%
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(.,cut=0.35)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")%>%    #performed using maximum likelihood estimation，Factor scores were estimated using the tenBerge
+fa.diagram(fit1,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+# 因子得分
+
+```{r}
+
+task_q_1_fa<-task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_1_fa,cut=0.35)
+
+
+```
+
+
+
+```{r}
+factor.scores(task_q_1,f=task_q_1_fa)
+```
+# 判断是否适合EFA
+```{r}
+
+day3_q_cor<-day3_q_all%>%
+  left_join(day0t2_q %>% select(ID, fri_ses2, obj_ses1), by = "ID") %>%
+  rename(SES1=obj_ses1,SES2=fri_ses2)%>%
+  #select(-ends_with("_al"),-ID,-X,-ParticipantID,)%>%
+  select(.,ends_with("_al"),ability_rating,physical_attraction,material_wealth, social_ability,moral_rating,SES1,SES2)%>%
+  rename(IPC=IPC_al,MSI=moralSeImag_al,MI=MorIden_al,
+         IM=IM_al,SGPS=SGPS_al,PHQ=phq_al,GAD=gad_al,SWB=swb_al,
+         LOT=LOT_al ,NPI=NPI_al,HSNS=hsns_al,
+         CSES=coreself_al,SDE=sde_al,
+         RSES=ses_al,SCCS=selfclarity_al,
+         )%>%
+  rename( Ability=ability_rating,
+          Physical=physical_attraction,
+          Material=material_wealth, 
+          Social=social_ability,
+          Moral=moral_rating)
+
+KMO(day3_q_cor)
+```
+```{r}
+cortest.bartlett(day3_q_cor)
+```
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+factor.num = fa.parallel(day3_q_cor,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+You can also embed plots, for example:
+
+```{r}
+
+day3_q_fa<-day3_q_cor%>%fa(.,fm="pa",nfactor=4,rotate="promax")%>%
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(.,cut=0.35)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+day3_q_cor%>%fa(.,fm="pa",nfactor=4,rotate="promax")%>%    #performed using maximum likelihood estimation，Factor scores were estimated using the tenBerge
+fa.diagram(fit1,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+# 因子得分
+
+```{r}
+
+day3_q_fa<-day3_q_cor%>%fa(.,fm="pa",nfactor=4,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(day3_q_fa,cut=0.35)
+
+
+```
+
+
+
+```{r}
+factor.scores(day3_q_cor,f=day3_q_fa)
+```
+
+
+
+
+```{r}
+iclust(task_q_1)
+```
+
+
+```{r}
+
+day3_q_selected <- day3_q_all %>%
+  left_join(day0t2_q %>% select(ID, fri_ses2, obj_ses1), by = "ID") %>%
+  rename(SES1=obj_ses1,SES2=fri_ses2)%>%
+  select(ends_with("_al"), ability_rating, physical_attraction, material_wealth, social_ability, moral_rating,SES1,SES2) %>%
+  rename(IPC=IPC_al,MSI=moralSeImag_al,MI=MorIden_al,
+         IM=IM_al,SGPS=SGPS_al,PHQ=phq_al,GAD=gad_al,SWB=swb_al,
+         LOT=LOT_al ,NPI=NPI_al,HSNS=hsns_al,
+         CSES=coreself_al,SDE=sde_al,
+         RSES=ses_al,SCCS=selfclarity_al,
+         )%>%
+  rename( Ability=ability_rating,
+          Physical=physical_attraction,
+          Material=material_wealth, 
+          Social=social_ability,
+          Moral=moral_rating)
+EFA(
+  task_q_1,
+  vars = names(task_q_1),
+  1:149,
+ nfactors=10,
+ file = "EFA.doc"
+ 
+)
+```
+
+
+```{r}
+day3_q_selected
+
+                                
+bruceR::CFA(day3_q_selected%>%select(IM ,SWB ,SGPS ,SCCS ,LOT , RSES , CSES , SDE , HSNS , IPC , MI,Social ,Moral , Material , Ability , NPI, Physical,SES1,SES2,GAD ,PHQ), model = 
+"PA1 =~ IM + SWB + SGPS + SCCS + LOT + RSES + CSES + SDE + HSNS + IPC + MI; 
+PA2 =~ Social + Moral + Material + Ability + NPI + Physical; 
+PA3 =~ SES1 + SES2; PA4 =~ GAD + PHQ")
+```
+
+
+
+
+```{r}
+CFA(
+  data,
+  model = "A =~ a[1:5]; B =~ b[c(1,3,5)]; C =~ c1 + c2 + c3",
+  estimator = "ML",
+  highorder = "",
+  orthogonal = FALSE,
+  missing = "listwise",
+  digits = 3,
+  file = NULL
+)
+```
+
+
+```{r}
+
+
+# Assuming day3_q_selected is already created as shown in your previous code
+
+# Fit the CFA model
+cfa_result <- CFA(
+  data = day3_q_selected,
+  model = "PA1 =~ IM + SWB + SGPS + SCCS + LOT + RSES + CSES + SDE + HSNS + IPC + MI;
+           PA2 =~ Social + Moral + Material + Ability + NPI + Physical;
+           PA3 =~ SES1 + SES2;
+           PA4 =~ GAD + PHQ",
+  estimator = "ML", # Maximum Likelihood estimator
+  highorder = "", # No higher-order factors
+  orthogonal = FALSE, # Factors are not orthogonal
+  missing = "listwise", # Listwise deletion of missing data
+  digits = 3, # Number of digits for output
+  file = NULL # No output file specified
+)
+
+# Check the output for errors
+print(cfa_result)
+
+```
+
+
+```{r}
+library(lavaan)
+model <- '
+PA1 =~ IM + SWB + SGPS + SCCS + LOT + RSES + CSES + SDE + HSNS + IPC + MI
+PA2 =~ Social + Moral + Material + Ability + NPI + Physical
+PA3 =~ SES1 + SES2
+PA4 =~ GAD + PHQ
+'
+# Fit the CFA model
+fit <- sem(model, data=day3_q_selected)
+# Check the output for errors
+summary(fit)
+```
+
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+day3_q_all.0_adjs<-day3_q_all.0%>%
+ select(matches("^(swb|SGPS|gad|phq)"))
+factor.num = fa.parallel(day3_q_all.0_adjs,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+```{r}
+efa_adjust<-factor.scores(day3_q_all.0_adjs,f=day3_q_all.0_adjs_fa)
+write.csv(efa_adjust$score,"efa_adjust.csv")
+```
+
+```{r}
+
+```
+
+
+```{r}
+day3_q_all.0_adjs_fa<-day3_q_all.0_adjs%>%fa(.,fm="pa",nfactor=3,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(day3_q_all.0_adjs_fa,cut=0.35)
+```
+```{r 只有问卷}
+day3_q_all.1 <- day3_q_all.0 %>%
+  select(-matches("al$"), -matches("^gad"), -matches("^phq"), -matches("^swb"), -matches("^SGPS"))%>%
+  select(-ID)
+factor.num = fa.parallel(day3_q_all.1,fa='both',n.iter = 100,
+  main='我的碎石图')####8-9个
+
+day3_q_all.1_fa<-day3_q_all.1%>%fa(.,fm="pa",nfactor=8,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(day3_q_all.1_fa,cut=0.35)
+
+efa_q<-factor.scores(day3_q_all.1,f=day3_q_all.1_fa)
+
+write.csv(efa_q$score,"day3_q_efa.all.csv")
+```
+```{r 只有问卷}
+regress1<-day3_q_all.0 %>% 
+  select(swb_al, SGPS_al, gad_al, phq_al)%>%
+  cbind(., efa_q$score)
+write.csv(regress1,"regress1.csv")
+```
+
+```{r 只有任务}
+task_q_1.1 <- task_q_1[, tail(names(task_q_1), 12)]
+  
+factor.num = fa.parallel(task_q_1.1,fa='both',n.iter = 100,
+  main='我的碎石图')####4个
+
+task_q_1.1_fa<-task_q_1.1%>%fa(.,fm="pa",nfactor=4,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_1.1_fa,cut=0.35)
+
+efa_task<-factor.scores(task_q_1.1,f=task_q_1.1_fa)
+
+write.csv(efa_task$score,"day3_task_efa.all.csv")
+```
+```{r 仅行为}
+EFA(
+  task_q_1.1,
+  vars = names(task_q_1.1),
+  1:12,
+ nfactors=4
+ 
+)
+```
+根据提供的探索性因素分析（EFA）结果，我们可以根据几个关键指标来评估行为数据是否适合进行EFA：
+
+KMO和巴特利特球形检验
+Kaiser-Meyer-Olkin (KMO) Measure of Sampling Adequacy (MSA): KMO值为0.603。KMO值范围从0到1，用于评估数据的适合度进行因子分析。一般而言，KMO值大于0.6被认为是“中等”适合度，大于0.7则被认为是“良好”适合度。因此，0.603的KMO值表明你的数据在可接受的范围内，但是接近下限，这意味着数据对EFA来说是勉强适合的。
+
+Bartlett's Test of Sphericity: 巴特利特球形检验的结果是χ²(66) = 1491.46，p值小于1e-99，这非常显著。这个检验测试的是总体相关矩阵是否为单位矩阵，如果不是，这意味着数据中的变量之间存在足够的相关性来进行因子分析。显著的巴特利特检验表明你的数据集中的变量之间存在相关性，适合进行因子分析。
+
+总结
+根据KMO值（0.603）和显著的巴特利特球形检验结果，你的行为数据是勉强适合进行探索性因子分析的。虽然KMO值表明样本适合度处于可接受的下限，但巴特利特检验的显著性表明数据中存在足够的变量间相关性，从而支持进行EFA。
+然而，为了提高分析的可靠性和解释力，你可能需要考虑增加样本量或优化变量选择，以提高KMO值。此外，实施因子分析时应谨慎解释结果，并考虑其他统计和实际标准来验证发现的因子结构。
+总体而言，这些结果表明你的数据是适合进行EFA的，但是分析的质量可以通过优化数据集而提高。
+
+You can also embed plots, for example:
+```{r 只有任务}
+regress2<-day3_q_all.0 %>% 
+  select(swb_al, SGPS_al, gad_al, phq_al)%>%
+  cbind(., efa_task$score)
+write.csv(regress2,"regress2.csv")
+```
+
+```{r 只有任务+问卷}
+regress3<-day3_q_all.0 %>% 
+  select(swb_al, SGPS_al, gad_al, phq_al)%>%
+  cbind(., efa_all$score)
+write.csv(regress3,"regress3.csv")
+```
+
+```{r 问卷+任务}
+
+task_q_1_fa<-task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")%>%
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(.,cut=0.35)
+```
+
+```{r}
+task_q_z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/task_q.csv")%>%
+  select(-c("ID","X"))%>%
+  fa(.,fm="pa",nfactor=10,rotate="promax")%>%
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+task_q_z%>%print(.,cut=0.35)
+
+```
+
+```{r}
+EFA(
+  task_q_z,
+  vars = names(task_q_z),
+  1:149,
+ nfactors=10
+ 
+)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")%>%    #performed using maximum likelihood estimation，Factor scores were estimated using the tenBerge
+fa.diagram(fit1,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+# 因子得分
+
+```{r}
+
+task_q_1_fa<-task_q_1%>%fa(.,fm="pa",nfactor=10,rotate="promax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_1_fa,cut=0.35)
+
+
+```
+
+```{r}
+efa_all<-factor.scores(task_q_1,f=task_q_1_fa)
+efa_all$score
+```
+
+
+```{r}
+write.csv((efa_all$score),"task_q_efa.csv")
+```
+```{r 仅问卷}
+day3_q_z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/day3_q_z.csv")%>%
+  select(-starts_with("SGPS"), 
+         -starts_with("gad"), 
+         -starts_with("phq"), 
+         -starts_with("swb"))%>%
+  select(-c("ID","X"))
+EFA(
+  day3_q_z,
+  vars = names(day3_q_z),
+  1:137,
+ nfactors=8
+ 
+)
+```

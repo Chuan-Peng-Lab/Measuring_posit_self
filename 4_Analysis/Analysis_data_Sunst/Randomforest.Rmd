@@ -1,0 +1,93 @@
+---
+title: "Randomforest"
+output: html_document
+date: "2024-05-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+pacman::p_load("randomForest")
+```
+
+#
+```{r}
+# Create training (70%) and test (30%) sets for the AmesHousing::make_ames() data.
+# Use set.seed for reproducibility
+write.csv(RF_data,"RF_data.csv")
+set.seed(123)
+rf_split <- initial_split(RF_data, prop = .7)# 70%训练集，30%测试集
+rf_train <- training(rf_split)#训练集
+rf_test  <- testing(rf_split)#测试集
+```
+我们将多个决策树模型组合的过程称为随机森林。我们称之为bagging和boosting。它们是机器学习中使用的两种集成方法，通过组合多个模型的预测来提高单个模型的性能。
+Bagging：bagging是一种组合多个模型的方式；正如我们上面讨论的，它可以是任何模型，例如knn、朴素贝叶斯、逻辑等。但是，结果将是相同的，因为所有模型的数据输入都相同。为了解决这个问题，我们将使用引导聚合器。例如，如果我们有 10 个模型，每个模型都在训练数据的不同子集上进行训练。
+最终的预测通常是所有模型预测的平均数或多数票。除此之外，由于上述两点，Bagging 还可以减少方差。
+Boosting：相反，BOOSTING 通过组合弱学习器来产生强学习器。 在上图中，您可以看到它遵循顺序训练。Boosting 算法的类型:1.Adaboosting2.梯度提升3. XGBoost
+bootstrap训练集创建：How do we create multiple subsets when we have Rows and columns in the training dataset? and what is with replacement?
+Rows:
+When we say with thereplacement(refer to the image below for better understanding), in a subset, we can have the same row multiple times. as you can see in subset 2, the 2nd row is repeated 2 times, and in subset 3 1st row is repeated 2 times.【行：重复抽取同一行多次】
+
+Columns:
+
+1. For classification, it’s a square root of the total number of features
+Example: let’s say we have a total of 4 features for each subset we will have 
+The square root of 4= 2. which is 2 features for each tree.【分类，每棵树的特征是每个子集的特征值开方】
+2. Regression: total number of features and dividing them by 3 【回归，总特征除以3】
+Prediction:
+For classification, we use majority voting
+For regression, we use averaging
+基本回归树将数据集划分为更小的组，然后为每个子组拟合一个简单的模型（常量）。不幸的是，单树模型往往非常不稳定，并且预测变量较差。但是，通过引导聚合（装袋）回归树，这种技术可以变得非常强大和有效。此外，这为更复杂的基于树的模型（如随机森林和梯度提升机）提供了基础。
+1.  Given a training data set
+2.  Select number of trees to build (n_trees)
+3.  for i = 1 to n_trees do
+4.  |  Generate a bootstrap sample of the original data
+5.  |  Grow a regression/classification tree to the bootstrapped data
+6.  |  for each split do
+7.  |  | Select m_try variables at random from all p variables
+8.  |  | Pick the best variable/split-point among the m_try
+9.  |  | Split the node into two child nodes
+10. |  end
+11. | Use typical tree model stopping criteria to determine when a 
+    | tree is complete (but do not prune)
+12. end
+13. Output ensemble of trees 
+ Although not technically a hyperparameter, the number of trees needs to be sufficiently large to stabilize the error rate. A good rule of thumb is to start with 10 times the number of features.
+ The hyperparameter that controls the split-variable randomization feature of random forests is often referred to as mtry.[分类，每棵树的特征是每个子集的特征值开方;回归，总特征除以3]
+
+随机森林是建立在个体决策树上的;
+
+因此，大多数随机森林实现都有一个或多个超参数，允许我们控制单个树的深度和复杂性。
+这通常包括超参数，如节点大小、最大深度、终端节点的最大数量或允许额外分割所需的节点大小。
+节点大小可能是控制树复杂性最常见的超参数，大多数实现使用默认值1进行分类，5进行回归，因为这些值往往产生良好的结果(Di'az-Uriarte和De Andres 2006;Goldstein, Polley, and Briggs 2011).然而，Segal(2004)表明，如果你的数据有许多嘈杂的预测器，并且更高的try值表现最好，那么通过增加节点大小(即。(降低树的深度和复杂性)。
+此外，如果计算时间是一个问题，那么通常可以通过增加节点大小来大幅减少运行时间，并且对误差估计的影响很小，如图11.3所示。
+
+```{r Tuning the parameters}
+#调参，选择maxnodes和ntree
+# If training the model takes too long try setting up lower value of N
+
+X_train_ = rf_train[1:352 , 2:10]
+y_train_ = rf_train[1:352,11]#SGPS
+
+rf.all.factor <- randomForest(x = X_train_, y = y_train_,type = regression, ntree = 100,importance = TRUE)
+
+```
+
+```{r}
+plot(rf.all.factor)
+```
+```{r}
+randomForest::importance(rf.all.factor)
+```
+
+```{r}
+varImpPlot(rf.all.factor,sort = FALSE)
+```

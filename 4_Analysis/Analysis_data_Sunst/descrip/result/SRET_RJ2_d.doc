@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>ANOVA Table:</b></p>
+<p><pre>Dependent variable(s):&#9;d_prime</pre></p>
+<p><pre>Between-subjects factor(s):&#9;–</pre></p>
+<p><pre>Within-subjects factor(s):&#9;domain, valence</pre></p>
+<p><pre>Covariate(s):&#9;&#9;–</pre></p>
+<table>
+<thead>
+<tr> <th align='left'></th> <th align='right'><i>MS</i></th> <th align='right'><i>MSE</i></th> <th align='right'><i>df</i><sub>1</sub></th> <th align='right'><i>df</i><sub>2</sub></th> <th align='right'><i>F</i></th> <th align='right'><i>p</i></th> <th align='right'> </th> <th align='right'>η<sup>2</sup><sub>p</sub> [90% CI]</th> <th align='right'>η<sup>2</sup><sub>G</sub></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>domain</td> <td align='right'>4.806</td> <td align='right'>0.435</td> <td align='right'>1</td> <td align='right'>497</td> <td align='right'>11.050</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.022 [.006, .047]</td> <td align='right'>.003</td> </tr>
+<tr> <td align='left'>valence</td> <td align='right'>1.019</td> <td align='right'>0.475</td> <td align='right'>1</td> <td align='right'>497</td> <td align='right'>2.144</td> <td align='right'>.144</td> <td align='left'></td> <td align='right'>.004 [.000, .019]</td> <td align='right'>.001</td> </tr>
+<tr> <td align='left'>domain * valence</td> <td align='right'>2.173</td> <td align='right'>0.408</td> <td align='right'>1</td> <td align='right'>497</td> <td align='right'>5.323</td> <td align='right'>.021</td> <td align='left'>*</td> <td align='right'>.011 [.001, .031]</td> <td align='right'>.001</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. MSE = Mean Square Error.</p><p><br/><br/></p><p><b>Descriptive Statistics:</b></p>
+<table>
+<thead>
+<tr> <th align='left'>"domain"</th> <th align='left'>"valence"</th> <th align='right'><i>M</i></th> <th align='3'><i>SD</i></th> <th align='left'><i>n</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>ability</td> <td align='left'>Negative</td> <td align='right'>0.696</td> <td align='3'>0.873</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>ability</td> <td align='left'>Positive</td> <td align='right'>0.675</td> <td align='3'>0.891</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Negative</td> <td align='right'>0.532</td> <td align='3'>0.859</td> <td align='NA'>498</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Positive</td> <td align='right'>0.643</td> <td align='3'>0.842</td> <td align='NA'>498</td> </tr>
+</tbody>
+</table>
+<p>Total sample size: <i>N</i> = 503</p>
+</body>
+
+</html>

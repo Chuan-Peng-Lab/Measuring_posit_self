@@ -1,0 +1,873 @@
+---
+title: "rf"
+output: html_document
+date: "2024-03-04"
+---
+node purity: Accuracy can be determined both at the node level (which is called “node purity”) and at the forest level (which is called “prediction accuracy”).
+
+一旦RF构建了多个决策树，就可以评估模型中每个预测因子的“可变重要性”variable importance" (VI)。
+
+存在各种衡量指数的方法，但每种方法都试图通过纳入每个个体预测因子来评估模型的拟合程度。
+
+一旦这样的措施是平均减少杂质(也被称为“基尼指数Gini index”)。
+ 
+该指数简单地比较决策树在包含感兴趣的预测器之前和之后的预测精度。
+
+例如，如果我们省略图1中的“编程年数”节点，并简单地将所有没有统计焦虑的人归类为“是”，则有11人是归类为“否”将变成“是”。classified as "No" would now be classified as "Yes." 
+被归类为"否"的人现在会被归类为"是"
+
+如果我们将此预测的准确性与模型中包含“编程年数”节点的预测进行比较，就会告诉我们“编程年数”在预测结果方面有多重要。
+
+如果我们对所有树中的所有变量都这样做(并通过该变量用于分裂的次数来加权)，这将得到“杂质的平均减少mean decrease in impurity”，或基尼指数。
+```{r}
+SEE_adju_score<-read.csv("SEE_adju_score.csv")
+head(SEE_adju_score)
+ SEE_adju_score<-SEE_adju_score%>%
+  select(-c("X.1","X"))%>%
+  rename("焦虑抑郁"=PA2,
+         "拖延"=PA1,
+         "主观幸福感"=PA3)
+```
+
+
+```{r 只有量表}
+regress1<-SEE_q_socre%>% 
+  select(-c("X"))%>%
+  merge(SEE_adju_score,by="ID")
+head(regress1)
+write.csv(regress1,"regress1_1.csv")
+
+```
+
+```{r 只有任务}
+regress2<-task_SE_score%>% 
+  select(-c("X"))%>%
+  merge(SEE_adju_score,by="ID")
+head(regress2)
+write.csv(regress2,"regress2_2.csv")
+```
+
+```{r 只有任务+问卷}
+regress3<-task_q_score%>% 
+  select(-X)%>%
+  merge(SEE_adju_score,by="ID")
+write.csv(regress3,"regress3_1.csv")
+head(regress3)
+
+```
+
+
+####task_q
+```{r gad_phq}
+
+# 定义自变量（X）和因变量（y）
+X <- regress3%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress3$焦虑抑郁
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r SGPS}
+
+
+# 定义自变量（X）和因变量（y）
+X <- regress3%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress3$拖延
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r 主观幸福感}
+
+# 定义自变量（X）和因变量（y）
+X <- regress3%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress3$主观幸福感
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+```
+
+
+
+
+###SEE_q
+```{r gad_phq}
+
+# 定义自变量（X）和因变量（y）
+X <- regress1%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress1$焦虑抑郁
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r SGPS}
+
+
+# 定义自变量（X）和因变量（y）
+X <- regress1%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress1$拖延
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r 主观幸福感}
+
+# 定义自变量（X）和因变量（y）
+X <- regress1%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress1$主观幸福感
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+```
+
+##仅任务
+```{r gad_phq}
+
+# 定义自变量（X）和因变量（y）
+X <- regress2%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress2$焦虑抑郁
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r SGPS}
+
+
+# 定义自变量（X）和因变量（y）
+X <- regress2%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress2$拖延
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r 主观幸福感}
+
+# 定义自变量（X）和因变量（y）
+X <- regress2%>%
+  select(-c("拖延","焦虑抑郁","主观幸福感","ID"))
+y <- regress2$主观幸福感
+
+# 划分训练集和测试集
+set.seed(123) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+```
+
+
+
+
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=8)
+```
+
+
+在该随机森林模型分析中，通过对因变量的预测表现以及不同因子（此处标记为PA1、PA7等）在预测中的重要性进行了评估。以下是根据心理学学术规范对结果的中文描述性总结：
+
+均方根误差（RMSE）为0.65179：这个值表示预测误差或残差的标准差。预测误差是观察值和预测值之间的差异。较低的RMSE值表明模型与数据的拟合度更好。在这个上下文中，RMSE表明模型预测值与数据集中实际值之间的平均距离。
+
+决定系数（R方）为0.5702355：这是一个统计度量，用来衡量回归预测如何精确地逼近真实数据点。R方值为1表示回归预测完美地符合数据。在这个案例中，R方值约为0.57，表明大约57%的因变量的方差可以通过模型来解释，这是一个中等水平的解释力。
+
+特征重要性：
+
+%IncMSE：这一列显示了当从模型中省略每个变量时，均方误差（MSE）的百分比增加。省略导致MSE显著增加的变量被认为更重要。例如，PA1是最重要的特征，因为其排除导致MSE增加最多（约29%）。
+IncNodePurity：这一指标根据变量在分裂节点时降低的不纯度（对于回归任务，通常指的是方差减少）来指示每个变量的重要性。较高的值表明该变量显著改善了模型的决策过程。同样，基于这一标准，PA1和PA7被显示为高度重要。
+综上所述，该随机森林输出表明模型具有中等的预测能力，某些因子（尤其是PA1和PA7）比其他因子在预测因变量方面更为重要。这些因子可能代表与因变量有强关系的潜在模式或构造，是进一步分析或决策过程中的关键关注领域。
+
+
+```{r 只有任务}
+regress2
+# 定义自变量（X）和因变量（y）
+X <- regress2[, c("PA1", "PA4",  "PA3", "PA2")]
+y <- regress2$gad_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=4)
+```
+
+均方根误差（RMSE）为0.9762905：这表示模型预测值与实际值之间的标准偏差较大，模型的预测精度较低。RMSE较高意味着模型在预测时存在较大的误差。
+
+决定系数（R^2）为0.0181185：这是衡量模型预测能力的统计指标，R^2值接近0表明模型对因变量的方差解释程度非常低，即模型的解释力非常有限。在本例中，仅有约1.8%的因变量方差能够被模型解释。
+
+特征重要性：
+
+%IncMSE：显示了从模型中移除某一特征时，均方误差（MSE）的百分比变化。负值（如PA1和PA4的-1.374391和-1.961787）意味着移除这些特征实际上减少了模型的预测误差，这在理论上是不常见的，可能指示这些变量与模型预测性能的负相关或模型过度拟合。
+IncNodePurity：反映了每个特征在分裂节点时对减少不纯度（对于回归任务通常是方差的减少）的贡献。即使模型的整体预测性能不高，PA3和PA2的正值表明这些特征在模型中相对重要，对于解释因变量的变异有一定的贡献。
+综上所述，该随机森林模型的结果表明模型的预测能力较弱，决定系数低，表明模型对因变量变异的解释能力有限。特征重要性指标显示，某些特征可能对模型的预测性能产生了负面影响。这些结果提示在心理学研究中应用此模型时需要谨慎，可能需要进一步调整模型参数或考虑使用其他模型以提高预测准确性。
+
+
+
+
+
+
+
+
+```{r 只有任务+问卷}
+regress3
+# 定义自变量（X）和因变量（y）
+X <- regress3[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6","PA9","PA10","PA11")]
+y <- regress3$gad_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=11)
+```
+
+
+####phq
+```{r}
+# 定义自变量（X）和因变量（y）
+X <- regress1[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6")]
+y <- regress1$phq_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=8)
+```
+
+
+```{r 只有任务}
+regress2
+# 定义自变量（X）和因变量（y）
+X <- regress2[, c("PA1", "PA4",  "PA3", "PA2")]
+y <- regress2$phq_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=4)
+```
+
+
+```{r 只有任务+问卷}
+regress3
+# 定义自变量（X）和因变量（y）
+X <- regress3[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6","PA9","PA10","PA11")]
+y <- regress3$phq_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=11)
+```
+
+####swb
+```{r 问卷}
+# 定义自变量（X）和因变量（y）
+X <- regress1[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6")]
+y <- regress1$swb_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=8)
+```
+
+
+```{r 只有任务}
+regress2
+# 定义自变量（X）和因变量（y）
+X <- regress2[, c("PA1", "PA4",  "PA3", "PA2")]
+y <- regress2$swb_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=4)
+```
+
+
+```{r 只有任务+问卷}
+regress3
+# 定义自变量（X）和因变量（y）
+X <- regress3[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6","PA9","PA10","PA11")]
+y <- regress3$swb_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=11)
+```
+
+####SGPS
+```{r 问卷}
+# 定义自变量（X）和因变量（y）
+X <- regress1[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6")]
+y <- regress1$SGPS_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=8)
+```
+
+
+```{r 只有任务}
+regress2
+# 定义自变量（X）和因变量（y）
+X <- regress2[, c("PA1", "PA4",  "PA3", "PA2")]
+y <- regress2$SGPS_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+```
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=4)
+```
+
+
+```{r 只有任务+问卷}
+regress3
+# 定义自变量（X）和因变量（y）
+X <- regress3[, c("PA1", "PA7", "PA4", "PA8", "PA5", "PA3", "PA2", "PA6","PA9","PA10","PA11")]
+y <- regress3$SGPS_al
+
+# 划分训练集和测试集
+set.seed(42) # 为了可重复性设置随机种子
+trainIndex <- sample(1:nrow(X), 0.8*nrow(X)) # 随机选择80%的数据作为训练集
+X_train <- X[trainIndex, ]
+y_train <- y[trainIndex]
+X_test <- X[-trainIndex, ]
+y_test <- y[-trainIndex]
+
+# 训练随机森林模型
+rf_model <- randomForest(x = X_train, y = y_train, ntree = 500, importance = TRUE)
+
+# 在测试集上进行预测
+y_pred <- predict(rf_model, newdata = X_test)
+
+# 评估模型性能
+mse <- mean((y_pred - y_test)^2)
+rmse <- sqrt(mse)
+cat("RMSE:", rmse, "\n")
+
+# R^2
+r2 <- cor(y_pred, y_test)^2
+cat("R^2:", r2, "\n")
+
+# 显示变量的重要性
+importance <- importance(rf_model)
+cat("Feature Importances:\n")
+print(importance)
+
+
+```
+
+```{r}
+varImpPlot(rf_model, sort=TRUE, n.var=11)
+```
+

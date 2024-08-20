@@ -1,0 +1,455 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>SRE - Experiment</title>
+    <script src="https://unpkg.com/jspsych@7.1.2"></script>
+	  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-likert@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.0"></script>
+
+    <script src="js/plugin-survey-text-timeout.js"></script>
+
+    <script src="js/stimuli_task_1.js"></script>
+    <script src="js/stimuli_task_2.js"></script>
+
+    <!-- Pavlovia plugin 2021.12 requires jQuery -->
+    <!-- 
+        <script type="text/javascript" src="lib/vendors/jquery-2.2.0.min.js"></script>
+        <script type="text/javascript" src="js/jspsych-7-pavlovia-2021.12.js"></script>
+    -->
+	
+    <link href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://unpkg.com/@jspsych/plugin-survey@0.1.1/css/survey.css">
+
+</head>
+
+<body>
+
+<script>
+
+    /* VERSION SETUP */
+    var version = "A"  // "A" or "B" they contain different adjectives
+
+
+
+
+    /* initialize jsPsych */
+    var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+
+    var timeline = [];
+
+    /*
+    //init connection with pavlovia.org 
+    var pavlovia_init = {
+      type: jsPsychPavlovia,
+      command: "init"
+    };
+    timeline.push(pavlovia_init);
+    */
+
+    var enter_fullscreen = {
+      type: jsPsychFullscreen,
+      fullscreen_mode: true
+    }
+    
+    var exit_fullscreen = {
+      type: jsPsychFullscreen,
+      fullscreen_mode: false,
+      delay_after: 0
+    }
+
+    // General settings
+    var T2_time_limit = 120000; // ms - should be 300000 for 5 minutes
+    var T3_recall_duration = 120000 // ms
+    
+
+    /*
+    ***************************************
+    ***** SETUP AND INTRODUCTION
+    ***************************************
+    */
+
+    /* Choose version */
+    var intro_choose_version = {
+        type: jsPsychHtmlButtonResponse,      
+      stimulus: `<div style="width:700px;">
+        <h1>EXPERIMENT</h1><hr>
+        <p><b>Think of a specific friend of yours.</b></p>
+        <p>In this task you will see adjectives. Your task will be to judge which of these adjectives describe you 
+            and your friend.</p>
+        </div>
+        `,
+      choices: ['Start the experiment'],
+      data: {
+          task_id: "task_1", 
+          screen_id: "instructions",
+          time_stamp: Date(),
+        },
+        on_finish: function(data) {
+            var version = data.response
+            console.log('Version selected: '+(version+1))
+        }
+    };
+
+    /* Push the starting page */
+    timeline.push(intro_choose_version);
+    
+    /* set up variables */
+    const start_time_total = new Date();
+
+    // Enter fullscreen mode
+    timeline.push(enter_fullscreen);
+
+    /*
+    ***************************************
+    ***** TASK 1: EVALUATE ADJECTIVES
+    ***************************************
+    */
+
+    /* TASK 1 SETUP */
+    var fixation_duration_T1 = 500   // in ms 
+
+    // Choose stimuli version and load from the stimuli_task_1.js file
+    if (version === "A") {
+        var adjectives_list = list_A
+    } else if (version === "B") {
+        var adjectives_list = list_B
+    }
+
+    // Randomize the order of test stimuli
+    var test_stimuli = jsPsych.randomization.repeat(adjectives_list,1)
+    var n_trials = test_stimuli.length;
+
+
+    /* INSTRUCTIONS FOR TASK 1  */
+    var instructions_task_1 = {
+      type: jsPsychHtmlButtonResponse,      
+      stimulus: `<div style="width:700px;">
+        <h1>TASK 1</h1>
+        <p><b>Think of a specific friend of yours.</b></p>
+        <p>In this task you will see adjectives. Your task will be to say which of these adjectives describe you 
+            and your friend.</p>
+        <p>Later you will be asked to recall some of this information. However, please DO NOT use any memorization techniques when doing this task. </p>
+        </div>
+        `,
+      choices: ['Continue'],
+      data: {
+          task_id: "task_1", 
+          screen_id: "instructions",
+          time_stamp: Date(),
+        }
+    };
+    timeline.push(instructions_task_1);
+
+    /* FIXATION */
+    var fixation_T1 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<p style="font-size: 60px">+</p>',
+        choices: 'a',
+        trial_duration: fixation_duration_T1,
+        data: {
+          task_id: "task_1", 
+          screen_id: "fixation",
+          time_stamp: Date()
+        }
+    }
+
+    /* PRESENTATING ADJECTIVES */
+    var present_adjective = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function() {
+            let text_q
+            if (jsPsych.timelineVariable('person') === 'You') {
+                text_q = 'Are you ';
+            } else if (jsPsych.timelineVariable('person') === 'Friend') {
+                text_q = 'Is your friend '
+            };
+            text_trait = '<p style="font-size: 40px">' + text_q + jsPsych.timelineVariable('adjective').toLowerCase() + `?</p>`
+            // text_trait_old = `<p>Does this adjective describe: </p>
+            // <p style="font-size: 40px">` + jsPsych.timelineVariable('person') + `</p>
+            // <p style="font-size: 60px">` + jsPsych.timelineVariable('adjective') + `?</p>`
+            return text_trait 
+        },
+        choices: ['Yes', 'No'],
+        data: {
+            task_id: "task_1", 
+            screen_id: "present_adjective",
+            time_stamp: Date(),
+            person: jsPsych.timelineVariable('person'),
+            word: jsPsych.timelineVariable('adjective')
+        }
+    }
+
+    /* change the test into an output to the timeline */
+    var test_procedure = {
+        timeline: [fixation_T1, present_adjective],
+        timeline_variables: test_stimuli
+    }
+    
+    /* add test_procerure to the timeline */
+    timeline.push(test_procedure);
+
+    /* End of task 1 */
+    var task1_end = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: "<p>You have completed the first part of the experiment</p>",
+        choices: ["Continue"],
+        data: {
+          task_id: "task_1", 
+          screen_id: "end_of_task_1",
+          time_stamp: Date()
+        },
+        on_finish: function(data) {
+          end_time = new Date()
+          data.duration = (end_time - start_time_total)/1000
+          console.log('Time spent until the end of Task 1: ' + data.duration)
+        }
+    };
+
+    timeline.push(task1_end)
+
+
+    /*
+    ***************************************
+    ***** TASK 2: Filler task: arithmetics
+    ***************************************
+    */
+
+    /* set up variables */
+	//var T2_time_limit = 60000; // ms - should be 300000 for 5 minutes
+    var start_time;
+    var end_test_timer;
+    var trial_count = 0;
+    var fixation_duration_T2 = 500   // in ms
+    var feedback_duration_T2 = 800   // in ms
+    var number_of_points  = 0   // initial number of points
+
+    // LOAD TEST STUMILI FROM THE STIMULI_T1.JS FILE
+    var test_stimuli_task_2 = test_stimuli_from_file_task_2
+    test_stimuli_task_2 = jsPsych.randomization.repeat(test_stimuli_task_2,1)
+    var n_trials = test_stimuli_task_2.length;
+
+
+    /* INSTRUCTIONS FOR TASK 2  */
+    var instructions_T2 = {
+      type: jsPsychHtmlButtonResponse,      
+      stimulus: `<div style="width:700px">
+        <h1>TASK 2</h1>
+        <p>Your task in this part of the experiment is to judge if the sum on the left or on the right is bigger, or if they are the same by clicking on a corresponding button.</p> 
+        <p></p><p></p>
+        <p>For example: if you see 4+4+8 on the left and 8+2+1 on the right then you need to click on 4+4+8, because 4+4+8 = 16 and 8+2+1 = 11, and 16 is bigger than 11.</p>
+        <p></p><p></p>
+        <p>For each correct answer you get 1 point and for each mistake you lose 1 point.<p> 
+        <p><div style="color:rgb(0,0,255)"><b>Try to earn as many points as possible in 2 minutes.</b></div></p>
+        <p></p>
+        </div>`,
+      choices: ['Start the task'],
+      data: {
+          task_id: "task_2", 
+          screen_id: "instructions",
+          time_stamp: Date()
+      }
+    };
+    timeline.push(instructions_T2);
+
+    /* FIXATION */
+    var fixation_T2 = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<p style="font-size: 60px">+</p>',
+        choices: 'a',
+        data: {
+            task_id: "task_2",
+            screen_id: "fixation",
+            time_stamp: Date()
+        },
+        trial_duration: fixation_duration_T2
+    }
+
+    /* define test trials and implement time limit */
+    var test_trials_T2 = {
+        type: jsPsychHtmlButtonResponse,   // jsPsychHtmlKeyboardResponse
+        //stimulus: jsPsych.timelineVariable('stimulus'),
+        stimulus: `<div style="font-size: 30px"><p>Which sum is bigger?</p><p></p></div>`,
+        choices: [ jsPsych.timelineVariable('left_string'), 'They are equal', jsPsych.timelineVariable('right_string')],
+        data: {
+            task_id: "task_2",
+            screen_id: "test_trial",
+            time_stamp: Date(),
+            task: 'response',
+            TASK_2_DATA: 1,
+            left_string: jsPsych.timelineVariable('left_string'),
+            right_string: jsPsych.timelineVariable('right_string'),
+            left_sum: jsPsych.timelineVariable('left_sum'),
+            right_sum: jsPsych.timelineVariable('right_sum'),
+            correct_response: jsPsych.timelineVariable('correct_answer_t2')
+        },
+        on_load: function() {
+            trial_count++;
+            // we need to set up the timer to end the current timeline after a certain duration, but only on the first trial
+            if (trial_count == 1) {
+                start_time = performance.now();
+                var end_test_timer = setTimeout(function() {
+                    // this stuff is just for testing
+                    var end_time = performance.now();
+                    var elapsed_time = end_time - start_time;
+                    console.log("elapsed time: ", elapsed_time);
+                    // this function is all you need to end the current timeline
+                    jsPsych.endCurrentTimeline();
+                    // this function ends the current trial 
+                    jsPsych.finishTrial({status: "ended early"});
+                }, T2_time_limit);
+            }
+        }, 
+        on_finish: function(data) {
+            // we also need to cancel the setTimeout timer if the person gets all the way through the timeline before 
+            // time_limit is reached, otherwise endCurrentTimeline will fire during the next timeline - not good!!
+            if (trial_count == n_trials) {
+                clearTimeout(end_test_timer);
+            }
+            // Check if the response was correct or not
+            if (data.response + 1 == data.correct_response) {
+                data.accuracy = 1
+                number_of_points = number_of_points + 1
+                data.points = number_of_points
+            } else {
+                data.accuracy = 0 
+                number_of_points = number_of_points - 1
+                data.points = number_of_points
+            }
+        }
+    }
+
+    /* FEEDBACK  */
+    var feedback_T2 = {
+        data: { 
+            task_id: "task_2",
+            screen_id:"feedback",
+            time_stamp: Date() 
+        },
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function() {
+            // if accuracy is 1 report correct, else report incorrect
+            var last_trial_accuracy = jsPsych.data.get().last(1).values()[0].accuracy
+            var points = jsPsych.data.get().last(1).values()[0].points
+            if (last_trial_accuracy==1) {
+                var feedback_message = '<div style="font-size: 30px; color:rgb(0,155,0)"><p> Correct </p></div><div style="font-size: 18px"><p>Your points: ' + points + '</p></div>'
+                return feedback_message
+            } else {
+                var feedback_message = '<div style="font-size: 30px; color:rgb(255,0,0)"><p> Wrong </p></div><div style="font-size: 18px"><p>Your points: ' + points + '</p></div>'
+                return feedback_message
+            }
+        },
+        choices: 'a',
+        trial_duration: feedback_duration_T2
+    }
+    
+    /* change the test into an input to the timeline */
+    var test_procedure_T2 = {
+        timeline: [fixation_T2, test_trials_T2, feedback_T2],
+        timeline_variables: test_stimuli_task_2
+    }
+    
+    /* add test_procerure to the timeline */
+    timeline.push(test_procedure_T2);
+
+    /* Add timeout to the timeline */
+    var end_of_task_2 = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function() {
+            var text_message = "<p><b>End of task 2</b></p><p>You have obtained " + (number_of_points+1) + " points</p>"
+            return text_message
+        },
+        choices: [ "Continue" ],
+        data: {
+            task_id: "task_2",
+            screen_id: "end_of_task_2",
+            time_stamp: Date()
+        }
+    }
+    timeline.push(end_of_task_2);
+
+
+
+    /*
+    ***************************************
+    ***** TASK 3: Recall
+    ***************************************
+    */
+
+    // Task 3 instructions and response form: requires a special survey plugin with timeout
+    var recall_words = {
+        type: jsPsychSurveyTextTimeout, 
+        questions: [
+            {prompt: `<h1>TASK 3</h1>
+            <p>Write as many adjectives as you can remember from the first part of the experiment. Separate them by commas (,)</p>
+            <p><b>You have 2 minutes to do it!</b></p>`, rows: 15}
+        ],
+        data: {
+          task_id: "task_3", 
+          screen_id: "recall_words",
+          time_stamp: Date()
+        },
+        trial_duration: T3_recall_duration
+    }
+
+    /* add task 3 to the timeline */
+    timeline.push(recall_words);
+
+    /* End of task 3 */
+    timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: "<p>You have completed the third part of the experiment</p>",
+        choices: ["Continue"],
+        data: {
+          task_id: "task_3", 
+          screen_id: "end_of_task_3",
+          time_stamp: Date()
+        },
+        on_finish: function(data) {
+          end_time = new Date()
+          data.duration = (end_time - start_time_total)/1000
+          console.log('Time spent until the end of Task 3: ' + data.duration)
+        }
+    });
+
+
+    // Exit fullscreen mode
+    timeline.push(exit_fullscreen);
+
+    /* End message */
+    var end_experiment = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: "<p>Thank you for participation!</p><p>You completed the experiment</p>",
+        choices: ["Finish the experiment"],
+        data: {
+            task_id: "experiment_end", 
+            screen_id: "end_of_experiment",
+            time_stamp: Date()
+        }, 
+        on_finish: function(data) {
+          end_time = new Date()
+          data.duration = (end_time - start_time_total)/1000
+          console.log('Time spent until the end of the experiment: '+data.duration)
+        } 
+    };
+
+    // Exit fullscreen mode
+    timeline.push(end_experiment);
+    
+    /* start the experiment */
+    jsPsych.run(timeline);
+
+
+</script>
+
+</body>
+
+</html>

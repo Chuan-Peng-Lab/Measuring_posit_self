@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Day1</title>
+  <!-- CSS: jspsych -->
+  <script src='./jspsych-7.3.1/plugins/axios.min.js'></script>
+  <link href="./jspsych-7.3.1\css\jspsych.css" rel="stylesheet" type="text/css">
+
+  <!-- JS: Basic -->
+  <script src="./jspsych-7.3.1\jspsych.js"></script>
+  <script src='./jspsych-7.3.1/js/jquery.js'></script>
+
+
+  <script src="./jspsych-7.3.1\plugins/plugin-fullscreen.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-instructions.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-call-function.js"></script>
+  <!-- JS: Survey -->
+  <script src="./self-report\surveys\plugin-survey.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-html-form.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-likert.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-multi-choice.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-multi-select.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-survey-text.js"></script>
+  <script src="./self-report/plugin-survey-template.js"></script>
+  <script src="./self-report/plugin-survey-template copy.js"></script>
+  <!-- JS: Stimulus-Response -->
+  <script src="./jspsych-7.3.1\plugins/plugin-html-button-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-html-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-html-slider-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-image-button-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-image-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-image-slider-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-audio-button-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-audio-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-audio-slider-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-video-button-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-video-keyboard-response.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-preload.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-video-slider-response.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-resize.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-fullscreen.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-call-function.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-virtual-chinrest.js"></script>
+  <script src="./jspsych-7.3.1/plugins/plugin-instructions.js"></script>
+  <!-- JS: Categorization Task -->
+  <script src="./jspsych-7.3.1\plugins/plugin-categorize-html.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-categorize-image.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-iat-html.js"></script>
+  <script src="./jspsych-7.3.1\plugins/plugin-iat-image.js"></script>
+  <script src="./jspsych-psychophysics-3.4.0/jspsych-psychophysics.js"></script>
+  <script src="./jspsych-7.3.1/js/jSignature/jSignature.min.js"></script>
+  <script src="./shuffle-seed.js"></script>
+  <script src="./shuffle-seed.min.js"></script>
+  <script src='./jspsych-7.3.1/plugins/extension_naodao-2021-12.js'></script>
+  <script src='./jspsych-7.3.1\plugins\plugin-call-function.js'></script>
+
+  <head>
+    <style>
+      body {
+        background-color: rgb(128, 128, 128);
+        /*背景灰色*/
+        color: white;
+        font-size: 22px;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      p {
+        font-size: 22px;
+        line-height: 20px;
+      }
+    </style>
+  </head>
+</head>
+
+<body>
+
+  <!-- Load template experiment -->
+  <script src="./initJspsy.js"></script>
+  <script src="./github.js"></script>
+  <script src="./iat_demo.js"></script>
+  <script src="./self-report/surveys/selected_items.js"></script>
+  <script src="./self-report/surveys/selfesteem.js"></script>
+  <script src="./self-report/surveys/coreself.js"></script>
+  <script src="./ALT_1.js"></script>
+  <script src="./self-report/surveys/NPI.js"></script>
+  <script src="./self-report/surveys/hsns.js"></script>
+  <script src="./self-report/surveys/SGPS.js"></script>
+
+
+</body>
+
+<script>
+
+  var timeline = [];
+
+  var rest_time = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "<p style='color:white;'>现在是休息时间，当您结束休息后，您可以点击 结束休息 按钮 继续。</p>",
+    choices: ["结束休息"],
+    data: {
+      task_id: "rest_time",
+      screen_id: "rest_time",
+      time_stamp: Date()
+    },
+    on_load: () => {
+      $("body").css("cursor", "default");
+    },
+    on_finish: function (data) {
+      end_time = new Date()
+
+    }
+  };
+  var mysave = {
+    type: jsPsychCallFunction,
+    func: function () {
+      jsPsych.data.get().addToAll(info).localSave("csv", `rawdata_${info["subj_idx"]}_day1.csv`); //原始数据读取和保存
+      let DOM = document.getElementById("jspsych-content");
+      DOM.innerHTML = "<p>正在保存数据中，请稍后</p>";
+      
+    }
+  };
+
+
+  timeline.push(welcome);
+  timeline.push(information);
+  timeline.push(open_fullscreen);
+  //timeline.push(chinrest);
+  timeline.push(selfesteem);
+  timeline.push(coreself);
+  timeline.push(preload);
+
+ if (jsPsych.randomization.sampleBernoulli(0.5)) {
+    timeline.push(main_IAT);
+    timeline.push(rest_time);
+    timeline.push(Instructions0);//Instructions0 of ALT_1
+    timeline.push(ALT_1);
+  } else{
+    timeline.push(Instructions0);//Instructions0 of ALT_1
+    timeline.push(ALT_1);
+    timeline.push(rest_time);
+    timeline.push(main_IAT);
+  }
+
+  timeline.push(rest_time);
+  timeline.push(SGPS);
+  timeline.push(NPI);
+  timeline.push(hsns);
+  var after = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `
+    <p>第二阶段的实验部分已结束，后续还有一个有关此阶段实验相关信息的问题反馈的问卷。</p>
+    <p>请不要关闭页面，随后将自动跳转到问题反馈页面。</p>
+    <p>系统将自动下载一个.csv文件，该文件为您的实验数据的备份文件。请不要对其进行任何更改，请不要随便删除，将它保存在您的系统文件夹中。</p>
+    <p>如果数据遗失，我们将联系您获取该备份文件。</p>
+    <p>本次实验按照您的作答情况发放报酬！</p>
+    <p> 若数据存在以下情形，将被视为无效数据。
+    （1）数据间存在明显的相互矛盾；
+    （2）词汇分类任务有超过10%数据的作答时间低于300ms，或大量次数超过10000ms；
+    （3）图形标签匹配任务的单个条件的正确率低于60%。</p>
+    <p>感谢您的配合！</p>`,
+  choices: 'ALL_KEYS',
+  trial_duration: 450,
+  response_ends_trial: false,
+
+};
+ timeline.push(after);
+  timeline.push(mysave);
+  timeline.push(finish);
+  jsPsych.run(timeline);
+
+</script>
+
+</html>
