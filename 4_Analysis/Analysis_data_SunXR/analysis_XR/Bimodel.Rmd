@@ -1,0 +1,51 @@
+---
+title: "Bimodel"
+author: "SunXinRu"
+date: "2025-06-28"
+output: html_document
+---
+```{r}
+# 安装所需包（如未安装）
+#install.packages(c("mclust", "ggplot2", "dplyr"))
+
+# 加载包
+library(mclust)
+library(ggplot2)
+library(dplyr)
+```
+```{r}
+# 使用主成分提取第一主成分
+pca_res <- prcomp(data_z, center = TRUE, scale. = TRUE)
+pc1_scores <- pca_res$x[,1]  # 第一主成分得分
+```
+```{r}
+# 拟合高斯混合模型（最多两个组）
+gmm_model <- Mclust(pc1_scores, G = 2)
+
+# 输出模型信息
+summary(gmm_model)
+```
+```{r}
+# 每个观测属于哪个组
+classification <- gmm_model$classification  # 1或2
+posterior_prob <- gmm_model$z  # 每行两个值，表示属于每组的概率
+
+# 整合进数据框
+result_df <- data.frame(
+  PC1 = pc1_scores,
+  Group = as.factor(classification),
+  Prob1 = posterior_prob[,1],
+  Prob2 = posterior_prob[,2]
+)
+
+head(result_df)
+```
+```{r}
+# 绘制密度图，按类别着色
+ggplot(result_df, aes(x = PC1, fill = Group)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Bimodal Distribution in PC1 (Gaussian Mixture Model)",
+       x = "PC1 Score", y = "Density") +
+  theme_minimal()
+```
+

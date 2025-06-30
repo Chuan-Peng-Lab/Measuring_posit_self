@@ -38,6 +38,47 @@ corrplot(
 )
 ```
 
+```{r}
+par(
+  family = "Times New Roman",       # 字体
+  mar = c(2, 2, 2, 2),              # 边距（下、左、上、右）
+  mgp = c(2, 0.5, 0),              # 坐标轴文字、刻度位置
+  cex.axis = 0.8,                  # 坐标轴刻度字体大小
+  font = 2                         # 粗体
+)
+
+# 定义颜色梯度（模板样式：浅米色 → 深橘红）
+col <- colorRampPalette(c("#fffff1", "#fbbf90", "#f28556", "#F16913", "#d34738"))(100)
+
+# 计算相关矩阵（皮尔逊相关系数）
+cor_matrix <- cor(data_al, method = "pearson")
+
+# 绘制相关系数图（模板样式）
+corrplot(
+  cor_matrix,
+  method = "circle",              # 圆圈形式
+  type = "lower",                 # 显示下三角
+  col = col,                      # 使用模板色带
+  tl.col = "black",               # 标签颜色
+  tl.cex = 0.9,                   # 标签字体大小
+  tl.srt = 45,                    # 标签旋转角度
+  cl.cex = 0.8,                   # 图例字体大小
+  #addCoef.col = "black",          # 添加系数文字（黑色）
+  #number.cex = 0.75,              # 系数字体大小
+  #number.digits = 2,              # 保留两位小数
+  addgrid.col = NA,               # 无网格线
+  is.corr = TRUE,                 # 标记为相关矩阵
+  col.lim = c(-1, 1),             # 颜色范围（适用于负相关）
+  diag = F,                    # 显示对角线
+  outline = TRUE                  # 添加边框
+)
+
+# 可选：标题
+title("自我报告 + 认知任务：相关系数热图", line = 1.5, family = "Times New Roman", font.main = 2)
+
+```
+
+
 #自我报告
 ```{r}
 cor_matrix <- cor(data_al[,1:16], method = "pearson")  # 可选方法：pearson/spearman/kendall
@@ -53,6 +94,46 @@ corrplot(
 )
 ```
 
+```{r}
+par(
+  family = "Times New Roman",       # 字体
+  mar = c(2, 2, 2, 2),              # 边距（下、左、上、右）
+  mgp = c(2, 0.5, 0),              # 坐标轴文字、刻度位置
+  cex.axis = 0.8,                  # 坐标轴刻度字体大小
+  font = 2                         # 粗体
+)
+
+# 定义颜色梯度（模板样式：浅米色 → 深橘红）
+col <- colorRampPalette(c("#fffff1", "#fbbf90", "#f28556", "#F16913", "#d34738"))(100)
+
+# 计算相关矩阵（皮尔逊相关系数）
+cor_matrix_q <- cor(data_al[,1:16], method = "pearson") 
+
+# 绘制相关系数图（模板样式）
+corrplot(
+  cor_matrix_q,
+  method = "circle",              # 圆圈形式
+  type = "lower",                 # 显示下三角
+  col = col,                      # 使用模板色带
+  tl.col = "black",               # 标签颜色
+  tl.cex = 0.9,                   # 标签字体大小
+  tl.srt = 45,                    # 标签旋转角度
+  cl.cex = 0.8,                   # 图例字体大小
+  #addCoef.col = "black",          # 添加系数文字（黑色）
+  #number.cex = 0.75,              # 系数字体大小
+  #number.digits = 2,              # 保留两位小数
+  addgrid.col = NA,               # 无网格线
+  is.corr = TRUE,                 # 标记为相关矩阵
+  col.lim = c(-1, 1),             # 颜色范围（适用于负相关）
+  diag = F,                    # 显示对角线
+  outline = TRUE                  # 添加边框
+)
+
+# 标题
+title("自我报告：相关系数热图", line = 1.5, family = "Times New Roman", font.main = 2)
+```
+
+
 #认知任务
 ```{r}
 cor_matrix <- cor(data_al[, 17:30], method = "pearson")  # 可选方法：pearson/spearman/kendall
@@ -67,6 +148,47 @@ corrplot(
   title = "认知任务相关系数热图"
 )
 ```
+
+```{r}
+par(
+  family = "Times New Roman",       # 字体
+  mar = c(2, 2, 2, 2),              # 边距（下、左、上、右）
+  mgp = c(2, 0.5, 0),              # 坐标轴文字、刻度位置
+  cex.axis = 0.8,                  # 坐标轴刻度字体大小
+  font = 2                         # 粗体
+)
+
+# 定义颜色梯度（模板样式：浅米色 → 深橘红）
+col <- colorRampPalette(c("#fffff1", "#fbbf90", "#f28556", "#F16913", "#d34738"))(100)
+
+# 计算相关矩阵（皮尔逊相关系数）
+cor_matrix_task <- cor(data_al[, 17:30], method = "pearson") 
+
+# 绘制相关系数图（模板样式）
+corrplot(
+  cor_matrix_task,
+  method = "circle",              # 圆圈形式
+  type = "lower",                 # 显示下三角
+  col = col,                      # 使用模板色带
+  tl.col = "black",               # 标签颜色
+  tl.cex = 0.9,                   # 标签字体大小
+  tl.srt = 45,                    # 标签旋转角度
+  cl.cex = 0.8,                   # 图例字体大小
+  #addCoef.col = "black",          # 添加系数文字（黑色）
+  #number.cex = 0.75,              # 系数字体大小
+  #number.digits = 2,              # 保留两位小数
+  addgrid.col = NA,               # 无网格线
+  is.corr = TRUE,                 # 标记为相关矩阵
+  col.lim = c(-1, 1),             # 颜色范围（适用于负相关）
+  diag = F,                    # 显示对角线
+  outline = TRUE                  # 添加边框
+)
+
+# 标题
+title("认知任务：相关系数热图", line = 1.5, family = "Times New Roman", font.main = 2)
+```
+
+
 
 #保留一个变量时其他变量的预测程度（10折交叉验证）
 ```{r}
@@ -166,6 +288,13 @@ write.csv(pca_q_scores, "PCA1.csv", row.names = FALSE)
 ```
 #贝叶斯因子确定最佳因子数，EFA分析
 ```{r}
+
+KMO(all_data_merged)          # Kaiser-Meyer-Olkin 检验
+cortest.bartlett(cor(all_data_merged), n = nrow(all_data_merged))  # 巴特利特球形检验
+#检查共性
+efa_result_merged$communality # 可设置阈值（如 < 0.3）筛除共性过低的变量
+
+
 # 根据贝叶斯信息准则（BIC）确认最佳因子数（8）
 
 fa_result <- list()
@@ -225,7 +354,9 @@ mantel <- mantel_test(
     pd = cut(p, breaks = c(-Inf, 0.005, 0.01, 0.05, Inf),
              labels = c("< 0.005", "0.005 - 0.01", "0.01 - 0.05", ">= 0.05"))
   )
-
+# 过滤 Mantel 数据，保留显著相关的连线
+mantel_filtered <- mantel %>%
+  filter(p < 0.005 & r >= 0.2)  # 只保留显著的连线
 # 计算相关矩阵
 cor_matrix <- correlate(data_q_adjusted)
 
@@ -236,7 +367,7 @@ p <- qcorrplot(cor_matrix, type = "upper", diag = FALSE, grid_col = NA) +
              shape = 21, stroke = 0.35, color = "black") +
   scale_size(range = c(1, 8), guide = "none") +
   new_scale("size") +
-  geom_couple(data = mantel,
+  geom_couple(data = mantel_filtered,
               aes(color = pd, size = rd),
               label.size = 3.88,
               label.family = "",
@@ -316,7 +447,9 @@ mantel <- mantel_test(
     pd = cut(p, breaks = c(-Inf, 0.005, 0.01, 0.05, Inf),
              labels = c("< 0.005", "0.005 - 0.01", "0.01 - 0.05", ">= 0.05"))
   )
-
+# 过滤 Mantel 数据，保留显著相关的连线
+mantel_filtered_q <- mantel %>%
+  filter(p < 0.005 & r >= 0.2)  # 只保留显著的连线
 # 计算相关矩阵
 cor_matrix <- correlate(data_q_adjusted)
 
@@ -327,7 +460,7 @@ p <- qcorrplot(cor_matrix, type = "upper", diag = FALSE, grid_col = NA) +
              shape = 21, stroke = 0.35, color = "black") +
   scale_size(range = c(1, 8), guide = "none") +
   new_scale("size") +
-  geom_couple(data = mantel,
+  geom_couple(data = mantel_filtered_q ,
               aes(color = pd, size = rd),
               label.size = 3.88,
               label.family = "",

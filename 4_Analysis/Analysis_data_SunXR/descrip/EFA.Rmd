@@ -1,0 +1,183 @@
+---
+title: "EFA"
+output: html_document
+date: "2024-03-04"
+---     
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+task_q_z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/task_q.csv")%>%
+  select(-c("ID","X"))
+```
+
+```{r}
+cortest.bartlett(task_q_z)
+```
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+factor.num = fa.parallel(task_q_z,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+```{r}
+
+task_q_z_fa<-task_q_z%>%fa(.,fm="pa",nfactor=11,rotate="varimax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_z)
+```
+```{r}
+task_q_z_fa%>%print(.,cut=0.25)
+```
+Minimum correlation of possible factor scores：因子分析中的 "可能因子得分的最小相关性 "是指，根据因子载荷和特定的因子得分估算方 法，个人在提取因子上的实际因子得分与预测得分之间可能存在的最小相关性。从根本上说，这个统计量可以估算出为每个受访者（或观察对象）计算的因子得分在多大程度上准确反映了他们在通过因子分析确定的潜在因子上的真实情况。通过这种相关性，可以了解在后续分析（如回归、相关或进一步的多元分析）中使用推导出的因子得分的有效性。较高的最小相关性表明，因子得分能够可靠地反映潜在的构念，从而确保可以放心地将这些得分用于进一步的分析。另一方面 另一方面，较低的值则表明需要谨慎，因为因子得分可能无法充分反映其所代表的潜在因子结构。它们所代表的潜在因素结构。
+```{r}
+fa.diagram(task_q_z,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+```{r}
+task_q_z_score<-factor.scores(task_q_z,f=task_q_z_fa)
+write.csv(task_q_z_score$scores,"task_q_z_score$scores.csv")
+write.csv(task_q_z_score$weights,"task_q_z_score$weights.csv")
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+day3_q_z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/day3_q_z.csv")%>%
+  select(-starts_with("SGPS"), 
+         -starts_with("gad"), 
+         -starts_with("phq"), 
+         -starts_with("swb"))%>%
+  select(-c("ID","X"))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+cortest.bartlett(day3_q_z)
+```
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+factor.num = fa.parallel(day3_q_z,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+```{r}
+
+day3_q_z_fa<-day3_q_z%>%fa(.,fm="pa",nfactor=8,rotate="varimax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_q_z)
+```
+```{r}
+day3_q_z_fa%>%print(.,cut=0.35)
+```
+
+```{r}
+fa.diagram(task_q_z_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+```{r}
+day3_q_z_score<-factor.scores(day3_q_z,f=day3_q_z_fa)
+write.csv(day3_q_z_score$scores,"day3_q_z_score$scores.csv")
+write.csv(day3_q_z_score$weights,"day3_q_z_score$weights.csv")
+```
+
+```{r pressure, echo=FALSE}
+task_SE_Z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/task_SE_Z.csv")%>%
+  select(-c("ID","X"))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+cortest.bartlett(task_SE_Z)
+```
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+factor.num = fa.parallel(task_SE_Z,fa='both',n.iter = 100,
+  main='我的碎石图')
+
+```
+```{r}
+cortest.bartlett(task_SE_Z)
+```
+
+```{r}
+
+task_SE_Z_fa<-task_SE_Z%>%fa(.,fm="pa",nfactor=4,rotate="varimax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法
+print(task_SE_Z)
+```
+```{r}
+task_SE_Z_fa%>%print(.,cut=0.35)
+```
+
+```{r}
+fa.diagram(task_SE_Z_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+```{r}
+task_SE_Z_score<-factor.scores(task_SE_Z,f=task_SE_Z_fa)
+#Defaults to"Thurstone" or regression based weights.method="Thurstone" finds the regression based weights: W = R−1F where R is the correlation matrix and F is the factor loading matrix.
+write.csv(task_SE_Z_score$scores,"task_SE_Z_score$scores.csv")
+write.csv(task_SE_Z_score$weights,"task_SE_Z_score$weights.csv")
+```
+
+
+
+#####心理适应
+
+```{r pressure, echo=FALSE}
+adj_q_z<-read.csv("D:/Sun/job/SEE_Online/Measuring_posit_self/4.Analysis/Data/descrip/preprocess/day3_q_z.csv")%>%
+  select(starts_with("SGPS"), 
+         starts_with("gad"), 
+         starts_with("phq"), 
+         starts_with("swb"))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+cortest.bartlett(adj_q_z)
+```
+
+# 确定因子数-------- Bayesian Information Criteria (BIC) is a criterion for model selection
+```{r}
+factor.num = fa.parallel(adj_q_z,fa='both',n.iter = 100,
+  main='我的碎石图')
+```
+
+```{r}
+
+adj_q_z_fa<-adj_q_z%>%fa(.,fm="pa",nfactor=3,rotate="varimax")
+#fm因素萃取法--vaiirmax最大变异法，nfacto提取因子数，rotate转轴方法,Principal Axis Factor Analysis主轴因子分析
+print(task_q_z)
+```
+```{r}
+adj_q_z_fa%>%print(.,cut=0.35)
+```
+
+```{r}
+fa.diagram(adj_q_z_fa,cut=0.35,sort=TRUE,digits=2)
+```
+
+
+```{r}
+adj_q_z_score<-factor.scores(adj_q_z,f=adj_q_z_fa)
+write.csv(adj_q_z_score$scores,"adj_q_z_score$scores.csv")
+write.csv(adj_q_z_score$weights,"adj_q_z_score$weights.csv")
+```

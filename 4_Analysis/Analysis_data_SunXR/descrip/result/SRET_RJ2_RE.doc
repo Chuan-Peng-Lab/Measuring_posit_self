@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset='utf-8'>
+<title></title>
+<style>
+body, pre {font-size: 10.5pt; font-family: Times New Roman;}
+p {margin: 0px;}
+table {border-collapse: collapse; border-spacing: 0px; color: #000000;
+       border-top: 2px solid #000000; border-bottom: 2px solid #000000;}
+table thead th {border-bottom: 1px solid #000000;}
+table th, table td {padding-left: 5px; padding-right: 5px; height: 19px;}
+</style>
+</head>
+
+<body>
+<p><b>ANOVA Table:</b></p>
+<p><pre>Dependent variable(s):&#9;recognition</pre></p>
+<p><pre>Between-subjects factor(s):&#9;–</pre></p>
+<p><pre>Within-subjects factor(s):&#9;domain, valence, identity</pre></p>
+<p><pre>Covariate(s):&#9;&#9;–</pre></p>
+<table>
+<thead>
+<tr> <th align='left'></th> <th align='right'><i>MS</i></th> <th align='right'><i>MSE</i></th> <th align='right'><i>df</i><sub>1</sub></th> <th align='right'><i>df</i><sub>2</sub></th> <th align='right'><i>F</i></th> <th align='right'><i>p</i></th> <th align='right'> </th> <th align='right'>η<sup>2</sup><sub>p</sub> [90% CI]</th> <th align='right'>η<sup>2</sup><sub>G</sub></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>domain</td> <td align='right'>0.183</td> <td align='right'>0.030</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>6.154</td> <td align='right'>.013</td> <td align='left'>*</td> <td align='right'>.013 [.001, .034]</td> <td align='right'>.001</td> </tr>
+<tr> <td align='left'>valence</td> <td align='right'>0.024</td> <td align='right'>0.033</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>0.714</td> <td align='right'>.398</td> <td align='left'></td> <td align='right'>.001 [.000, .013]</td> <td align='right'>.000</td> </tr>
+<tr> <td align='left'>identity</td> <td align='right'>0.006</td> <td align='right'>0.105</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>0.059</td> <td align='right'>.808</td> <td align='left'></td> <td align='right'>.000 [.000, .006]</td> <td align='right'>.000</td> </tr>
+<tr> <td align='left'>domain * valence</td> <td align='right'>0.098</td> <td align='right'>0.029</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>3.417</td> <td align='right'>.065</td> <td align='left'>.</td> <td align='right'>.007 [.000, .025]</td> <td align='right'>.000</td> </tr>
+<tr> <td align='left'>domain * identity</td> <td align='right'>2.180</td> <td align='right'>0.039</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>56.571</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.105 [.066, .149]</td> <td align='right'>.009</td> </tr>
+<tr> <td align='left'>valence * identity</td> <td align='right'>0.547</td> <td align='right'>0.132</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>4.149</td> <td align='right'>.042</td> <td align='left'>*</td> <td align='right'>.009 [.000, .027]</td> <td align='right'>.002</td> </tr>
+<tr> <td align='left'>domain * valence * identity</td> <td align='right'>0.997</td> <td align='right'>0.044</td> <td align='right'>1</td> <td align='right'>483</td> <td align='right'>22.601</td> <td align='right'>< .001</td> <td align='left'>***</td> <td align='right'>.045 [.019, .079]</td> <td align='right'>.004</td> </tr>
+</tbody>
+</table>
+<p><i>Note</i>. MSE = Mean Square Error.</p><p><br/><br/></p><p><b>Descriptive Statistics:</b></p>
+<table>
+<thead>
+<tr> <th align='left'>"domain"</th> <th align='left'>"valence"</th> <th align='left'>"identity"</th> <th align='right'><i>M</i></th> <th align='3'><i>SD</i></th> <th align='left'><i>n</i></th> </tr>
+</thead>
+<tbody>
+<tr> <td align='left'>ability</td> <td align='left'>Negative</td> <td align='left'>friend</td> <td align='right'>0.599</td> <td align='3'>0.245</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>ability</td> <td align='left'>Negative</td> <td align='left'>self</td> <td align='right'>0.657</td> <td align='3'>0.256</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>ability</td> <td align='left'>Positive</td> <td align='left'>friend</td> <td align='right'>0.602</td> <td align='3'>0.252</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>ability</td> <td align='left'>Positive</td> <td align='left'>self</td> <td align='right'>0.644</td> <td align='3'>0.252</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Negative</td> <td align='left'>friend</td> <td align='right'>0.655</td> <td align='3'>0.249</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Negative</td> <td align='left'>self</td> <td align='right'>0.554</td> <td align='3'>0.279</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Positive</td> <td align='left'>friend</td> <td align='right'>0.614</td> <td align='3'>0.253</td> <td align='NA'>484</td> </tr>
+<tr> <td align='left'>morality</td> <td align='left'>Positive</td> <td align='left'>self</td> <td align='right'>0.625</td> <td align='3'>0.249</td> <td align='NA'>484</td> </tr>
+</tbody>
+</table>
+<p>Total sample size: <i>N</i> = 497</p>
+</body>
+
+</html>

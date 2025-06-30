@@ -1,0 +1,66 @@
+---
+title: "Prediction"
+author: "SunXinRu"
+date: "2025-06-09"
+output: html_document
+---
+#不同领域（道德、能力）是否可以相互预测
+```{r}
+# 安装并加载必要的包
+if (!require(randomForest)) install.packages("randomForest")
+library(randomForest)
+library(dplyr)
+library(caret)
+
+data_al <- as.data.frame(data_al)
+
+# Step 1: 提取以 ability_ 和 moral_ 开头的列
+ability_df <- data_al %>% select(starts_with("ability_"))
+moral_df <- data_al %>% select(starts_with("moral_"))
+
+# Step 2: 创建训练集和测试集索引（70%训练, 30%测试）
+set.seed(123)
+train_index <- createDataPartition(1:nrow(data_al), p = 0.7, list = FALSE)
+
+ability_train <- ability_df[train_index, ]
+ability_test  <- ability_df[-train_index, ]
+
+moral_train <- moral_df[train_index, ]
+moral_test  <- moral_df[-train_index, ]
+
+# Step 3: 构造训练和测试数据，用 ability 预测每一个 moral 变量
+# 可以针对 moral_df 中的每一个列分别建立一个随机森林模型进行预测
+
+# 初始化结果列表
+rf_models <- list()
+predictions <- list()
+mse_values <- c()
+
+for (moral_var in colnames(moral_df)) {
+  # 提取当前 moral 变量的训练和测试值
+  y_train <- moral_train[[moral_var]]
+  y_test <- moral_test[[moral_var]]
+  
+  # 训练随机森林模型
+  rf_model <- randomForest(x = ability_train, y = y_train, ntree = 500, importance = TRUE)
+  
+  # 预测
+  y_pred <- predict(rf_model, newdata = ability_test)
+  
+  # 计算 MSE
+  mse <- mean((y_test - y_pred)^2)
+  
+  # 保存结果
+  rf_models[[moral_var]] <- rf_model
+  predictions[[moral_var]] <- y_pred
+  mse_values[moral_var] <- mse
+  
+  # 输出当前变量结果
+  cat(paste0("变量 ", moral_var, " 的均方误差 (MSE): ", round(mse, 4), "\n"))
+}
+
+# 查看整体预测性能概览
+mse_values
+
+```
+

@@ -1,0 +1,848 @@
+---
+title: "SEE_day3_clean"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r setup, include=FALSE}
+getwd() #查看工作目录，
+#清空环境
+rm(list = ls())
+```
+
+### 加载R包
+
+```{r create environment}
+# 检查是否已安装 pacman
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman") }   # 如果未安装，则安装包
+
+# 加载所需要的R包
+pacman::p_load("tidyverse","openxlsx","here","tidyverse","bruceR","ggplot2","psych","psychTools","DataExplorer","lavaan","rstatix")
+```
+
+```{r}
+subj_phase_day3 <- function(phase,Eligible,Moneny, Paid_date) {
+  # 读取 subj_day0_phase_003 数据
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day0/",phase, "/subj_day0_",phase, ".xlsx"))
+
+# 导入文件，修改phase_002
+subj_day3<-read.csv(list.files(paste0("../../../Data/raw/day3/", phase, "/"),pattern = "^SEE.*\\.csv$", full.names = TRUE), header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8",colClasses=c("UserId"="character"))%>%
+    slice(-1)%>%
+  select(-c("Subject.IDs","NodeId","Node","Env_Q1","Env_Q2","Env_Q3","Env_Q4","Env_Q5","X"))%>%
+  rename(
+    USERID=UserId,
+    Time_day3=Time,
+  )%>%
+  mutate(Eligible=Eligible,
+         Moneny=Moneny,
+         Paid_date=Paid_date)%>%
+ merge(.,subj_day0[, c("USERID", "ID","ParticipantID")], by = "USERID", all.x = TRUE) 
+
+####由于脑岛故障，未能在脑岛保存，但是在邮箱收到数据，找到被试的编号
+#####subj_day0_row <- subj_day0[subj_day0$ID == "phase_004_subj_12", c("USERID", "Subject.Name", "ParticipantID", "ID")]
+#####subj_day3 <- bind_rows(subj_day3, subj_day0_row)
+
+# 导出文件
+write.xlsx(subj_day3, file = paste0("../../../Data/raw/day3/",phase,"/subj_day3_",phase,".xlsx"))
+}
+# 调用函数并传入相应的 phase 参数,“批次号”，“是否符合要求”，“报酬金额”，“发放报酬的日期”
+
+subj_phase_day3 ("phase_020","yes","109","3.18")
+```
+
+### 检查工作环境，查看文件列表,合并本批day2所有被试的数据
+```{r check environment}
+#check out all '.csv' files in a folder, ‘..’ 表示返回上一级目录，因此 ../../.. 表示在当前工作目录的上两级目录下找到 "4.Analysis" 目录
+list.files("../../../Data/raw/day3/phase_017/jsPsych",pattern = "\\.csv$", full.names = TRUE)
+
+#汇总本轮day0所有被试的数据
+combine_csv_files <- function(phase,firstnum, lastnum) 
+  {  ##[批次号，输入文件列表的文件范围]
+  subj_day0 <- read.xlsx(paste0("../../../Data/raw/day3/",phase, "/subj_day3_",phase, ".xlsx"))
+  subj_day0$USERID<-as.numeric(subj_day0$USERID,digits = 0)
+  subj_day0<-subj_day0%>% rename(
+    subj_idx=USERID,
+    
+  )
+ # subj_day0$ subj_idx<- gsub("\t", "",subj_day0$ subj_idx)
+  print(subj_day0)
+  folder_path<-paste0("../../..//Data/raw/day3/",phase,"/jsPsych")
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  
+  selected_files <- files[firstnum:lastnum] #输入文件列表的文件范围；起始编号：终止编号
+  
+  combined_data <- NULL
+  
+  for (file in files) {
+    tmp <- read.csv(file, header = TRUE, sep = ",", stringsAsFactors = FALSE, fileEncoding = "UTF-8")  # 逐个读取csv文件，fileEncoding可能为UTF-8 或 GBK
+    
+    if (is.null(combined_data)) {
+      combined_data <- tmp
+    } else {
+      combined_data <- rbind(combined_data, tmp)
+    }
+  }
+  combined_data$subj_idx<-as.numeric(combined_data$subj_idx, digits = 0)
+  combined_data<-combined_data%>%
+merge(., subj_day0[, c("ID", "subj_idx")], by = "subj_idx", all.x = TRUE)%>%#修改phase_002
+ select(-c("subj_idx")) 
+  print(head(combined_data))
+  print( unique(combined_data$subj_idx))
+ 
+  write.csv(combined_data, paste0( "../../../Data/raw/day3/",phase,"/day3_",phase,".csv"), row.names = FALSE)
+}
+
+
+# 使用示例，每次运行仅需修改此3个参数
+combine_csv_files("phase_020",1,6)#修改phase_002
+
+```
+
+#将合并所有被试后的day2的数据中包含的变量进行拆分为不同的文件
+```{r day3 }
+#记录单个被试subject well-being
+day3_process<-function(phase){  
+  
+   #创建子文件夹"../../../Data/clean/clean_day3/phase"用于储存清洗后的文件
+  
+  dir.create(paste0("../../../Data/clean/clean_day3/",phase), recursive = TRUE)
+  
+  filePath<-paste0("../../../Data/raw/day3/",phase,"/day3_",phase,".csv")
+  day3 <- read.csv(filePath, fileEncoding = "UTF-8")
+    #这行代码不是每次都需要，是本次数据有个被试输错被试编号
+  #day3$ParticipantID[day3$ParticipantID == 1] <- 306
+  
+#记录单个被试的IPC，内控感，-3~3，但是没有0，0~1,1~2,2~3
+
+#记录单个被试的NPI
+# NPI,1~0,2-1,3-0,4-0,5-1,6-1,7-0,8-0,9-1,10-0,11-0,12-1,13-0,14-1,15-0；NPI-16,全量表分数代表自恋的显性维度，得分0—15，分数越高，显性自恋水平越高；0是第一个选项，对代表自恋的选项进行计分为1，记录每个问题的第一个选项的分值为0还是1
+
+# 记录day3的问卷的数据
+day3_q <- day3 %>%
+  filter(trial_index == 0) %>%
+  select(ID, everything(), -c("success", "user_agent", "value", "responses", "item_order", "radio_event_ids", "radio_event_times", "key_event_times","mouse_event_times","straightlining","zigzagging","honeypot","question_order","internal_node_id","time_elapsed","trial_index","trial_type","response","stimulus","rt"))%>%
+  mutate(across(starts_with("IPC"), ~ case_when(. == 0 ~ 1, . == 1 ~ 2, . == 2 ~ 3, TRUE ~ .)))%>%
+  mutate(
+    NPI1 = ifelse(NPI1 == "0", 1, 0),
+    NPI3 = ifelse(NPI3 == "0", 1, 0),
+    NPI4 = ifelse(NPI4 == "0", 1, 0),
+    NPI7 = ifelse(NPI7 == "0", 1, 0),
+    NPI8 = ifelse(NPI8 == "0", 1, 0),
+    NPI10 = ifelse(NPI10 == "0", 1, 0),
+    NPI11 = ifelse(NPI11 == "0", 1, 0),
+    NPI13 = ifelse(NPI13 == "0", 1, 0),
+    NPI15 = ifelse(NPI15 == "0", 1, 0)
+  ) 
+
+
+  output_path <- paste0("../../../Data/clean/clean_day3/",phase,"/day3_q_",phase,".csv")
+  write.csv(day3_q, output_path)
+  
+  trap3<-day3%>%
+ filter(grepl("在", trap3_item) )%>%
+ select(c("ID","ParticipantID","trap3","trap3_item"))# 1 代表“完全不同意”，2 代表“不同意”，3 代表“不确定”，4 代表“同意”，5 代表“完全同意”。
+assign("trap3", trap3, envir = .GlobalEnv)
+
+}
+
+day3_process("phase_020")#修改phase_002
+
+```
+
+
+```{r}
+day3_q_1  <- day2_q_ALL  %>%
+    rename(ability_rating = domain_rating_1, 
+           physical_attraction = domain_rating_2,
+           material_wealth = domain_rating_3,
+           social_ability = domain_rating_4,
+           moral_rating=domain_rating_5,
+           )%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    sde_al= rowSums(select(., starts_with("sde")), na.rm = TRUE),
+    IM_al= rowSums(select(., starts_with("IM")), na.rm = TRUE),
+    MorIden_al= rowSums(select(., starts_with("MorIden")), na.rm = TRUE),
+    moralSeImag_al= rowSums(select(., starts_with("moralSeImag")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24)
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+
+```
+
+
+
+```{r}
+plot_bar(day3_q )
+```
+
+```{r}
+day2_q <-read.csv("../../../Data/clean/clean_day2/phase_006/day2_q_phase_006.csv")#修改phase_002
+day0_q <-read.csv("../../../Data/clean/clean_day0/phase_006/day0_all_phase_006.csv")#修改phase_002
+day1_q<-read.csv("../../../Data/clean/clean_day1/phase_006/day1_q_phase_006.csv")#修改phase_002
+
+#合并day0到day2的问卷数据
+day0t2_q<- merge(day0_q, day1_q, by = "ID", all = TRUE) %>%
+  merge(day2_q, by = "ID", all = TRUE)
+# %>%filter(ID != "phase_002_subj_1" & ID != "phase_002_subj_3")#这行代码不是每次都需要，这是被试流失，去除流失的被试
+
+#对合并day0到day2的问卷数据，进行总分计算
+day0t2_q<- subset(day0t2_q, ID %in% subj_phase_006)%>%
+  mutate(
+    phq_al = rowSums(select(., starts_with("phq")), na.rm = TRUE),
+    gad_al = rowSums(select(., starts_with("gad")), na.rm = TRUE),
+    selfclarity_al = rowSums(select(., starts_with("selfclarity")), na.rm = TRUE),
+    ses_al = rowSums(select(., starts_with("ses")), na.rm = TRUE),
+    coreself_al =rowSums(select(., starts_with("coreself")), na.rm = TRUE),
+    SGPS_al = rowSums(select(., starts_with("SGPS")), na.rm = TRUE),
+    hsns_al = rowSums(select(., starts_with("hsns")), na.rm = TRUE),
+    NPI_al = rowSums(select(., starts_with("NPI")), na.rm = TRUE),
+    swb_al = rowSums(select(., starts_with("swb")), na.rm = TRUE),
+    LOT_al = rowSums(select(., starts_with("LOT")), na.rm = TRUE),
+    sde_al= rowSums(select(., starts_with("sde")), na.rm = TRUE),
+    IM_al= rowSums(select(., starts_with("IM")), na.rm = TRUE),
+    MorIden_al= rowSums(select(., starts_with("MorIden")), na.rm = TRUE),
+    moralSeImag_al= rowSums(select(., starts_with("moralSeImag")), na.rm = TRUE),
+    IPC_al = (rowSums(select(., starts_with("IPC")), na.rm = TRUE)+24)
+  )%>%mutate(gad = case_when(
+    gad_al >= 0 & gad_al <= 4 ~ "无",
+    gad_al >= 5 & gad_al <= 9 ~ "轻度",
+    gad_al >= 10 & gad_al <= 14 ~ "中度",
+    gad_al >= 15 ~ "重度",
+    TRUE ~ NA_character_
+  ))%>%
+   mutate(phq = case_when(
+    phq_al >= 0 & phq_al <= 4 ~ "无",
+    phq_al >= 5 & phq_al <= 9 ~ "轻度",
+    phq_al >= 10 & phq_al <= 14 ~ "中度",
+    phq_al >= 15 & phq_al <= 19 ~ "中重度",
+     phq_al >= 20  ~ "重度",
+    TRUE ~ NA_character_
+  ))
+  
+
+```
+
+```{r}
+plot_bar(day0t2_q)
+```
+```{r}
+
+```
+
+
+```{r 计算重测信度}
+
+#选择要算重测信度的量表
+questionnaires <- c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al","MorIden_al","moralSeImag_al","sde_al","IM_al")
+
+# 计算重测信度
+
+# 存储计算的重测信度
+reliabilities <- data.frame(questionnaire = character(0), reliability = numeric(0))
+
+for (questionnaire in questionnaires) {
+  # 选择两次测量的数据，for循环
+  data1 <- day0t2_q [, c("ID", questionnaire)]
+  data2 <- day3_q_1 [, c("ID", questionnaire)]
+  
+  # 合并数据框
+  combined_data <- merge(data1, data2, by = "ID", suffixes = c("_1", "_2"))
+  
+  # 计算重测信度，利用pearson积差相关
+  reliability <- cor(combined_data[, paste(questionnaire, "_1", sep = "")], combined_data[, paste(questionnaire, "_2", sep = "")],method = "pearson", use = "pairwise")
+  
+  # 存储结果
+  reliabilities <- rbind(reliabilities, data.frame(questionnaire = questionnaire, reliability = reliability))
+}
+
+# 输出重测信度
+print(reliabilities)
+
+```
+
+```{r}
+day0t2_1<-  day0t2_q%>%
+  select(starts_with("selfclarity_"), 
+         starts_with("phq_"), 
+         starts_with("gad_"), 
+         starts_with("swb_"), 
+         starts_with("LOT_"), 
+         starts_with("IPC_"), 
+         starts_with("ses_"), 
+         starts_with("coreself_"), 
+         starts_with("SGPS_"), 
+         starts_with("NPI"), 
+         starts_with("hsns"), 
+         starts_with("MorIden_"), 
+         starts_with("moralSeImag_"), 
+         starts_with("sde_"), 
+         starts_with("IM_"),
+         ID)%>%
+  mutate(time="1")
+ day3_q_2<-day3_q_1 %>%
+  select(starts_with("selfclarity_"), 
+         starts_with("phq_"), 
+         starts_with("gad_"), 
+         starts_with("swb_"), 
+         starts_with("LOT_"), 
+         starts_with("IPC_"), 
+         starts_with("ses_"), 
+         starts_with("coreself_"), 
+         starts_with("SGPS_"), 
+         starts_with("NPI"), 
+         starts_with("hsns"), 
+         starts_with("MorIden_"), 
+         starts_with("moralSeImag_"), 
+         starts_with("sde_"), 
+         starts_with("IM_"),
+         ID)%>%
+  mutate(time="2")
+day0t2_1.1<-  day0t2_q%>%
+  select(c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al","MorIden_al","moralSeImag_al","sde_al","IM_al"),ID)
+day3_q_2.1<- day3_q_1%>%
+  select(c("IPC_al", "LOT_al", "swb_al", "NPI_al", "hsns_al", "SGPS_al", "coreself_al", "ses_al", "selfclarity_al", "gad_al", "phq_al","MorIden_al","moralSeImag_al","sde_al","IM_al"),ID) 
+
+day0t3_q_reliability<-merge(day0t2_1.1, day3_q_2.1,by="ID")%>%
+  select(sort(names(.)))
+
+```
+
+```{r}
+day0t3_q <- day3_q_1 %>%
+  select(ID, ability_rating, physical_attraction, material_wealth, social_ability, moral_rating)%>%
+ left_join(day0t2_q, ., by = "ID")%>%
+  select(-c("X.y","ParticipantID.y","X.x","No","birthday","sex","ParticipantID.x","friend_name","X","ParticipantID"))
+
+```
+```{r}
+describe_day0t3_q<-day0t3_q%>%
+  select(-ID,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),ends_with("_al"))%>%
+  describe()
+  
+```
+```{r}
+day0t3_q%>%
+  select(-ID,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),-ends_with("_al"))%>%
+ mutate(
+    age=case_when(
+          between(age, 18, 28) ~ "18~28",
+          between(age, 28, 38) ~ "28~38",
+           between(age, 38, 48) ~ "38~48",
+          between(age, 48, 59) ~ "48~59",
+          age>59~ ">59",
+          TRUE ~ as.character(age) 
+        ),
+         obj_ses1=as.character(obj_ses1),
+         fri_ses2=as.character(fri_ses2),
+        ) %>%
+ mutate(fatherEdu = case_when(
+    fatherEdu == 0 ~ "zero",
+    fatherEdu == 1 ~ "elementary",
+    fatherEdu == 2 ~ "junior",
+    fatherEdu == 3 ~ "senior",
+    fatherEdu == 4 ~ "college",
+    fatherEdu == 5 ~ "graduate",
+    TRUE ~ as.character(fatherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(motherEdu = case_when(
+    motherEdu == 0 ~ "zero",#没上学
+    motherEdu == 1 ~ "elementary",#小学
+    motherEdu == 2 ~ "junior",#初中
+    motherEdu == 3 ~ "senior",#高中，中专
+    motherEdu == 4 ~ "college",#大学（专科或本科）
+    motherEdu == 5 ~ "graduate",#研究生
+    TRUE ~ as.character(motherEdu)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(FatherOccupation = case_when(
+    FatherOccupation == 0 ~ "casual_laborer",#临时工
+    FatherOccupation == 1 ~ "self_employed",#个体经营
+    FatherOccupation == 2 ~ "general_management",#一般管理
+    FatherOccupation == 3 ~ "middlel_management",#中层管理
+    FatherOccupation == 4 ~ "high_management",#高级管理
+    TRUE ~ as.character(FatherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(MotherOccupation = case_when(
+    MotherOccupation == 0 ~ "casual_laborer",#临时工
+    MotherOccupation == 1 ~ "self_employed",#个体经营
+    MotherOccupation == 2 ~ "general_management",#一般管理
+    MotherOccupation == 3 ~ "middle_management",#中层管理
+    MotherOccupation == 4 ~ "high_management",#高级管理
+    TRUE ~ as.character(MotherOccupation)  # 如果没有匹配到上述条件，保持不变
+  ))%>%
+  mutate(income = case_when(
+    income == 0 ~ "zero",
+    income < 2000 ~ "<2000",
+    between(income, 2000, 5000) ~ "2000~5000",
+    between(income, 5000, 10000) ~ "5000~10000",
+    between(income, 10000, 30000) ~ "10000~30000",
+    between(income, 30000, 50000) ~ "30000~50000",
+    between(income, 50000, 100000) ~ "50000~100000",
+    between(income, 100000, 150000) ~ "100000~150000",
+    between(income, 150000, 200000) ~ "150000~200000",
+    income >= 200000 ~ "≥200000",
+    TRUE ~ as.character(income)  # 如果没有匹配的条件，保持不变
+  ))%>%
+  plot_bar()
+```
+
+```{r}
+day0t3_q%>%
+  select(-ID,-gad,-phq,-Sex,-age,-national,-education,-MotherOccupation,-FatherOccupation,-fatherEdu,-motherEdu,-obj_ses1,-fri_ses2,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),ends_with("_al"))%>%
+  plot_histogram()
+
+```
+
+
+```{r}
+COR_day0t3_q<-day0t3_q%>%
+  select(-ID,-gad,-phq,-Sex,-age,-national,-education,#-MotherOccupation,-FatherOccupation,-fatherEdu,-motherEdu,-obj_ses1,-fri_ses2,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),ends_with("_al"))%>%
+bruceR::Corr(.,
+  method = "spearman",#"pearson" (default), "spearman", or "kendall".
+  p.adjust = "none",#"none", "fdr", "holm", "bonferroni
+  all.as.numeric = TRUE,
+  digits = 2,
+  file = NULL,#File name of MS Word (.doc).
+  plot = TRUE,
+  plot.r.size = 4,
+  plot.colors = NULL,
+  plot.file = NULL,
+  plot.width =20,
+  plot.height =20,
+  plot.dpi = 500)
+```
+```{r}
+efa_data<-day0t3_q%>%
+  select(-ID,-gad,-phq,-Sex,-age,-national,-education,-MotherOccupation,-FatherOccupation,-fatherEdu,-motherEdu,-obj_ses1,-fri_ses2,
+    -starts_with("selfclarity_"), 
+         -starts_with("phq_"), 
+         -starts_with("gad_"), 
+         -starts_with("swb_"), 
+        -starts_with("LOT_"), 
+         -starts_with("IPC_"), 
+         -starts_with("ses_"), 
+         -starts_with("coreself_"), 
+         -starts_with("SGPS_"), 
+         -starts_with("NPI"), 
+         -starts_with("hsns"), 
+         -starts_with("MorIden_"), 
+         -starts_with("moralSeImag_"), 
+         -starts_with("sde_"), 
+         -starts_with("IM_"),ends_with("_al"))
+
+ efa_data%>%
+  cor(.,method = "pearson")%>%
+  cortest.bartlett(.,21)%>% # p<0.05变量间相关，可用于因子或主成分分析
+  print()
+
+# 1.2.6 Kaiser-Meyer-Olkin Measure of Sampling Adequacy(KMO采样充分性检验)
+ efa_data%>%
+  cor(.,method = "pearson")%>%
+  psych::KMO()%>% # 根据Kaiser提出的经验原则，变量适合性处于一般到良好。
+ print()
+```
+
+
+```{r}
+day3_q_evenodd<-day3_q %>% 
+  select(starts_with("sde_"),starts_with("IM_"))%>%
+  evenodd(., c(20,20))%>%
+  #evenodd(., c(20,20,9,7,9,8,15,12,10,10,5,10))%>%
+    print()
+
+day3_q_evenodd<-day3_q %>% 
+  select(starts_with("sde_"),starts_with("IM_"),starts_with("phq"),starts_with("gad"),starts_with("SGPS"),starts_with("IPC"), starts_with("NPI"),starts_with("selfclarity"), starts_with("coreself"),starts_with("hsns"),starts_with("swb"),starts_with("ses"))%>%
+   longstring(., avg = TRUE)%>%
+  #evenodd(., c(20,20,9,7,9,8,15,12,10,10,5,10))%>%
+    print()
+```
+
+
+```{r}
+# 1.2.3 多元正态分布检验
+
+day3_q_2.2<-day3_q_2.1%>%
+  select(-c("ID")) %>% 
+  mshapiro_test() %>%
+  p.adjust() # p<0.05,数据不满足多元正态分布。可以换其他方法，也可以继续进行PCA分析。
+
+# 1.2.4 pearson相关性分析
+cor1 <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  bruceR::Corr(.,method = "pearson",plot = TRUE, plot.width = 15,
+  plot.height = 15,
+  plot.dpi = 500)
+cor2 <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+bruceR::Describe()
+
+
+```
+
+```{r}
+
+```
+
+
+
+
+```{r}
+# 1.2.5 Bartlett's test of sphericity(球形检验)
+cor <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  cor(.,method = "pearson")
+cor %>%
+  cortest.bartlett(.,n=nrow(data)) # p<0.05变量间相关，可用于因子或主成分分析
+
+# 1.2.6 Kaiser-Meyer-Olkin Measure of Sampling Adequacy(KMO采样充分性检验)
+cor %>%
+  psych::KMO() # 根据Kaiser提出的经验原则，变量适合性处于一般到良好。
+
+
+# 2.1.1 因子分析确定提取因子数量-PCA法
+## 使用principal()进行PCA分析，输入数据可以是原始数据矩阵或者相关性系数矩阵。
+#page(principal) #查看函数代码
+
+pca2 <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  principal(., #降维数据不包括pH,后续将会以pH为因变量进行回归分析。
+                 #r = cor, #也可使用变量相关性矩阵，但是样本得分需要自己计算。
+                 cor="cor",
+                 scores = TRUE,
+                 residuals = TRUE, # 输出结果中包含残差。
+                 nfactors = 10,# nfactors设置主成分数目
+                 rotate="none", # 不设置因子旋转方法
+                 ) 
+pca2$Vaccounted # 某个因子的特征值等于因子载荷平方和。
+
+## 绘制碎石图-确定最佳因子数量
+plot(pca2$values,type = "b",ylab = "Eigenvalues",xlab = "Component")
+text(pca2$values,labels = round(pca2$values/15*100,2))
+abline(a=1,b=0,col="red",lty=2)
+
+
+#fa()中提供了六种算法估计载荷和公共因子(估计特定变量与数据矩阵中其它变量有多少共同方差)等参数：minimum residual (minres, aka ols, uls), principal axes, alpha factoring, weighted least squares, minimum rank和maximum likelihood。principal()使用PCA法提取因子。factanal 则是使用ML法提取因子。除PCA以外，其它因子提取方法都假设某一原始变量等于潜变量的线性方程+误差项。PCA提取方法则没有误差项，它认为原始变量的方差都可以由因子(潜变量)解释，其使用的相关性矩阵的对角线值为1。
+
+
+# 2.1.2 因子分析确定提取因子数量-迭代主轴因子法(IPA)
+## 使用fa()进行因子分析。
+
+fa0  <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  psych::fa(
+        .,
+        cor ="cor", # 计算相关性矩阵的方法，cor表示Pearson。
+        scores = TRUE,
+        residuals = TRUE, # 输出结果中包含残差。
+        nfactors = 3,# nfactors设置提取因子数目。最后几个因子轴特征值<0.1，所以设置了一个稍小的数值。
+        rotate="none", # 不设置因子旋转方法
+        min.err = 0, # 设置迭代过程中，公因子方差变化不大于0，迭代才停止。
+        n.iter=99, # bootstrap分析重复次数,计算因子载荷置信区间。
+        SMC = TRUE,#默认设置squared multiple correlations为初始矩阵对角线公因子方差。设置为FALSE，可设置初始矩阵对角线为1。
+        fm = "pa", # PA法分析的是协方差，相关性矩阵的对角线值是公因子方差估计值，即变量能被潜变量代表的方差。
+        max.iter = 120 # 结果收敛的最大迭代次数，重复进行主轴因子法(PA)提取因子。
+                 ) 
+fa0$Vaccounted
+
+## 相关性矩阵对角线均值计算
+smc(data[-c(1:3,12)]) # 这是初始对角线值。
+fa0$communality # 这是最后确定的对角线值，即公因子方差。
+fa0$communality %>% mean # 因子特征值最好大于0.7623729,设置的提取因子数不同，此值会有变化。
+
+## 绘制碎石图-确定最佳因子数量
+plot(fa0$values,type = "b",ylab = "Eigenvalues",xlab = "Component")
+text(fa0$values,adj=c(0.2,0.5),
+     labels = paste(round(fa0$values/ncol(data[-c(1:3,12)])*100,2),"%",sep = "")) # 这里百分比计算的分母，包含原始变量的误差项。
+abline(a=mean(fa0$communality),b=0,col="red",lty=2)
+
+#fa()进行PA提取因子时，将提取因子数目设置为原始变量数量，可能会报错：“Error in if (nitems[i] < 1) { : missing value where TRUE/FALSE needed”，设置为一个稍小于原始变量数量的值，可能会报错：”Error in l[id] : subscript out of bounds“。这是因为提取的因子的特征值必须大于0.1才行，这里解决方法就是先设置一个较小的值，然后查看fa0$values，再重新根据特征值设置提取因子数目。
+
+#平行分析是使用模拟数据估计与原始模型相同的因子模型，经过多次模型获得的特征值被平均化，然后与原始因子模型进行比较。如果原始因子模型的某个因子的特征值大于模拟数据特征值的均值，则该因子则应该保留。可以看出，跟直接进行因子分析确定的提取因子数量的情况差不多。这些都是确定因子数量的数学方法，实际因子数量的选择还是应该根据自己的数据情况和想要研究的问题来确定，后续因子旋转后也是一样，要看每个因子对原始数据的代表情况，如果有自己想要研究的变量，并没有被潜变量很好的代表，则应该考虑将该变量单独列出，其余变量重新做因子分析。因此，进行因子分析前的，原始变量间关系的探索也是很重要的，原始变量间具有相关关系，才能更好的查看数据具有的维度和对数据进行降维。
+
+# 2.1.3 平行分析确定应提取的因子个数
+# ## 平行分析确定应提取的因子个数-psych包
+pa1 <-day3_q_2.1%>%
+  select(-c("ID"))%>% fa.parallel(
+  .,
+  fa = "fa", # "both"可选择同时进行PCA和因子分析。
+  fm = "pa",
+  n.iter=99,
+  nfactors = 3,
+  SMC = TRUE,
+  )
+
+pa2 <- fa.parallel(
+  data[-c(1:3,12)],
+  fa = "pc", # 进行PCA。
+  n.iter=99,
+  nfactors = 5,
+  SMC = FALSE,
+  )
+
+
+## nFactors包
+library(nFactors)
+ev <- eigen(cor(data[-c(1:3,12)],use = "na.or.complete")) # 获取特征值
+pa3 <- parallel(
+  subject=nrow(data),# subject指样本个数
+  var=ncol(data[-c(1:3,12)]),# var是指变量个数
+  rep=100,cent=.05) 
+nS <- nScree(x=ev$values, aparallel=pa3$eigen$qevpea) # 确定探索性因子分析中应保留的因子。
+plotnScree(nS) # 绘制碎石图
+
+
+#最后决定提取2个因子轴，继续进行分析。因子分析最后得到的特征值总和如果大于相关性矩阵的对角线之和，则表明初始矩阵中对角线上的公因子方差估计有误，因此实际分析时，多常用迭代主轴因子法(IPA),重复多次PA提取因子过程，以计算得到的公因子方差(h2)更新初始矩阵的对角线公因子方差，直到PA提取的h2与初始矩阵更新后的对角线h2没有差异为止。
+
+# 2.1.4 根据确定的提取因子数进行因子分析
+## IPA法提取两个因子轴
+library(psych)
+fa1  <- psych::fa(
+        data[-c(1:3,12)],
+        cor ="cor", # 计算相关性矩阵的方法，cor表示Pearson。
+        scores = TRUE,
+        residuals = TRUE, # 输出结果中包含残差。
+        nfactors = 2,
+        rotate="none", # 不设置因子旋转方法
+        min.err = 0, # 设置迭代过程中，公因子方差变化不大于0，迭代才停止。
+        n.iter=99, # bootstrap分析重复次数。
+        SMC = TRUE,#默认设置squared multiple correlations为初始矩阵对角线公因子方差。设置为FALSE，可设置初始矩阵对角线为1。
+        fm = "pa", # PA法分析的是协方差，相关性矩阵的对角线值是公因子方差估计值，即变量能被潜变量代表的方差。
+        max.iter = 120 # 结果收敛的最大迭代次数，重复进行主轴因子法(PA)提取因子。
+                 ) 
+fa1
+
+#scale(TN)=0.95*PA1+0.32*PA2+误差项。因子载荷的平方即代表因子对该原始变量的方差解释度，该原始变量在所有因子上的载荷的平方和，即为该变量的公因子方差(h2)。1-h2即为该变量未被所有因子代表的方差(唯一方差u2)。com的全称是“the complexity of the factor loadings for that variable”，表示Hoffman's index of complexity for each item,反应了一个变量在多大程度上反映了单一结构，如果变量仅在一个因子上有载荷，则等于1，如果在两个因子上均匀加载则为2。根据因子载荷绝对值大小，可以区分因子对原变量的代表性，很多文章建议以0.4(PCA法提取因子则推荐0.7)为阈值，来区分因子对原变量的代表性的显著性。同时在多个因子上的载荷都很高，也是需要注意的，会很难解释提取因子可能代表的意义。此时可以考虑更换提取因子的方法或进行因子旋转，最后再尝试删除变量。如果提取因子能很好的区分变量，有明显的代表意义，则可以进行后续分析。比如给因子命名，赋予其代表意义，计算样本得分以及进行信度检验。如果未经因子旋转的降维结果并不能很好的赋予因子轴以实际意义，后续可进行因子旋转。
+### 特征值-因子(潜变量)捕获的原始数据的方差
+fa1$Vaccounted 
+
+### 因子载荷=因子的特征向量*sqrt(特征值)
+print(fa1$loadings[1:ncol(data[-c(1:3,12)]),1:2],cutoff = 0)
+
+### 变量公因子方差
+fa1$communality
+
+### 公因子方差之和与特征值之和相等
+fa1$Vaccounted[1,] %>% sum
+fa1$communality %>% sum
+
+##  提取因子结果可视化-一般以0.4为载荷阈值
+### 因子载荷图
+fa.plot(fa1,labels = colnames(data[-c(1:3,12)]))
+
+### 因子解示意图
+fa.diagram(fa1)
+#psych绘图函数将变量归类于载荷高的因子上。因子载荷是一个衡量原始变量与因子之间关系的参数。因子载荷的别称：PC loading, PC coefficient, weights和eigenvectors，当数据进行过标准化时，它们彼此没有区别。如图所示除TK以外的变量在因子1的载荷绝对值都>0.4,TK、Ammonia、OM和OC在因子2的载荷绝对值>0.4，但因为PA1已经加载了Ammonia、OM和OC，所以PA2只有TK。但是此结果于我们并没有什么理论意义，下面尝试进行因子旋转
+
+#如果未经因子旋转的降维结果并不能很好的赋予因子轴以实际意义，后续可进行因子旋转。一般旋转后的因子解，每个因子轴的原始变量的载荷值会更接近或更远离0，即每个因子轴仅代表有限的几个原始变量组合的方差，有助于对每个因子轴的解释。经过旋转之后，每个变量的载荷发生改变，即对数据方差总量的贡献会改变，但是所有因子的方差解释度总和不会变。即，旋转前后因子分析选择的轴数量对方差总量的解释度不变。初始因子解产生的因子轴是正交变量，可以认为互相之间相关性为0，选择正交旋转(orthogonal rotation)法，旋转过后的因子轴间的相关性仍为0，若选择斜交旋转(oblique rotation：promax、oblimin、quartimin等)，经旋转的因子轴之间的相关性不为0。斜交旋转中，一个变量在一个因子上的载荷，是在控制了其他因素后估计的，因此得到的因子载荷相当于多重回归模型中偏标准化回归系数(偏相关关系)。执行正交还是倾斜旋转通常又取决于哪种解决方案的结果更容易解释，以及具有不相关或相关因子对研究人员是否更有实际或科学意义。
+#因子旋转的方法很多，比如principal()提供的有"varimax", "quartimax", "promax", "oblimin", "simplimax"和 "cluster"等方法。fa()中还有更多方法，?fa查看rotate参数选项，使用最多和书中介绍的是一种正交旋转法：varimax(极大方差法)，varimax使每个因子的平方载荷的方差最大化，从而使载荷或高或低，以更容易识别能代表特定变量的因子。varimax旋转过程中保持因子1和因子2的轴线的角度在90度，可以认为两个因子间的相关性为0。因子旋转前后的因子提取方法保持一致。
+
+
+
+# 2.2.1 主轴因子法(PA)因子分析-极大方差旋转
+## 主轴因子法探索性因子分析
+library(psych)
+fa.var  <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  fa(.,
+        cor ="cor", # 计算相关性矩阵的方法，cor表示Pearson。
+        n.obs = 15,
+        scores = TRUE,
+        residuals = TRUE, # 输出结果中包含残差。
+        nfactors = 3,# nfactors设置提取因子数目
+        rotate="varimax", # 设置主成分旋转方法
+        min.err = 0, # 设置迭代过程中，公因子方差变化不大于0，迭代才停止。
+        n.iter=99, # bootstrap分析重复次数。
+        SMC = TRUE,#默认设置squared multiple correlations为初始矩阵对角线公因子方差。设置为FALSE，可设置初始矩阵对角线为1。
+        fm = "pa", # PA法分析的是协方差，相关性矩阵的对角线值是公因子方差估计值，即变量能被潜变量代表的方差。
+        max.iter = 120 # 结果收敛的最大迭代次数。
+                 ) 
+fa.var
+
+fa.var$Vaccounted # 2个潜变量共解释原始数据的~56.18%方差。
+
+
+## principal()提取因子并进行因子旋转
+pca.var <-day3_q_2.1%>%
+  select(-c("ID"))%>%
+  principal(
+  .,
+  residuals = TRUE, # 输出结果中包含残差。
+  nfactors = 3,# nfactors设置主成分数目
+  rotate="varimax", # 设置主成分旋转方法
+  use = "na.or.complete",
+)
+pca.var # 2个潜变量共解释原始数据的~65%方差。
+### 特征值-因子(潜变量)捕获的原始数据的方差
+fa.var$Vaccounted 
+
+### 因子载荷=因子的特征向量*sqrt(特征值)
+print(fa.var$loadings[1:15,1:2],cutoff = 3)
+
+### 变量公因子方差
+fa.var$communality
+
+### Hoffman's index of complexity for each item
+fa.var$complexity #反应了一个变量在多大程度上反映了单一结构，如果变量仅在一个因子上有载荷，则等于1，如果在两个因子上均匀加载则为2。
+
+### 估计因子样本分数-默认“regression”法计算，因子变量载荷*样本中标准化变量值。
+# ?factor.scores # 查看更多估计因子得分的方法。
+# ?factor.stats # 查看因子分析更多统计结果解读。
+fa.var$scores
+
+### 因子决定系数:推荐因子决定系数不小于0.9，估计因子样本分数才能作为原始变量的替代。
+fa.var$R2.scores
+
+
+# 2.2.2 IPA法探索性因子分析结果可视化
+## 提取绘图数据
+### 估计因子样本分数-回归方法估计因子分数
+(fa.var.scores = data.frame(fa.var$scores)) %>% head
+write.csv(fa.var.scores,"fa.var.scores.csv",quote = FALSE)
+
+### 特征值-潜变量捕获的原始数据的方差
+(fa.var.eig = data.frame(fa.var$Vaccounted)) # 2个潜变量共解释原始数据的~57.65%方差。
+write.csv(fa.var$Vaccounted,"fa.var.eig.csv",quote = FALSE)
+
+### 因子载荷=因子的特征向量*sqrt(特征值)
+(fa.var.loadings <- print(fa.var$loadings[1:ncol(data[-c(1:3,12)]),1:2],cutoff = 0))
+write.csv(fa.var.loadings,"fa.var.loadings.csv",quote = FALSE)
+
+## 原始环境因子数据结果绘图
+### 样本得分图
+(FA1 = round(fa.var.eig[2,1],4)*100)
+(FA2 = round(fa.var.eig[2,2],4)*100)
+
+fa.var.scores %>%
+  mutate(grazing = factor(data$grazing,levels=c("CK","LG","MG","HG")),
+         depth = factor(data$depth,levels = unique(data$depth))) %>%
+  ggplot2::ggplot(
+    aes(PA1,PA2)) + 
+  geom_point(
+        aes(
+        color = grazing,
+        fill = grazing,  
+        alpha = depth), # 颜色透明度区分depth。
+        size=2.5)+
+  stat_ellipse(
+    level = 0.95,
+    linetype = 2,
+    aes(group = grazing,color = grazing))+
+    scale_color_manual(
+    values = ggsci::pal_d3("category10")(4) )+
+  scale_fill_manual(
+    values = ggsci::pal_d3("category10")(4) )+
+    labs(x=paste("Factor 1",FA1,"%"),y=paste("Factor 2",FA2,"%"))+
+  theme_bw()+
+  geom_hline(yintercept=0)+geom_vline(xintercept=0)+
+  theme(panel.grid=element_blank(),
+        legend.position="right",
+        axis.title = element_text(family = "serif", face = "bold", size = 18,colour = "black"),
+        axis.text = element_text(family = "serif", face = "bold", size = 16,color="black")) -> f1
+        
+ggsave("fa.var.factor.pdf", f1, device = "pdf")
+
+
+### 因子对原始变量的方差解释图
+fa.var$communality # 变量公因子方差h^2，表示变量能被潜变量解释的方差。
+fa.var.loadings^2 %>% rowSums() # 所有变量的因子载荷平方和就是该变量的公因子方差。
+fa.var$uniquenesses # 唯一方差u^2,表示变量不能被新潜变量解释的方差。
+
+#### 提取绘制潜变量对原始数据的方差的代表数据
+(fa.var.contrib = data.frame(
+  fa.var.loadings^2,
+  residuals=fa.var$uniquenesses) %>% as.matrix())
+fa.var.contrib[fa.var.contrib[,3] <0][3] <- 0 # 将负值改为0。
+write.csv(fa.var.contrib,"pca.var.contrib.csv",quote = FALSE)
+```
+

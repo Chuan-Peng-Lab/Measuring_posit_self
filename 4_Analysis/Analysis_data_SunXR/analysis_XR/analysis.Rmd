@@ -2917,7 +2917,7 @@ result_gad1['gad'] <- y_test_gad
 result_gad1['prediction']<-predictions_gad1
 head(result_gad1)   
 ```
-
+ 
 
 ```{r}
 randomForest::importance(gad)
