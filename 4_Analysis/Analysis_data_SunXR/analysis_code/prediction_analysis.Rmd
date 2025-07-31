@@ -1,0 +1,166 @@
+---
+title: "prediction_analysis"
+author: "SunXinRu"
+date: "2025-07-13"
+output: html_document
+---
+
+# 查看因子贡献度（排序）
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Step 1: 提取 SS loadings 并转为数据框
+ss <- efa_result$Vaccounted["SS loadings", ]
+ss_df <- data.frame(
+  Factor = names(ss),
+  SS_Loading = as.numeric(ss)
+)
+
+# Step 2: 按解释度排序（从高到低）
+ss_df <- ss_df %>% 
+  arrange(desc(SS_Loading)) %>%
+  mutate(Factor = factor(Factor, levels = Factor))  # 保持排序
+
+# Step 3: 提取前4个贡献度最高的因子名
+top4_factors <- ss_df$Factor[1:4]
+cat("前4个因子为：\n")
+print(top4_factors)
+
+# Step 4: 提取对应的因子得分（来自 efa_result$scores）
+factor_scores <- as.data.frame(efa_result$scores)
+top4_scores <- factor_scores[, top4_factors]
+
+# Step 5: 可视化因子解释度
+ggplot(ss_df, aes(x = Factor, y = SS_Loading)) +
+  geom_bar(stat = "identity", fill = "#f28556") +
+  geom_text(aes(label = round(SS_Loading, 2)), vjust = -0.3, size = 4) +
+  labs(
+    title = "每个因子的方差解释度（SS Loadings）",
+    x = "因子", y = "方差解释度"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+# 线性模型lasso预测
+```{r}
+# 加载必要包
+library(caret)
+library(elasticnet)
+
+# 合并数据
+data_lasso <- cbind(top4_scores, gad = health_var$SGPS)
+
+# 删除 NA
+#data_lasso <- na.omit(data_lasso)
+
+# 数据划分（70% 训练，30% 测试）
+set.seed(123)
+train_index <- createDataPartition(data_lasso$gad, p = 0.7, list = FALSE)
+train_data <- data_lasso[train_index, ]
+test_data <- data_lasso[-train_index, ]
+
+# 模型训练（Lasso 回归）
+lasso_model <- train(
+  gad ~ .,
+  data = train_data,
+  method = "lasso",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneLength = 10
+)
+
+# 模型预测与评估
+preds <- predict(lasso_model, newdata = test_data)
+rmse <- RMSE(preds, test_data$gad)
+r2 <- R2(preds, test_data$gad)
+
+# 输出结果
+cat("Lasso模型预测gad结果：\n")
+cat("RMSE:", round(rmse, 3), "\n")
+cat("R²:", round(r2, 3), "\n")
+```
+
+# 非线性模型随机森林预测
+```{r}
+library(randomForest)
+
+# 合并数据
+data_rf <- cbind(top4_scores, health_var%>% select(-ID))
+
+# 加载必要包
+library(randomForest)
+library(rsample)
+library(tidyverse)
+library(caret)
+library(ggplot2)
+
+# Step 1: 数据划分
+set.seed(123)
+rf_split <- initial_split(data_rf, prop = 0.7)
+rf_train <- training(rf_split)
+rf_test <- testing(rf_split)
+
+# Step 2: 提取预测变量（前8列）和目标变量名
+X_train <- rf_train[, 1:4]
+X_test <- rf_test[, 1:4]
+target_vars <- colnames(data_rf)[5:8]  # SGPS, gad, phq, SWB
+
+# Step 3: 构建通用建模函数
+run_rf_model <- function(y_train, y_test, target_name) {
+  model <- randomForest(x = X_train, y = y_train, ntree = 100, importance = TRUE)
+  preds <- predict(model, X_test)
+
+  # 评估
+  rmse <- RMSE(preds, y_test)
+  mae <- MAE(preds, y_test)
+  r2 <- cor(preds, y_test)^2
+
+  # 打印性能
+  cat(paste0("\n【", target_name, "】模型性能:\n"))
+  cat("RMSE: ", round(rmse, 3), "\n")
+  cat("MAE: ", round(mae, 3), "\n")
+  cat("R²: ", round(r2, 3), "\n")
+
+  # 重要性提取
+  importance_df <- as.data.frame(importance(model))
+  importance_df$Variable <- rownames(importance_df)
+  importance_df$Direction <- ifelse(cor(X_train, y_train) > 0, "Positive", "Negative")
+  importance_df$Target <- target_name
+
+  # 可视化
+  p <- ggplot(importance_df, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`, fill = Direction)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    scale_fill_manual(values = c("Positive" = "blue", "Negative" = "red")) +
+    labs(title = paste("Variable Importance for", target_name),
+         x = "Variables", y = "%IncMSE") +
+    theme_minimal()
+  print(p)
+
+  return(importance_df)
+}
+
+# Step 4: 循环处理所有目标变量
+all_importance <- list()
+
+for (target in target_vars) {
+  y_train <- rf_train[[target]]
+  y_test <- rf_test[[target]]
+  importance_df <- run_rf_model(y_train, y_test, target)
+  all_importance[[target]] <- importance_df
+}
+
+# Step 5: 合并重要性数据框
+imp_all_df <- bind_rows(all_importance)
+
+# 可选：多因变量下变量重要性综合图
+ggplot(imp_all_df, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`, color = Target)) +
+  geom_point(size = 3) +
+  coord_flip() +
+  labs(title = "Variable Importance across All Targets",
+       x = "Variables", y = "%IncMSE") +
+  theme_minimal()
+```
+

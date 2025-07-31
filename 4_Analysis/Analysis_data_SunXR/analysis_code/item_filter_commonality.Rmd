@@ -1,0 +1,80 @@
+---
+title: "相关共性因子选择"
+author: "SunXinRu"
+date: "2025-06-28"
+output: html_document
+---
+```{r}
+# 计算条目之间的相关矩阵
+cor_mat <- cor(data_z, use = "pairwise.complete.obs")
+# 计算每个条目的平均相关性（排除自身）
+mean_corr <- apply(cor_mat, 1, function(row) mean(row[-which.max(abs(row))]))
+# 转为数据框便于排序和筛选
+item_commonality <- data.frame(
+  item = colnames(data_z),
+  mean_corr = mean_corr
+)
+# 可视化每个条目的平均相关程度
+library(ggplot2)
+ggplot(item_commonality, aes(x = reorder(item, mean_corr), y = mean_corr)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "各条目的平均相关性（共性）", x = "条目", y = "平均相关系数")
+# 筛选阈值：例如保留平均相关 > 0.2 的条目（你可调节）
+threshold <- 0.2
+common_items <- item_commonality$item[item_commonality$mean_corr > threshold]
+# 创建一个新的数据框，保留高共性条目
+data_common <- data_z[, common_items]
+# 查看筛选后数据维度
+cat("原始条目数：", ncol(data_z), "\n")
+cat("保留条目数（共性 > ", threshold, "）：", length(common_items), "\n")
+```
+```{r}
+# 打印保留条目的变量名
+cat("保留的条目名称如下：\n")
+print(common_items)
+# 展示保留条目的共性得分
+retained_items_info <- item_commonality %>%
+  filter(item %in% common_items) %>%
+  arrange(desc(mean_corr))
+# 输出为表格
+print(retained_items_info)
+# 保存结果为 CSV 文件
+# write.csv(retained_items_info, "retained_items_based_on_commonality.csv", row.names = FALSE)
+```
+
+#方差筛选法
+```{r}
+# 加载必要包
+library(dplyr)
+library(tidyr)
+
+# Step 1: 只保留数值型变量（如果你的数据框中还有字符型变量或其他类型）
+#data_numeric <- data_z %>%
+ # select(where(is.numeric))
+
+# Step 2: 设置方差阈值
+var_threshold <- 0.05  # 可以根据需求调整这个值
+data_z <- as.data.frame(data_z)
+# Step 3: 计算每列的方差，并筛选出高于阈值的变量
+variance_df <- data_z %>% 
+#variance_df <- data_z %>%
+  summarise(across(everything(), function(x) var(x, na.rm = TRUE))) %>%
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "variance") %>%
+  filter(variance >= var_threshold)
+
+# Step 4: 获取保留的变量名
+items_to_keep <- variance_df$variable
+
+# Step 5: 构建新的筛选后数据框
+data_selected <- data_z %>%
+  select(all_of(items_to_keep))
+
+# Step 6: 打印保留下来的变量名
+print("保留下来的条目变量名：")
+print(items_to_keep)
+
+# Step 7: 可选，查看新数据框维度
+cat("筛选后数据维度为：", nrow(data_selected), "行", ncol(data_selected), "列\n")
+```
+

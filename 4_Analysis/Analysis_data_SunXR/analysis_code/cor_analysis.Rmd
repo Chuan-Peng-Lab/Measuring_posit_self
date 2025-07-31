@@ -9,7 +9,7 @@ pacman::p_load(
   psych, lavaan, ggplot2, reshape2, caret,
   FactoMineR, factoextra, tidyverse, linkET,
   vegan, ggnewscale, RColorBrewer, EGAnet, xgboost,
-  semPlot, randomForest, Metrics,corrplot, rsample
+  semPlot, randomForest, Metrics,corrplot, rsample, qgraph
 )
 ```
 
@@ -73,8 +73,8 @@ corrplot(
   outline = TRUE                  # 添加边框
 )
 
-# 可选：标题
-title("自我报告 + 认知任务：相关系数热图", line = 1.5, family = "Times New Roman", font.main = 2)
+# 标题
+# title("自我报告 + 认知任务：相关系数热图", line = 1.5, family = "Times New Roman", font.main = 2)
 
 ```
 
@@ -197,7 +197,7 @@ variables <- setdiff(names(data_z_cleaned), c("X.1", "X"))
 # 初始化一个列表来保存模型结果
 model_results <- list()
 # 设置交叉验证的参数
-control <- trainControl(method = "cv", number = 10) # 10折交叉验证
+control <- trainControl(method = "cv", number = 10) # 10折 “cv”交叉验证；每次用其中9份训练，1份验证，循环10次
 # 循环遍历每个变量
 for(target_var in variables) {
 # 排除当前目标变量，获取预测变量
@@ -259,7 +259,65 @@ ggplot(performance_df, aes(x = reorder(Target_Variable, MAE), y = MAE)) +
   coord_flip() +
   labs(x = "Target Variable", y = "MAE", title = "Mean Absolute Error for Each Model") +
   theme_minimal()
+
+# 对具有高预测力的条目进行筛选
+## r方和rmse
+selected <- performance_df[performance_df$Rsquared > 0.3 & performance_df$RMSE < 0.8, ]
+print(selected$Target_Variable)
+
+## r方
+selected <- performance_df[performance_df$Rsquared > 0.4, ]
+print(selected$Target_Variable)
 ```
+
+#对自我报告与认知任务的网络分析
+```{r}
+# Step 1: 数据准备
+network_data1 <- data_al[, 1:16]  # 第一组数据
+network_data2 <- data_al[, 17:30]  # 第二组数据
+# Step 2: 网络分析
+ega_model1 <- EGA(network_data1, model = "glasso")  # 第一组数据网络分析
+ega_model2 <- EGA(network_data2, model = "glasso")  # 第二组数据网络分析
+# 提取邻接矩阵
+adj_matrix1 <- ega_model1$network  # 第一组网络邻接矩阵
+adj_matrix2 <- ega_model2$network  # 第二组网络邻接矩阵
+# Step 3: 合并网络
+combined_matrix <- matrix(0, nrow = ncol(network_data1) + ncol(network_data2), 
+                          ncol = ncol(network_data1) + ncol(network_data2))
+rownames(combined_matrix) <- c(colnames(network_data1), colnames(network_data2))
+colnames(combined_matrix) <- c(colnames(network_data1), colnames(network_data2))
+# 填充邻接矩阵
+combined_matrix[1:ncol(network_data1), 1:ncol(network_data1)] <- adj_matrix1
+combined_matrix[(ncol(network_data1) + 1):nrow(combined_matrix), 
+                (ncol(network_data1) + 1):ncol(combined_matrix)] <- adj_matrix2
+# Step 4: 可视化
+groups <- list(
+  'Questionnaire' = 1:ncol(network_data1),
+  'Task' = (ncol(network_data1) + 1):ncol(combined_matrix)
+)
+
+pdf('Network_UpDown.pdf')
+qgraph(
+  combined_matrix,
+  groups = groups,
+  layout = layout,        # 自定义布局：上下分布
+  labels = FALSE,         # 不显示节点上的数字
+  legend = TRUE,          # 显示图例
+  label.cex = 0.8,        # 标签大小
+  vsize = 5,              # 节点大小
+  curveAll = TRUE,        # 显示所有边的曲率
+  curve = 0.8,            # 边曲率
+  edge.color = "black",   # 边的颜色
+  color = c("#add3f4", "#fccb8e"),  # 第一组蓝色，第二组橙色
+  theme = "colorblind",   # 色盲友好的主题
+  title = "Network: Questionnaire and Task"
+)
+dev.off()
+```
+
+
+
+
 
 ##对自我报告与认知任务分别降维(PCA)
 #自我报告

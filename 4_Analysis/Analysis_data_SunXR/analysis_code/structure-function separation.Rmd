@@ -1,0 +1,174 @@
+---
+title: "structure-function separation"
+author: "SunXinRu"
+date: "2025-07-19"
+output: html_document
+---
+# lasso
+```{r}
+# 📦 加载必要包
+library(glmnet)
+library(dplyr)
+library(ggplot2)
+
+# 📌 设置参数
+set.seed(123)
+n_repeat <- 100
+n_sample <- 7
+X_all <- data_remained
+X_explicit <- X_all[, 1:133]
+X_implicit <- X_all[, 134:140]
+
+# 📌 初始化总结果表
+results_all <- data.frame()
+
+# 📌 遍历 health_var 中的所有预测变量（除第1列 ID）
+for (varname in colnames(health_var)[-1]) {
+  
+  y <- health_var[[varname]]  # 当前目标变量
+  
+  results <- data.frame(iteration = 1:n_repeat,
+                        outcome = varname,
+                        RMSE_exp = NA,
+                        RMSE_imp = NA,
+                        R2_exp = NA,
+                        R2_imp = NA)
+  
+  for (i in 1:n_repeat) {
+    # —— Step 1: 显性抽样
+    sampled_cols <- sample(colnames(X_explicit), n_sample)
+    X_sampled <- X_explicit[, sampled_cols]
+    
+    # —— Step 2: 建模与预测
+    model_exp <- cv.glmnet(as.matrix(X_sampled), y, alpha = 1, standardize = FALSE)
+    model_imp <- cv.glmnet(as.matrix(X_implicit), y, alpha = 1, standardize = FALSE)
+    
+    rmse_exp <- min(model_exp$cvm)
+    rmse_imp <- min(model_imp$cvm)
+    
+    r2_exp <- 1 - rmse_exp^2 / var(y)
+    r2_imp <- 1 - rmse_imp^2 / var(y)
+    
+    # —— Step 3: 存储结果
+    results$RMSE_exp[i] <- rmse_exp
+    results$RMSE_imp[i] <- rmse_imp
+    results$R2_exp[i] <- r2_exp
+    results$R2_imp[i] <- r2_imp
+  }
+  
+  # —— 合并进总表
+  results_all <- rbind(results_all, results)
+}
+
+# ✅ 查看整体结果（按变量分组平均）
+summary_df <- results_all %>%
+  group_by(outcome) %>%
+  summarise(
+    mean_RMSE_exp = mean(RMSE_exp),
+    mean_RMSE_imp = mean(RMSE_imp),
+    mean_R2_exp = mean(R2_exp),
+    mean_R2_imp = mean(R2_imp)
+  )
+
+print(summary_df)
+
+# ✅ 可视化：每个心理变量分别画出 R² 对比
+library(tidyr)
+
+results_long <- results_all %>%
+  select(outcome, iteration, R2_exp, R2_imp) %>%
+  pivot_longer(cols = c(R2_exp, R2_imp), names_to = "type", values_to = "R2")
+
+ggplot(results_long, aes(x = type, y = R2, fill = type)) +
+  geom_boxplot(alpha = 0.7, outlier.size = 0.8) +
+  facet_wrap(~ outcome, scales = "free_y") +
+  labs(title = "显性 vs 隐性预测效果对比（按心理变量）",
+       x = "", y = expression(R^2)) +
+  theme_minimal()
+```
+
+# 随机森林
+```{r}
+# 📦 加载必要包
+library(randomForest)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# 📌 设置参数
+set.seed(123)
+n_repeat <- 100
+n_sample <- 7
+X_all <- data_remained
+X_explicit <- X_all[, 1:133]
+X_implicit <- X_all[, 134:140]
+
+# 📌 初始化总结果表
+results_all_rf <- data.frame()
+
+# 📌 遍历 health_var 中的所有预测变量（除第1列 ID）
+for (varname in colnames(health_var)[-1]) {
+  
+  y <- health_var[[varname]]  # 当前目标变量
+  
+  results <- data.frame(iteration = 1:n_repeat,
+                        outcome = varname,
+                        RMSE_exp = NA,
+                        RMSE_imp = NA,
+                        R2_exp = NA,
+                        R2_imp = NA)
+  
+  for (i in 1:n_repeat) {
+    # —— Step 1: 显性抽样
+    sampled_cols <- sample(colnames(X_explicit), n_sample)
+    X_sampled <- X_explicit[, sampled_cols]
+    
+    # —— Step 2: 显性随机森林建模（抽样7项）
+    rf_exp <- randomForest(x = X_sampled, y = y, ntree = 500)
+    pred_exp <- predict(rf_exp, newdata = X_sampled)
+    rmse_exp <- sqrt(mean((pred_exp - y)^2))
+    r2_exp <- 1 - sum((pred_exp - y)^2) / sum((y - mean(y))^2)
+    
+    # —— Step 3: 隐性随机森林建模（7项全量）
+    rf_imp <- randomForest(x = X_implicit, y = y, ntree = 500)
+    pred_imp <- predict(rf_imp, newdata = X_implicit)
+    rmse_imp <- sqrt(mean((pred_imp - y)^2))
+    r2_imp <- 1 - sum((pred_imp - y)^2) / sum((y - mean(y))^2)
+    
+    # —— Step 4: 存储结果
+    results$RMSE_exp[i] <- rmse_exp
+    results$RMSE_imp[i] <- rmse_imp
+    results$R2_exp[i] <- r2_exp
+    results$R2_imp[i] <- r2_imp
+  }
+  
+  # —— 合并进总表
+  results_all_rf <- rbind(results_all_rf, results)
+}
+
+# ✅ 汇总平均结果
+summary_rf <- results_all_rf %>%
+  group_by(outcome) %>%
+  summarise(
+    mean_RMSE_exp = mean(RMSE_exp),
+    mean_RMSE_imp = mean(RMSE_imp),
+    mean_R2_exp = mean(R2_exp),
+    mean_R2_imp = mean(R2_imp)
+  )
+
+print(summary_rf)
+
+results_long_rf <- results_all_rf %>%
+  pivot_longer(cols = c(R2_exp, R2_imp), names_to = "type", values_to = "R2")
+
+ggplot(results_long_rf, aes(x = type, y = R2, fill = type)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +
+  geom_jitter(width = 0.2, alpha = 0.3, size = 1.2, color = "black") +
+  facet_wrap(~ outcome, scales = "free_x") +
+  scale_y_continuous(limits = c(0.2, 1)) +
+  labs(title = "随机森林预测下显性 vs 隐性测量预测力",
+       x = "", y = expression(R^2)) +
+  theme_minimal()
+```
+
+
