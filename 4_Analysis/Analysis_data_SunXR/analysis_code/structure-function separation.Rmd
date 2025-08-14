@@ -6,23 +6,23 @@ output: html_document
 ---
 # lasso
 ```{r}
-# 📦 加载必要包
+# 加载包
 library(glmnet)
 library(dplyr)
 library(ggplot2)
 
-# 📌 设置参数
+# 设置参数
 set.seed(123)
 n_repeat <- 100
-n_sample <- 7
+n_sample <- 7  #由于筛选后行为数据指标仅保留7个
 X_all <- data_remained
 X_explicit <- X_all[, 1:133]
 X_implicit <- X_all[, 134:140]
 
-# 📌 初始化总结果表
+# 初始化总结果表
 results_all <- data.frame()
 
-# 📌 遍历 health_var 中的所有预测变量（除第1列 ID）
+# 遍历 health_var 中的所有预测变量（除第1列 ID）
 for (varname in colnames(health_var)[-1]) {
   
   y <- health_var[[varname]]  # 当前目标变量
@@ -60,7 +60,7 @@ for (varname in colnames(health_var)[-1]) {
   results_all <- rbind(results_all, results)
 }
 
-# ✅ 查看整体结果（按变量分组平均）
+# 查看整体结果（按变量分组平均）
 summary_df <- results_all %>%
   group_by(outcome) %>%
   summarise(
@@ -72,7 +72,7 @@ summary_df <- results_all %>%
 
 print(summary_df)
 
-# ✅ 可视化：每个心理变量分别画出 R² 对比
+# 可视化：每个心理变量分别画出 R² 对比
 library(tidyr)
 
 results_long <- results_all %>%
@@ -89,13 +89,13 @@ ggplot(results_long, aes(x = type, y = R2, fill = type)) +
 
 # 随机森林
 ```{r}
-# 📦 加载必要包
+# 加载必要包
 library(randomForest)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 
-# 📌 设置参数
+# 设置参数
 set.seed(123)
 n_repeat <- 100
 n_sample <- 7
@@ -103,10 +103,10 @@ X_all <- data_remained
 X_explicit <- X_all[, 1:133]
 X_implicit <- X_all[, 134:140]
 
-# 📌 初始化总结果表
+#  初始化总结果表
 results_all_rf <- data.frame()
 
-# 📌 遍历 health_var 中的所有预测变量（除第1列 ID）
+# 遍历 health_var 中的所有预测变量（除第1列 ID）
 for (varname in colnames(health_var)[-1]) {
   
   y <- health_var[[varname]]  # 当前目标变量
@@ -146,7 +146,7 @@ for (varname in colnames(health_var)[-1]) {
   results_all_rf <- rbind(results_all_rf, results)
 }
 
-# ✅ 汇总平均结果
+# 汇总平均结果
 summary_rf <- results_all_rf %>%
   group_by(outcome) %>%
   summarise(
@@ -171,4 +171,315 @@ ggplot(results_long_rf, aes(x = type, y = R2, fill = type)) +
   theme_minimal()
 ```
 
+# 采用等量抽样的方法进行泛化拟合
+```{r}
+library(randomForest)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+set.seed(123)
+n_repeat <- 100
+n_sample <- 7
+test_ratio <- 0.2
+
+X_all <- data_remained
+X_explicit <- X_all[, 1:133]
+X_implicit <- X_all[, 134:140]
+
+results_all_rf <- data.frame()
+
+for (varname in colnames(health_var)[-1]) {
+  
+  y <- health_var[[varname]]
+  
+  results <- data.frame(iteration = 1:n_repeat,
+                        outcome = varname,
+                        RMSE_exp = NA,
+                        RMSE_imp = NA,
+                        R2_exp = NA,
+                        R2_imp = NA)
+  
+  for (i in 1:n_repeat) {
+    # --- 划分训练集 & 测试集
+    test_idx <- sample(seq_len(nrow(X_all)), size = floor(test_ratio * nrow(X_all)))
+    train_idx <- setdiff(seq_len(nrow(X_all)), test_idx)
+    
+    # --- 显性数据随机选特征（只在训练集）
+    sampled_cols <- sample(colnames(X_explicit), n_sample)
+    
+    X_train_exp <- X_explicit[train_idx, sampled_cols, drop = FALSE]
+    X_test_exp  <- X_explicit[test_idx, sampled_cols, drop = FALSE]
+    
+    X_train_imp <- X_implicit[train_idx, , drop = FALSE]
+    X_test_imp  <- X_implicit[test_idx, , drop = FALSE]
+    
+    y_train <- y[train_idx]
+    y_test  <- y[test_idx]
+    
+    # --- 显性模型
+    rf_exp <- randomForest(x = X_train_exp, y = y_train, ntree = 1000, mtry = floor(n_sample/3))
+    pred_exp <- predict(rf_exp, newdata = X_test_exp)
+    rmse_exp <- sqrt(mean((pred_exp - y_test)^2))
+    r2_exp <- 1 - sum((pred_exp - y_test)^2) / sum((y_test - mean(y_test))^2)
+    
+    # --- 隐性模型
+    rf_imp <- randomForest(x = X_train_imp, y = y_train, ntree = 1000, mtry = floor(ncol(X_implicit)/3))
+    pred_imp <- predict(rf_imp, newdata = X_test_imp)
+    rmse_imp <- sqrt(mean((pred_imp - y_test)^2))
+    r2_imp <- 1 - sum((pred_imp - y_test)^2) / sum((y_test - mean(y_test))^2)
+    
+    # --- 存结果
+    results$RMSE_exp[i] <- rmse_exp
+    results$RMSE_imp[i] <- rmse_imp
+    results$R2_exp[i] <- r2_exp
+    results$R2_imp[i] <- r2_imp
+  }
+  
+  results_all_rf <- rbind(results_all_rf, results)
+}
+
+# --- 汇总
+summary_rf <- results_all_rf %>%
+  group_by(outcome) %>%
+  summarise(
+    mean_RMSE_exp = mean(RMSE_exp),
+    mean_RMSE_imp = mean(RMSE_imp),
+    mean_R2_exp = mean(R2_exp),
+    mean_R2_imp = mean(R2_imp)
+  )
+
+print(summary_rf)
+```
+
+
+
+
+# 根据EGA结果利用十折交叉验证进行预测
+# 线性
+```{r}
+# 根据EGA的筛选创建只包含保留条目的数据框
+kept_data <- data_z[, kept_items]
+
+# 加载必要的包
+library(caret)
+
+#-------------------------
+# 1. 分离问卷数据和行为数据
+#-------------------------
+questionnaire_data <- kept_data[, 1:132]   # 问卷
+behavior_data      <- kept_data[, 133:142] # 行为任务
+
+#-------------------------
+# 2. 处理待预测变量
+#-------------------------
+# 去掉第一列被试编号
+targets <- health_var[, -1]
+
+# 检查变量名
+colnames(targets)
+
+#-------------------------
+# 3. 定义十折交叉验证控制
+#-------------------------
+set.seed(123) # 保证结果可复现
+cv_control <- trainControl(
+  method = "cv",
+  number = 10,
+  verboseIter = TRUE
+)
+
+#-------------------------
+# 4. 定义预测函数
+#-------------------------
+run_cv <- function(predictors, outcome_name) {
+  
+  # outcome_name 是因变量的名字
+  outcome <- targets[[outcome_name]]
+  
+  # 合并预测变量和因变量
+  df <- data.frame(outcome = outcome, predictors)
+  
+  # 模型：线性回归（可以改成 'glmnet', 'rf', 'xgbTree' 等）
+  model <- train(
+    outcome ~ .,
+    data = df,
+    method = "glmnet",  # LASSO / Ridge / Elastic Net
+    trControl = cv_control,
+    preProcess = c("center", "scale"),
+    tuneLength = 10
+  )
+  
+  return(model)
+}
+
+#-------------------------
+# 5. 循环跑四个健康变量
+#-------------------------
+# 用问卷数据
+results_questionnaire <- lapply(colnames(targets), function(var) {
+  cat("问卷数据预测：", var, "\n")
+  run_cv(questionnaire_data, var)
+})
+
+# 用行为数据
+results_behavior <- lapply(colnames(targets), function(var) {
+  cat("行为数据预测：", var, "\n")
+  run_cv(behavior_data, var)
+})
+
+#-------------------------
+# 6. 查看预测效果（RMSE, R² 等）
+#-------------------------
+get_performance <- function(model_list) {
+  sapply(model_list, function(m) {
+    c(RMSE = min(m$results$RMSE),
+      Rsq  = max(m$results$Rsquared))
+  })
+}
+
+perf_questionnaire <- get_performance(results_questionnaire)
+perf_behavior <- get_performance(results_behavior)
+
+perf_questionnaire
+perf_behavior
+```
+
+
+# 非线性（随机森林）
+```{r}
+library(caret)
+library(randomForest)
+
+set.seed(123)
+
+# 1. 分开问卷和行为数据
+data_questionnaire <- kept_data[, 1:132]
+data_behavior <- kept_data[, 133:142]
+
+# 2. 待预测变量（去掉第一列 ID）
+target_vars <- health_var[, -1]  
+
+# 创建存储结果的矩阵
+perf_questionnaire_rf <- matrix(NA, nrow = 2, ncol = ncol(target_vars))
+rownames(perf_questionnaire_rf) <- c("RMSE", "Rsq")
+colnames(perf_questionnaire_rf) <- colnames(target_vars)
+
+perf_behavior_rf <- matrix(NA, nrow = 2, ncol = ncol(target_vars))
+rownames(perf_behavior_rf) <- c("RMSE", "Rsq")
+colnames(perf_behavior_rf) <- colnames(target_vars)
+
+# 3. 十折交叉验证控制
+train_control <- trainControl(method = "cv", number = 10)
+
+# 4. 循环预测四个变量
+for (i in seq_along(target_vars)) {
+  y <- target_vars[[i]]
+  
+  # 问卷数据
+  df_q <- data.frame(y = y, data_questionnaire)
+  model_q <- train(y ~ ., data = df_q, method = "rf",
+                   trControl = train_control,
+                   tuneLength = 5,
+                   importance = TRUE)
+  perf_questionnaire_rf[1, i] <- min(model_q$results$RMSE)
+  perf_questionnaire_rf[2, i] <- max(model_q$results$Rsquared)
+  
+  # 行为数据
+  df_b <- data.frame(y = y, data_behavior)
+  model_b <- train(y ~ ., data = df_b, method = "rf",
+                   trControl = train_control,
+                   tuneLength = 5,
+                   importance = TRUE)
+  perf_behavior_rf[1, i] <- min(model_b$results$RMSE)
+  perf_behavior_rf[2, i] <- max(model_b$results$Rsquared)
+}
+
+# 5. 输出结果
+perf_questionnaire_rf
+perf_behavior_rf
+```
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# ------------------
+# 计算汇总结果
+# ------------------
+summary_rf <- results_all_rf %>%
+  group_by(outcome) %>%
+  summarise(
+    mean_RMSE_exp = mean(RMSE_exp),
+    mean_RMSE_imp = mean(RMSE_imp),
+    mean_R2_exp = mean(R2_exp),
+    mean_R2_imp = mean(R2_imp)
+  )
+
+# ------------------
+# 转为长格式，方便绘图
+# ------------------
+summary_long <- summary_rf %>%
+  pivot_longer(
+    cols = -outcome,
+    names_to = c("metric", "data_type"),
+    names_pattern = "(.*)_(exp|imp)",
+    values_to = "value"
+  ) %>%
+  mutate(
+    data_type = ifelse(data_type == "exp", "显性数据（问卷）", "隐性数据（行为任务）"),
+    metric = ifelse(metric == "mean_RMSE", "RMSE", "R²")
+  )
+
+# ------------------
+# 绘制 R² 对比图
+# ------------------
+ggplot(
+  filter(summary_long, metric == "R²"),
+  aes(x = outcome, y = value, fill = data_type)
+) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7)) +
+  geom_text(aes(label = round(value, 3)), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.5, size = 3.5) +
+  labs(title = "显性数据（问卷） vs 隐性数据（行为任务）预测效果对比",
+       y = expression(R^2), x = "健康指标", fill = "数据类型") +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
+
+# ------------------
+# 绘制 RMSE 对比图（可选）
+# ------------------
+ggplot(
+  filter(summary_long, metric == "RMSE"),
+  aes(x = outcome, y = value, fill = data_type)
+) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7)) +
+  geom_text(aes(label = round(value, 2)), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.5, size = 3.5) +
+  labs(title = "显性数据（问卷） vs 隐性数据（行为任务）预测误差对比",
+       y = "RMSE", x = "健康指标", fill = "数据类型") +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
+```
+
+```{r}
+df_cv <- data.frame(
+  outcome = rep(colnames(perf_questionnaire_rf), 2),
+  R2 = c(perf_questionnaire_rf["Rsq", ], perf_behavior_rf["Rsq", ]),
+  DataType = rep(c("显性数据（问卷）", "隐性数据（行为任务）"), each = ncol(perf_questionnaire_rf))
+)
+
+ggplot(df_cv, aes(x = outcome, y = R2, fill = DataType)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_text(aes(label = round(R2, 3)), position = position_dodge(width = 0.9), vjust = -0.5) +
+  theme_minimal()
+```
 

@@ -587,6 +587,165 @@ qgraph(
 dev.off()
 ```
 
+
+# EGA模型
+```{r}
+library(EGAnet)
+library(psych)
+
+# 1. 去冗余（UVA）
+uva <- UVA(data = data_z, wto.cut = 0.25)
+data_ega <- uva$reduced_data
+# 查看保留下来的条目名
+kept_items <- colnames(uva$reduced_data)
+kept_items
+# 查看剔除掉的条目名
+removed_items <- setdiff(colnames(data_z), colnames(uva$reduced_data))
+removed_items
+
+# 2. 运行 EGA
+ega <- EGA(data = data_ega, model = "glasso", algorithm = "walktrap",
+           corrMethod = "spearman", gamma = 0.5, plot.EGA = TRUE)
+summary(ega)
+
+# 3. 稳定性检测（BootEGA）
+boot <- bootEGA(data = data_ega, model = "glasso", algorithm = "walktrap",
+                corrMethod = "spearman", n.boot = 500)
+summary(boot)
+
+# 查看维度稳定性
+dimensionStability(boot)
+itemStability(boot)
+```
+```{r}
+library(EGAnet)
+library(ggraph)
+library(igraph)
+
+# 从 EGA 对象创建 igraph
+# ega$network 是估计的网络（相关矩阵）
+graph <- graph_from_adjacency_matrix(
+  ega$network,  # 相关矩阵
+  mode = "undirected",
+  weighted = TRUE,
+  diag = FALSE
+)
+
+# 节点名称
+V(graph)$name <- colnames(ega$network)
+
+# 社区信息（来自 EGA 的 wc）
+V(graph)$community <- as.factor(ega$wc)
+
+# 确保权重为正（布局算法要求）
+E(graph)$weight <- abs(E(graph)$weight)
+
+# 绘制美化版网络图
+ggraph(graph, layout = "fr") +
+  geom_edge_link(aes(width = weight), alpha = 0.3, color = "grey50") +
+  geom_node_point(aes(color = community), size = 8) +
+  #geom_node_text(aes(label = name), repel = TRUE, size = 3) +
+  scale_color_brewer(palette = "Set2") +
+  theme_void() +
+  labs(color = "Community")
+```
+
+
+
+
+
+
+# Bifactor
+```{r}
+# 自动确定模型因子数量
+library(psych)
+fa_parallel <- fa.parallel(data_z, fa = "fa", fm = "minres", n.iter = 100)
+nfactors <- fa_parallel$nfact  # 推荐因子数量
+
+# 进行 EFA
+efa_result <- fa(r = cor(data_z), nfactors = nfactors, fm = "minres", rotate = "oblimin")
+print(efa_result)
+loadings <- as.data.frame(efa_result$loadings)
+
+# 动态生成 bifactor 模型公式
+threshold <- 0.3
+model_formula <- ""
+for (factor_idx in 1:nfactors) {
+  if (factor_idx <= ncol(loadings$x)) {
+    factor_items <- rownames(loadings$x)[abs(loadings$x[, factor_idx]) > threshold]
+    factor_name <- paste0("F", factor_idx)
+    if (length(factor_items) > 0) {
+      model_formula <- paste0(
+        model_formula,
+        factor_name, " =~ ", paste(factor_items, collapse = " + "), "\n"
+      )
+    }
+  }
+}
+
+# 添加通用因子（所有条目都加载）
+general_factor_items <- rownames(loadings$x)
+model_formula <- paste0(
+  "I =~ ", paste(general_factor_items, collapse = " + "), "\n",
+  model_formula
+)
+
+cat("\n生成的模型公式:\n")
+cat(model_formula)
+
+# 拟合 SEM 模型
+library(lavaan)
+fit <- sem(model_formula, 
+           data = data_z, 
+           std.lv = TRUE, 
+           fixed.x = FALSE,
+           orthogonal = TRUE)
+
+# 输出结果
+summary(fit, standardized = TRUE, fit.measures = TRUE)
+fitMeasures(fit, c("p", "cfi", "tli", "rmsea", "srmr", "AIC"))
+
+# 提取标准化路径载荷
+standardized_solution <- parameterEstimates(fit, standardized = TRUE)
+factor_loadings <- subset(standardized_solution, op == "=~")
+head(factor_loadings)
+
+# 提取因子得分
+factor_scores <- predict(fit)
+head(factor_scores)
+```
+
+```{r}
+# 可视化模型结构
+library(semPlot)
+semPaths(fit, 
+         what = "std", 
+         fade = FALSE, 
+         layout = "tree", 
+         style = "lisrel", 
+         residuals = FALSE, 
+         title = TRUE, 
+         label.cex = 0.8, 
+         edge.label.cex = 0.8, 
+         nCharNodes = 0, 
+         sizeMan = 8, 
+         sizeLat = 10, 
+         mar = c(5, 5, 5, 5))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #对现实结果的预测：抑郁/焦虑/拖延/主观幸福感
 ##机器学习方法
 ###梯度提升机XGBoost：XGBoost迭代的机器学习技术，通过逐步添加新的模型（通常是弱学习器，如决策树）来修正现有模型的残差，从而提高整体模型的预测能力，是一种优化的分布式梯度提升决策树算法，在梯度提升框架下构建的，专门设计用于提高计算效率和模型性能，尤其在处理大规模数据集时表现优异。
