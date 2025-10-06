@@ -1,0 +1,121 @@
+---
+title: "IAT_DDM"
+author: "SunXinRu"
+date: "2025-08-26"
+output: html_document
+---
+```{r}
+library(dplyr)
+
+IAT_data <- IAT_all %>%
+  mutate(
+    ParticipantID = as.character(ParticipantID),
+    rt = as.numeric(rt)
+  ) %>%
+  # version 生成
+  mutate(version = NA) %>%
+  mutate(
+    version = case_when(
+      version_attrib == version_target & task_id == "ability" & screen_id == 3 ~ "A1",
+      version_attrib == version_target & task_id == "ability" & screen_id == 4 ~ "A2",
+      version_attrib == version_target & task_id == "ability" & screen_id == 6 ~ "B1",
+      version_attrib == version_target & task_id == "ability" & screen_id == 7 ~ "B2",
+      version_attrib != version_target & task_id == "ability" & screen_id == 3 ~ "B1",
+      version_attrib != version_target & task_id == "ability" & screen_id == 4 ~ "B2",
+      version_attrib != version_target & task_id == "ability" & screen_id == 6 ~ "A1",
+      version_attrib != version_target & task_id == "ability" & screen_id == 7 ~ "A2",
+      version_attrib2 == version_target2 & task_id == "moral" & screen_id == 3 ~ "A1",
+      version_attrib2 == version_target2 & task_id == "moral" & screen_id == 4 ~ "A2",
+      version_attrib2 == version_target2 & task_id == "moral" & screen_id == 6 ~ "B1",
+      version_attrib2 == version_target2 & task_id == "moral" & screen_id == 7 ~ "B2",
+      version_attrib2 != version_target2 & task_id == "moral" & screen_id == 3 ~ "B1",
+      version_attrib2 != version_target2 & task_id == "moral" & screen_id == 4 ~ "B2",
+      version_attrib2 != version_target2 & task_id == "moral" & screen_id == 6 ~ "A1",
+      version_attrib2 != version_target2 & task_id == "moral" & screen_id == 7 ~ "A2",
+      TRUE ~ version
+    )
+  ) %>%
+  filter(screen_id %in% c(3,4,6,7), rt <= 10000) %>%
+  mutate(
+    block_type = case_when(
+      version %in% c("A1","A2") ~ "compatible",
+      version %in% c("B1","B2") ~ "incompatible"
+    )
+  )
+
+# 计算均值
+IAT_data1 <- IAT_data %>%
+  group_by(ParticipantID, task_id, block_type, version) %>%
+  summarize(
+    mean_rt = mean(rt),
+    sd_rt = sd(rt),
+    row_n = n(),
+    se_rt = sd(rt) / sqrt(row_n),
+    .groups = "drop"
+  )
+
+# 替换错误试次
+IAT_data <- IAT_data %>%
+  left_join(IAT_data1 %>% select(ParticipantID, task_id, block_type, version, mean_rt),
+            by = c("ParticipantID","task_id","block_type","version")) %>%
+  mutate(
+    rt = ifelse(correct %in% c(FALSE,"FALSE",0,"0","false"), mean_rt + 600, rt)
+  )
+
+# 构建 DDM 数据
+ddm_data <- IAT_data %>%
+  mutate(
+    rt = rt / 1000,   # 转秒
+    response_num = ifelse(tolower(response) == "e", 0, 1),
+    correct_num = ifelse(correct %in% c(TRUE,"TRUE",1,"1"), 1, 0),
+    condition_block = block_type,   # 相容/不相容
+    domain = task_id                # moral/ability
+  ) %>%
+  select(ParticipantID, rt, response_num, condition_block, domain, correct_num)
+```
+
+```{r}
+# 安装必要的包
+#install.packages(c("brms", "rtdists"))
+library(Rcpp)
+
+
+# 定义 brms 的公式
+# drift v ~ condition * domain  (相容性 × 领域)
+# a, t0, z 只考虑个体差异
+ddm_formula <- bf(
+  rt | dec(response_num) ~ condition_block * domain + (1|ParticipantID),
+  bs ~ 1 + (1|ParticipantID),   # boundary separation (a)
+  ndt ~ 1 + (1|ParticipantID),  # non-decision time (t0)
+  bias ~ 1 + (1|ParticipantID)  # starting bias (z)
+)
+
+# 拟合模型
+fit_ddm <- brm(
+  ddm_formula,
+  data = ddm_data,
+  family = wiener(),   # brms 的 wiener family 用于 DDM
+  chains = 4, cores = 4, iter = 2000,
+  control = list(adapt_delta = 0.95, max_treedepth = 12)
+)
+
+summary(fit_ddm)
+plot(fit_ddm)
+```
+```{r}
+summary(ddm_data)
+
+# 检查 NA
+colSums(is.na(ddm_data))
+
+# 检查 RT 是否都 > 0
+summary(ddm_data$rt)
+
+# 检查 response_num 是否只有 0/1
+table(ddm_data$response_num, useNA = "ifany")
+
+# 检查 condition_block / domain 是否有 NA
+table(ddm_data$condition_block, useNA = "ifany")
+table(ddm_data$domain, useNA = "ifany")
+```
+
